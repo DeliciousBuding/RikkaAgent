@@ -31,6 +31,10 @@ Transition style (guideline):
 - enter: `fadeIn + slideInVertically(…/2)` or small scale-in (0.9–0.95)
 - exit: symmetric fade + slide/scale out
 
+Timing guidance:
+
+- Use the motion token table in `docs/spec/25-design-tokens.md` to keep durations consistent.
+
 ## 3) Loading & Streaming States
 
 Connection lifecycle:
@@ -106,4 +110,3 @@ Errors should be noticeable without being alarming:
 - Expand/collapse code blocks must not cause layout “teleporting”.
 - Input bar expand/collapse must feel stable with IME on/off.
 - No “infinite animations” on screens users stare at for minutes (battery + distraction).
-

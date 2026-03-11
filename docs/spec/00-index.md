@@ -10,13 +10,14 @@ This spec is written to enable an open-source, production-quality implementation
 4. `docs/spec/22-motion.md`
 5. `docs/spec/23-rendering.md`
 6. `docs/spec/24-components.md`
-7. `docs/spec/30-architecture.md`
-8. `docs/spec/40-security.md`
-9. `docs/spec/50-data.md`
-10. `docs/spec/60-env.md`
-11. `docs/spec/70-testing.md`
-12. `docs/spec/80-release.md`
-13. `docs/spec/90-oss.md`
+7. `docs/spec/25-design-tokens.md`
+8. `docs/spec/30-architecture.md`
+9. `docs/spec/40-security.md`
+10. `docs/spec/50-data.md`
+11. `docs/spec/60-env.md`
+12. `docs/spec/70-testing.md`
+13. `docs/spec/80-release.md`
+14. `docs/spec/90-oss.md`
 
 ## Research Notes (Non-Normative)
 
