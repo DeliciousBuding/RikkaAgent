@@ -27,6 +27,7 @@ Apache-2.0. See `LICENSE`.
 ## Docs
 
 - Plan: `docs/plan.md`
+- Spec index: `docs/spec/00-index.md`
 - Architecture: `docs/architecture.md`
 - Threat model: `docs/threat-model.md`
 - Server hardening guide: `docs/server-hardening.md`
@@ -35,4 +36,3 @@ Apache-2.0. See `LICENSE`.
 ## Clean-Room Note
 
 This project is inspired by the UX ideas of various chat UIs (including RikkaHub), but is implemented from scratch. Please do not copy code from repositories that are under strong-copyleft licenses unless you fully understand and accept the licensing implications.
-

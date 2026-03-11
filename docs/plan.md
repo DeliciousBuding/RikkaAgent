@@ -155,3 +155,9 @@ Phase 4（体验打磨）：
 1. Phase 0：对 `D:\Code\Projects\rikkahub` 做只读勘探，产出落点文档到 `D:\Code\Projects\rikka-agent\docs\`.
 2. 明确一个产品决策：SSH Profile 先支持单主机还是多主机（不影响底层，但影响信息架构与页面）。
 
+## 10. Spec 文档入口
+
+完整 spec（分版块）位于：
+
+- `D:\Code\Projects\rikka-agent\docs\spec\00-index.md`
+

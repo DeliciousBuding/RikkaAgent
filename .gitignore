@@ -30,3 +30,15 @@ Thumbs.db
 *.crt
 *.env
 
+# Android outputs
+*.apk
+*.aab
+
+# Local databases / runtime artifacts (keep user data out of git)
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# Gradle wrapper/metadata (optional; keep if you prefer)
+# gradle/wrapper/gradle-wrapper.jar
