@@ -28,6 +28,7 @@ Apache-2.0. See `LICENSE`.
 
 - Plan: `docs/plan.md`
 - Spec index: `docs/spec/00-index.md`
+- Reference study notes: `docs/research/rikkahub-android-ui-study.md`
 - Architecture: `docs/architecture.md`
 - Threat model: `docs/threat-model.md`
 - Server hardening guide: `docs/server-hardening.md`
