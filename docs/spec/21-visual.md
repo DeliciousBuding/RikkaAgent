@@ -2,6 +2,10 @@
 
 This document defines the **visual language** of `rikka-agent` (Mode A).
 
+If you want implementable constants (spacing/typography/radius/motion timings), also read:
+
+- `docs/spec/25-design-tokens.md`
+
 Goals:
 
 - Match the “polished chat UI” feel of RikkaHub Android (inspiration only).
@@ -134,4 +138,3 @@ Minimums:
 - Support high font scales without clipping:
   - message bubbles should wrap and grow
   - toolbars may scroll horizontally rather than truncate critical controls
-

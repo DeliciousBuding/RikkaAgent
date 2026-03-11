@@ -35,6 +35,10 @@ Naming is **suggested**. The key requirement is that we design components so the
      - edit
      - rerun
      - pin (optional)
+   - states:
+     - normal
+     - selected (for export/copy multi-select, optional)
+     - disabled (when disconnected; rerun disabled but copy still allowed)
 2. **OutputBubble**
    - contains:
      - stdout block
@@ -46,6 +50,10 @@ Naming is **suggested**. The key requirement is that we design components so the
      - copy all
      - expand/collapse
      - export (with warning)
+   - states:
+     - streaming (receiving chunks; show subtle indicator)
+     - complete (exit code shown)
+     - truncated (badge + export/copy all)
 3. **StatusCard**
    - connection lifecycle (connecting/connected/disconnected)
    - host key prompts
@@ -79,6 +87,10 @@ Naming is **suggested**. The key requirement is that we design components so the
    - optional “more” panel:
      - pinned commands
      - variables/snippets
+   - behavior rules:
+     - enter sends (configurable)
+     - shift+enter inserts newline
+     - while running, primary button cancels current exec
 2. **PinnedCommandsRow** (optional early)
    - horizontally scrollable chips
    - tap to insert / long-press to edit
@@ -122,3 +134,6 @@ At minimum:
   - “trust” vs “cancel” flows
   - mismatch warning copy present
 
+- `CodeBlockCard`:
+  - wrap toggle changes layout without jank
+  - copy button copies the correct full content even when collapsed
