@@ -79,6 +79,10 @@ Rules:
 - Rendering should be sandboxed:
   - prefer an isolated WebView approach with local HTML/JS assets
   - no remote network access required for Mermaid rendering
+- UX requirements (nice-to-have):
+  - zoom controls
+  - “open large preview” (bottom sheet)
+  - export to image (with a safe local save flow)
 
 Failure mode:
 
@@ -138,4 +142,3 @@ Streaming output updates must be **batched**:
 - Code blocks should be virtualized and avoid heavy layout in tight loops.
 - Markdown parsing must happen off the main thread.
 - Mermaid rendering must not block scrolling (defer / lazy load).
-

@@ -118,6 +118,13 @@ Mermaid entry:
 - WebView wrapper:
   - `D:\Code\Projects\rikkahub\app\src\main\java\me\rerere\rikkahub\ui\components\webview\WebView.kt`
 
+Key observations:
+
+- Mermaid is rendered inside a WebView with zoom enabled.
+- The component measures content height via a JS bridge and caches the resulting height (reduces “jumping”).
+- Export to image is supported via a JS call that returns base64 image data to Android for saving.
+- There is a “preview” affordance that opens a larger view in a bottom sheet.
+
 Implication for `rikka-agent`:
 
 - For Mode A, we can render stdout/stderr as “code cards” by default.
@@ -149,4 +156,3 @@ If `rikka-agent` matches these, we’re in the right territory:
   - expand/collapse with stable layout
 - Optional blur/glass input bar.
 - Rich output rendering with effortless copy/export.
-
