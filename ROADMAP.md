@@ -19,7 +19,7 @@
 |--------|------|------|
 | M0 规范冻结 | ✅ 基本完成 | 剩余：spec 用词统一检查 |
 | M1 UI 骨架 | ✅ 主要完成 | 8 屏 + ProfilesVM/EditorVM/ChatVM 全部连接 Room |
-| M2 渲染管线 | 🔶 60% | Markdown 渲染 v1 完成，流式渲染待优化 |
+| M2 渲染管线 | ✅ 主要完成 | Markdown v1 + 流式渲染优化 + CodeCard；Mermaid 可选 |
 | M3 SSH 引擎 | ✅ 主要完成 | sshj exec + 认证 + host key + 会话管理 + 密钥生成 + 加密存储 |
 | M4 Codex 接入 | 🔶 50% | profile 开关 + exec 包装 + Markdown 渲染；JSONL 待做 |
 | M5 开源发布 | ⬜ 未开始 | CI workflow 已有 |
@@ -38,7 +38,7 @@
 
 - [x] Markdown 渲染 v1（段落/标题/列表/引用/链接/行内代码/代码块/表格/删除线）
 - [x] CodeCard 基础组件（折叠/展开/复制/语言标签）
-- [ ] 流式渲染策略（50-100ms 批处理，避免全量重解析）
+- [x] 流式渲染策略（流式阶段用 CodeCard，终态切 MarkdownText 单次解析 + remember 缓存）
 - [ ] 可选：Mermaid 渲染（WebView/JS bridge）
 
 ## M4 待完成
