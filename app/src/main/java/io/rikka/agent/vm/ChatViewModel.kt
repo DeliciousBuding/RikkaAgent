@@ -55,6 +55,10 @@ class ChatViewModel(
   private val _connectionState = MutableStateFlow(ConnectionState.IDLE)
   val connectionState: StateFlow<ConnectionState> = _connectionState
 
+  /** Profile display info for the top bar. */
+  private val _profileLabel = MutableStateFlow("")
+  val profileLabel: StateFlow<String> = _profileLabel
+
   private val _hostKeyEvent = MutableSharedFlow<HostKeyEvent>(extraBufferCapacity = 1)
   val hostKeyEvent: SharedFlow<HostKeyEvent> = _hostKeyEvent.asSharedFlow()
 
@@ -104,6 +108,7 @@ class ChatViewModel(
       val profile = profileStore.getById(profileId)
       if (profile != null) {
         currentProfile = profile
+        _profileLabel.value = profile.name.ifBlank { "${profile.username}@${profile.host}" }
         _connectionState.value = ConnectionState.READY
         appendSystemMessage("Ready. Profile: ${profile.name} (${profile.username}@${profile.host})")
       } else {
