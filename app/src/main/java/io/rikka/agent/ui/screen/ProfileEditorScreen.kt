@@ -39,6 +39,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -367,6 +368,46 @@ fun ProfileEditorScreen(
                 )
               }
             }
+          }
+        }
+      }
+
+      // --- Codex integration section ---
+      SectionLabel("Codex")
+      Card(
+        colors = CardDefaults.cardColors(
+          containerColor = MaterialTheme.colorScheme.surface,
+        ),
+      ) {
+        Column(
+          modifier = Modifier.padding(16.dp),
+          verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+          Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+          ) {
+            Text("Codex Mode", style = MaterialTheme.typography.bodyLarge)
+            Switch(
+              checked = form.codexMode,
+              onCheckedChange = { vm.updateForm(form.copy(codexMode = it)) },
+            )
+          }
+          if (form.codexMode) {
+            Text(
+              text = "Commands will be sent as natural-language tasks via codex exec.",
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedTextField(
+              value = form.codexWorkDir,
+              onValueChange = { vm.updateForm(form.copy(codexWorkDir = it)) },
+              label = { Text("Working Directory") },
+              placeholder = { Text("/home/user/project") },
+              singleLine = true,
+              modifier = Modifier.fillMaxWidth(),
+            )
           }
         }
       }

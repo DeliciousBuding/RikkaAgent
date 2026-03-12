@@ -197,7 +197,11 @@ class ChatViewModel(
     _connectionState.value = ConnectionState.EXECUTING
 
     val execRunner = getOrCreateRunner()
-    val shellCommand = wrapWithShell(command)
+    val shellCommand = if (profile.codexMode) {
+      wrapForCodex(command, profile.codexWorkDir)
+    } else {
+      wrapWithShell(command)
+    }
 
     runningJob = viewModelScope.launch {
       val stdout = StringBuilder()
@@ -367,6 +371,18 @@ class ChatViewModel(
    * SSH exec typically runs commands through the server's login shell,
    * but this allows explicit shell selection (e.g., bash -c '...').
    */
+  /** Wrap a natural-language task as a `codex exec` command. */
+  private fun wrapForCodex(task: String, workDir: String?): String {
+    val escaped = task.replace("\"", "\\\"")
+    val cdPart = if (!workDir.isNullOrBlank()) "cd ${shellQuote(workDir)} && " else ""
+    return "${cdPart}codex exec --full-auto \"$escaped\""
+  }
+
+  private fun shellQuote(s: String): String {
+    val escaped = s.replace("'", "'\\''")
+    return "'$escaped'"
+  }
+
   private fun wrapWithShell(command: String): String {
     val shell = kotlinx.coroutines.runBlocking {
       appPreferences.defaultShell.first()

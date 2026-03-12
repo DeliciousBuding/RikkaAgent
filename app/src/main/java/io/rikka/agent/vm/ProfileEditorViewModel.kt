@@ -23,6 +23,8 @@ data class ProfileForm(
   val username: String = "root",
   val authType: AuthType = AuthType.PublicKey,
   val keyRef: String? = null,
+  val codexMode: Boolean = false,
+  val codexWorkDir: String = "",
 )
 
 class ProfileEditorViewModel(
@@ -53,6 +55,8 @@ class ProfileEditorViewModel(
             username = p.username,
             authType = p.authType,
             keyRef = p.keyRef,
+            codexMode = p.codexMode,
+            codexWorkDir = p.codexWorkDir ?: "",
           )
         }
       }
@@ -79,6 +83,8 @@ class ProfileEditorViewModel(
         username = f.username.trim(),
         authType = f.authType,
         keyRef = f.keyRef,
+        codexMode = f.codexMode,
+        codexWorkDir = f.codexWorkDir.trim().ifBlank { null },
       )
       store.upsert(profile)
       _saved.value = true

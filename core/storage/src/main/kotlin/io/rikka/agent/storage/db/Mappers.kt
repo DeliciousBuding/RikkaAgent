@@ -14,6 +14,8 @@ fun SshProfileEntity.toModel(): SshProfile = SshProfile(
   keyRef = keyRef,
   hostKeyPolicy = HostKeyPolicy.valueOf(hostKeyPolicy),
   keepaliveIntervalSec = keepaliveIntervalSec,
+  codexMode = codexMode,
+  codexWorkDir = codexWorkDir,
 )
 
 fun SshProfile.toEntity(): SshProfileEntity = SshProfileEntity(
@@ -26,4 +28,6 @@ fun SshProfile.toEntity(): SshProfileEntity = SshProfileEntity(
   keyRef = keyRef,
   hostKeyPolicy = hostKeyPolicy.name,
   keepaliveIntervalSec = keepaliveIntervalSec,
+  codexMode = codexMode,
+  codexWorkDir = codexWorkDir,
 )
