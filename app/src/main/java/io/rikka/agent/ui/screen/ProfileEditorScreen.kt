@@ -2,17 +2,21 @@ package io.rikka.agent.ui.screen
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -20,6 +24,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -83,64 +88,109 @@ fun ProfileEditorScreen(
         .padding(innerPadding)
         .padding(horizontal = 16.dp)
         .verticalScroll(rememberScrollState()),
-      verticalArrangement = Arrangement.spacedBy(12.dp),
+      verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
       Spacer(modifier = Modifier.height(4.dp))
 
-      OutlinedTextField(
-        value = form.name,
-        onValueChange = { vm.updateForm(form.copy(name = it)) },
-        label = { Text("Name") },
-        placeholder = { Text("My Server") },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-      )
+      // --- Connection section ---
+      SectionLabel("Connection")
+      Card(
+        colors = CardDefaults.cardColors(
+          containerColor = MaterialTheme.colorScheme.surface,
+        ),
+      ) {
+        Column(
+          modifier = Modifier.padding(16.dp),
+          verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+          OutlinedTextField(
+            value = form.name,
+            onValueChange = { vm.updateForm(form.copy(name = it)) },
+            label = { Text("Name") },
+            placeholder = { Text("My Server") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+          )
 
-      OutlinedTextField(
-        value = form.host,
-        onValueChange = { vm.updateForm(form.copy(host = it)) },
-        label = { Text("Host") },
-        placeholder = { Text("192.168.1.100") },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-        isError = attempted && form.host.isBlank(),
-        supportingText = if (attempted && form.host.isBlank()) {
-          { Text("Host is required") }
-        } else null,
-      )
+          OutlinedTextField(
+            value = form.host,
+            onValueChange = { vm.updateForm(form.copy(host = it)) },
+            label = { Text("Host") },
+            placeholder = { Text("192.168.1.100") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+            isError = attempted && form.host.isBlank(),
+            supportingText = if (attempted && form.host.isBlank()) {
+              { Text("Host is required") }
+            } else null,
+          )
 
-      OutlinedTextField(
-        value = form.port,
-        onValueChange = { vm.updateForm(form.copy(port = it)) },
-        label = { Text("Port") },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
-      )
+          Row(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+              value = form.port,
+              onValueChange = { vm.updateForm(form.copy(port = it)) },
+              label = { Text("Port") },
+              singleLine = true,
+              modifier = Modifier.width(120.dp),
+              keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Next,
+              ),
+              isError = attempted && (form.port.toIntOrNull()?.let { it !in 1..65535 } ?: true),
+              supportingText = if (attempted && (form.port.toIntOrNull()?.let { it !in 1..65535 } ?: true)) {
+                { Text("1–65535") }
+              } else null,
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            OutlinedTextField(
+              value = form.username,
+              onValueChange = { vm.updateForm(form.copy(username = it)) },
+              label = { Text("Username") },
+              placeholder = { Text("root") },
+              singleLine = true,
+              modifier = Modifier.weight(1f),
+              keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+              isError = attempted && form.username.isBlank(),
+              supportingText = if (attempted && form.username.isBlank()) {
+                { Text("Required") }
+              } else null,
+            )
+          }
+        }
+      }
 
-      OutlinedTextField(
-        value = form.username,
-        onValueChange = { vm.updateForm(form.copy(username = it)) },
-        label = { Text("Username") },
-        placeholder = { Text("root") },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-        isError = attempted && form.username.isBlank(),
-        supportingText = if (attempted && form.username.isBlank()) {
-          { Text("Username is required") }
-        } else null,
-      )
-
-      AuthTypeDropdown(
-        selected = form.authType,
-        onSelect = { vm.updateForm(form.copy(authType = it)) },
-      )
+      // --- Authentication section ---
+      SectionLabel("Authentication")
+      Card(
+        colors = CardDefaults.cardColors(
+          containerColor = MaterialTheme.colorScheme.surface,
+        ),
+      ) {
+        Column(
+          modifier = Modifier.padding(16.dp),
+          verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+          AuthTypeDropdown(
+            selected = form.authType,
+            onSelect = { vm.updateForm(form.copy(authType = it)) },
+          )
+        }
+      }
 
       Spacer(modifier = Modifier.height(80.dp)) // FAB clearance
     }
   }
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+  Text(
+    text = text,
+    style = MaterialTheme.typography.labelMedium,
+    color = MaterialTheme.colorScheme.primary,
+    modifier = Modifier.padding(start = 4.dp),
+  )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

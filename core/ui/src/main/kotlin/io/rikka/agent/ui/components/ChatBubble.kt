@@ -1,13 +1,21 @@
 package io.rikka.agent.ui.components
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
@@ -38,6 +47,10 @@ import io.rikka.agent.model.MessageStatus
 import io.rikka.agent.ui.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 @Composable
 fun ChatBubble(
@@ -46,12 +59,26 @@ fun ChatBubble(
   contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
 ) {
   val isUser = message.role == ChatRole.User
+  val isError = message.status == MessageStatus.Error
+  val isStreaming = message.status == MessageStatus.Streaming
   val bubbleShape = RoundedCornerShape(
     topStart = 18.dp,
     topEnd = 18.dp,
     bottomEnd = if (isUser) 6.dp else 18.dp,
     bottomStart = if (isUser) 18.dp else 6.dp,
   )
+
+  val bubbleColor = when {
+    isUser -> MaterialTheme.colorScheme.primary
+    isError -> MaterialTheme.colorScheme.errorContainer
+    else -> MaterialTheme.colorScheme.surface
+  }
+
+  val contentColor = when {
+    isUser -> MaterialTheme.colorScheme.onPrimary
+    isError -> MaterialTheme.colorScheme.onErrorContainer
+    else -> MaterialTheme.colorScheme.onSurface
+  }
 
   Column(
     modifier = modifier.fillMaxWidth(),
@@ -60,7 +87,7 @@ fun ChatBubble(
     Surface(
       tonalElevation = 0.dp,
       shadowElevation = 0.dp,
-      color = if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+      color = bubbleColor,
       shape = bubbleShape,
       modifier = Modifier
         .clip(bubbleShape)
@@ -69,68 +96,112 @@ fun ChatBubble(
     ) {
       Box(
         modifier = Modifier
-          .background(
-            color = if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-          )
+          .background(color = bubbleColor)
           .padding(contentPadding),
       ) {
-        if (isUser) {
-          Text(
-            text = message.content,
-            color = MaterialTheme.colorScheme.onPrimary,
-            style = MaterialTheme.typography.bodyLarge,
-            overflow = TextOverflow.Clip,
-          )
-        } else {
-          RichText {
-            Markdown(message.content)
+        Column {
+          if (isUser) {
+            Text(
+              text = message.content,
+              color = contentColor,
+              style = MaterialTheme.typography.bodyLarge,
+              overflow = TextOverflow.Clip,
+            )
+          } else if (isStreaming && message.content.isEmpty()) {
+            StreamingDots()
+          } else {
+            RichText(
+              modifier = if (isError) Modifier else Modifier,
+            ) {
+              Markdown(message.content)
+            }
+            if (isStreaming) {
+              Spacer(modifier = Modifier.height(4.dp))
+              StreamingDots()
+            }
           }
         }
       }
     }
 
-    // Action row: copy button for completed messages
-    if (message.status == MessageStatus.Final && message.content.isNotBlank()) {
-      CopyButton(content = message.content, isUser = isUser)
+    // Timestamp + action row
+    Row(
+      modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+      Text(
+        text = formatTimestamp(message.timestampMs),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+      )
+      if (message.status == MessageStatus.Final && message.content.isNotBlank()) {
+        CopyButton(content = message.content)
+      }
     }
   }
 }
 
 @Composable
-private fun CopyButton(content: String, isUser: Boolean) {
+private fun StreamingDots() {
+  val transition = rememberInfiniteTransition(label = "streaming")
+  val dotCount by transition.animateFloat(
+    initialValue = 1f,
+    targetValue = 4f,
+    animationSpec = infiniteRepeatable(
+      animation = tween(durationMillis = 800, easing = LinearEasing),
+      repeatMode = RepeatMode.Restart,
+    ),
+    label = "dots",
+  )
+  Text(
+    text = ".".repeat(dotCount.toInt().coerceIn(1, 3)),
+    style = MaterialTheme.typography.bodyLarge,
+    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+  )
+}
+
+@Composable
+private fun CopyButton(content: String) {
   val clipboardManager = LocalClipboardManager.current
   val scope = rememberCoroutineScope()
   var copied by remember { mutableStateOf(false) }
 
-  Row(
-    modifier = Modifier.padding(horizontal = 12.dp),
-    horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
-  ) {
-    IconButton(
-      onClick = {
-        clipboardManager.setText(AnnotatedString(content))
-        copied = true
-        scope.launch {
-          delay(1500)
-          copied = false
-        }
-      },
-      modifier = Modifier.size(32.dp),
-    ) {
-      if (copied) {
-        Text(
-          text = "✓",
-          style = MaterialTheme.typography.labelMedium,
-          color = MaterialTheme.colorScheme.secondary,
-        )
-      } else {
-        Icon(
-          painter = painterResource(id = R.drawable.ic_copy),
-          contentDescription = "Copy",
-          tint = MaterialTheme.colorScheme.onSurfaceVariant,
-          modifier = Modifier.size(16.dp),
-        )
+  IconButton(
+    onClick = {
+      clipboardManager.setText(AnnotatedString(content))
+      copied = true
+      scope.launch {
+        delay(1500)
+        copied = false
       }
+    },
+    modifier = Modifier.size(24.dp),
+  ) {
+    if (copied) {
+      Text(
+        text = "✓",
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.secondary,
+      )
+    } else {
+      Icon(
+        painter = painterResource(id = R.drawable.ic_copy),
+        contentDescription = "Copy",
+        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+        modifier = Modifier.size(14.dp),
+      )
     }
+  }
+}
+
+private fun formatTimestamp(timestampMs: Long): String {
+  val now = System.currentTimeMillis()
+  val diff = now - timestampMs
+  return when {
+    diff < TimeUnit.MINUTES.toMillis(1) -> "just now"
+    diff < TimeUnit.HOURS.toMillis(1) -> "${TimeUnit.MILLISECONDS.toMinutes(diff)}m ago"
+    diff < TimeUnit.DAYS.toMillis(1) -> "${TimeUnit.MILLISECONDS.toHours(diff)}h ago"
+    else -> SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()).format(Date(timestampMs))
   }
 }
