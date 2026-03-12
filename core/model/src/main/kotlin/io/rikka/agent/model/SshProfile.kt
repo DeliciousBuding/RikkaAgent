@@ -9,5 +9,22 @@ data class SshProfile(
   val host: String,
   val port: Int = 22,
   val username: String,
+  val authType: AuthType = AuthType.PublicKey,
+  val keyRef: String? = null,
+  val hostKeyPolicy: HostKeyPolicy = HostKeyPolicy.TrustFirstUse,
+  val keepaliveIntervalSec: Int = 60,
 )
+
+@Serializable
+enum class AuthType {
+  PublicKey,
+  Password,
+}
+
+@Serializable
+enum class HostKeyPolicy {
+  TrustFirstUse,
+  RejectUnknown,
+  AcceptAll,
+}
 

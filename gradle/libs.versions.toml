@@ -13,11 +13,17 @@ lifecycle-viewmodel-compose = "2.8.5"
 navigation-compose = "2.8.0"
 coil-compose = "2.7.0"
 material3 = "1.3.0"
-accompanist-systemuicontroller = "0.34.0"
 richtext = "1.0.0-alpha03"
 kotlinx-serialization-json = "1.6.3"
 coroutines = "1.8.1"
 okio = "3.9.1"
+room = "2.6.1"
+datastore-preferences = "1.1.1"
+ksp = "2.1.0-1.0.29"
+koin-bom = "3.5.6"
+junit4 = "4.13.2"
+kotlinx-coroutines-test = "1.8.1"
+turbine = "1.1.0"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -26,6 +32,7 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "core-ktx" }
@@ -36,7 +43,6 @@ androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation-compose" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil-compose" }
 material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
-accompanist-systemuicontroller = { module = "com.google.accompanist:accompanist-systemuicontroller", version.ref = "accompanist-systemuicontroller" }
 richtext = { module = "com.halilibo.compose-richtext:richtext-ui-material3", version.ref = "richtext" }
 richtext-markdown = { module = "com.halilibo.compose-richtext:richtext-commonmark", version.ref = "richtext" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
@@ -44,3 +50,21 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
+
+# Room
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+
+# DataStore
+datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore-preferences" }
+
+# Koin DI
+koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
+koin-android = { module = "io.insert-koin:koin-android" }
+koin-compose = { module = "io.insert-koin:koin-androidx-compose" }
+
+# Testing
+junit4 = { module = "junit:junit", version.ref = "junit4" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-test" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }

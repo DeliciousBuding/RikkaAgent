@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,6 +13,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,15 +28,18 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import io.rikka.agent.model.ChatMessage
 import io.rikka.agent.vm.ChatViewModel
 import io.rikka.agent.ui.components.ChatBubble
 import io.rikka.agent.ui.components.ChatInput
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun ChatScreen() {
-  val vm: ChatViewModel = viewModel()
+fun ChatScreen(
+  profileId: String = "",
+  onBack: () -> Unit = {},
+) {
+  val vm: ChatViewModel = koinViewModel()
   val messages by vm.messages.collectAsState()
 
   Box(modifier = Modifier.fillMaxSize()) {
@@ -51,7 +59,7 @@ fun ChatScreen() {
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
-      HeaderBar()
+      HeaderBar(onBack = onBack)
 
       LazyColumn(
         modifier = Modifier.weight(1f),
@@ -76,22 +84,32 @@ fun ChatScreen() {
 }
 
 @Composable
-private fun HeaderBar() {
-  Column(
+private fun HeaderBar(onBack: () -> Unit = {}) {
+  Row(
     modifier = Modifier
       .fillMaxWidth()
-      .padding(horizontal = 20.dp, vertical = 18.dp),
+      .padding(horizontal = 8.dp, vertical = 8.dp),
+    verticalAlignment = Alignment.CenterVertically,
   ) {
-    Text(
-      text = "Rikka Agent",
-      style = MaterialTheme.typography.titleLarge,
-      color = MaterialTheme.colorScheme.onBackground
-    )
-    Text(
-      text = "Mode A · SSH exec",
-      style = MaterialTheme.typography.labelMedium,
-      color = MaterialTheme.colorScheme.onBackground,
-      modifier = Modifier.alpha(0.6f)
-    )
+    IconButton(onClick = onBack) {
+      Icon(
+        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+        contentDescription = "Back",
+        tint = MaterialTheme.colorScheme.onBackground,
+      )
+    }
+    Column(modifier = Modifier.padding(start = 4.dp)) {
+      Text(
+        text = "Rikka Agent",
+        style = MaterialTheme.typography.titleLarge,
+        color = MaterialTheme.colorScheme.onBackground
+      )
+      Text(
+        text = "Mode A · SSH exec",
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onBackground,
+        modifier = Modifier.alpha(0.6f)
+      )
+    }
   }
 }

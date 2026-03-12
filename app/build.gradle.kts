@@ -64,6 +64,7 @@ android {
 
 dependencies {
   implementation(platform(libs.compose.bom))
+  implementation(platform(libs.koin.bom))
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -71,7 +72,8 @@ dependencies {
   implementation(libs.androidx.lifecycle.viewmodel.compose)
   implementation(libs.androidx.navigation.compose)
   implementation(libs.material3)
-  implementation(libs.accompanist.systemuicontroller)
+  implementation(libs.koin.android)
+  implementation(libs.koin.compose)
   implementation(libs.coil.compose)
   implementation(libs.kotlinx.serialization.json)
 
@@ -79,4 +81,7 @@ dependencies {
   implementation(projects.core.ui)
   implementation(projects.core.ssh)
   implementation(projects.core.storage)
+
+  // Room (needed for DI wiring in AppModule)
+  implementation(libs.room.runtime)
 }
