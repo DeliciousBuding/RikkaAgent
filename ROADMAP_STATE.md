@@ -62,9 +62,14 @@
 - ✅ 线程自动标题（首条用户命令前 50 字符）
 - ✅ CodeCard 组件（可折叠代码输出, 复制按钮, 语言标签, 水平滚动）
 - ✅ ChatBubble 重构（助手消息改用 CodeCard 渲染, 用户消息保持气泡样式）
+- ✅ 私钥文件选择器（SAF 文件选取, ContentUri 持久化权限, ProfileEditor 集成）
+- ✅ 密钥密码短语支持（PassphraseProvider + 弹窗复用 PasswordDialog）
+- ✅ 内容模式密钥加载（OpenSSHKeyFile + StringReader, 不依赖文件路径）
 
 **待完成：**
-- 私钥文件选择器（keyRef 路径管理）
+- ~~私钥文件选择器（keyRef 路径管理）~~ ✅ 已完成
+- 空输出优化（命令无输出时的 UI 提示）
+- 更多密钥格式支持（PKCS8, PuTTY）
 
 ## VectorControl Portal (原 Gateway Portal) 基础设施
 

@@ -82,6 +82,7 @@ fun ChatScreen(
   val messages by vm.messages.collectAsState()
   val connectionState by vm.connectionState.collectAsState()
   val threads by vm.threads.collectAsState()
+  val profileLabel by vm.profileLabel.collectAsState()
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
   val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -197,10 +198,31 @@ fun ChatScreen(
     topBar = {
       TopAppBar(
         title = {
-          Text(
-            text = "Session",
-            style = MaterialTheme.typography.titleLarge,
-          )
+          Column {
+            Text(
+              text = profileLabel.ifBlank { "Session" },
+              style = MaterialTheme.typography.titleMedium,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis,
+            )
+            val statusText = when (connectionState) {
+              ConnectionState.IDLE -> "Connecting…"
+              ConnectionState.READY -> "Ready"
+              ConnectionState.EXECUTING -> "Running…"
+              ConnectionState.ERROR -> "Error"
+            }
+            val statusColor = when (connectionState) {
+              ConnectionState.READY -> MaterialTheme.colorScheme.primary
+              ConnectionState.EXECUTING -> MaterialTheme.colorScheme.tertiary
+              ConnectionState.ERROR -> MaterialTheme.colorScheme.error
+              else -> MaterialTheme.colorScheme.onSurfaceVariant
+            }
+            Text(
+              text = statusText,
+              style = MaterialTheme.typography.labelSmall,
+              color = statusColor,
+            )
+          }
         },
         navigationIcon = {
           IconButton(onClick = { scope.launch { drawerState.open() } }) {
