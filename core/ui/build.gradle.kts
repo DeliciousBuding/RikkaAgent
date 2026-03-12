@@ -45,4 +45,6 @@ dependencies {
     exclude(group = "org.jetbrains.compose.animation")
   }
   implementation(projects.core.model)
+
+  testImplementation(libs.junit4)
 }

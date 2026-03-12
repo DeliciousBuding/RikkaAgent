@@ -4,8 +4,10 @@ This document is the single place where we track unresolved decisions so they do
 
 ## Must Decide Before Implementing SSH (M3)
 
-- SSH library choice
-  - criteria: Android compatibility, host key verification hooks, key format support, license compatibility
+- ~~SSH library choice~~ **DECIDED (2026-03-12): JSch (mwiede fork)**
+  - Maven: `com.github.mwiede:jsch:0.2.21`
+  - Rationale: most actively maintained, BSD license, modern defaults (rsa-sha2, ed25519), pure Java 8 (Android-safe), blocking API acceptable for Mode A exec
+  - Runner-up: SSHJ (Apache-2.0, also good); rejected: Apache MINA SSHD (overkill), Trilead (dead)
 - Private key handling
   - where passphrases live (memory-only vs optionally cached)
   - which Android crypto storage to use for key material (`keyRef` semantics)
@@ -15,7 +17,10 @@ This document is the single place where we track unresolved decisions so they do
 
 ## Should Decide Before Implementing Rendering (M2)
 
-- Markdown library choice (Compose-friendly, performance characteristics)
+- ~~Markdown library choice~~ **DECIDED: richtext-commonmark (current) + IntelliJ Markdown (future)**
+  - Current: `com.halilibo.compose-richtext:richtext-commonmark:1.0.0-alpha03` (alpha risk noted)
+  - Future: If alpha proves unstable, switch to `org.jetbrains:markdown` (same as rikkahub, GFM-flavored) with custom Compose renderer
+  - Key pattern from rikkahub: parse on `Dispatchers.Default`, cache AST, use `snapshotFlow` for streaming
 - Code highlighting approach
   - lightweight syntax highlight vs full TextMate grammar
   - line numbers default (on/off)

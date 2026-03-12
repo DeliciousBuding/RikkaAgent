@@ -2,6 +2,7 @@ plugins {
   alias(libs.plugins.android.library)
   alias(libs.plugins.kotlin.android)
   alias(libs.plugins.kotlin.serialization)
+  alias(libs.plugins.ksp)
 }
 
 android {
@@ -23,4 +24,12 @@ android {
 dependencies {
   implementation(projects.core.model)
   implementation(libs.kotlinx.serialization.json)
+
+  // Room
+  implementation(libs.room.runtime)
+  implementation(libs.room.ktx)
+  ksp(libs.room.compiler)
+
+  // DataStore
+  implementation(libs.datastore.preferences)
 }
