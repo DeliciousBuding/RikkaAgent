@@ -51,6 +51,9 @@ class ChatViewModel(
   private val app: Application,
 ) : ViewModel() {
 
+  /** Max chars for in-memory stdout/stderr per run (spec: MUST cap). */
+  private val maxOutputChars = 256_000
+
   private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
   val messages: StateFlow<List<ChatMessage>> = _messages
 
@@ -356,16 +359,32 @@ class ChatViewModel(
     stderr: StringBuilder,
     exitCode: Int?,
   ): String = buildString {
+    val stdoutTruncated = stdout.length > maxOutputChars
+    val stderrTruncated = stderr.length > maxOutputChars
     if (stdout.isNotEmpty()) {
-      append(stdout)
-      if (!stdout.endsWith("\n")) append("\n")
+      if (stdoutTruncated) {
+        append(stdout, stdout.length - maxOutputChars, stdout.length)
+        append("\n")
+        append(app.getString(R.string.msg_output_truncated))
+        append("\n")
+      } else {
+        append(stdout)
+      }
+      if (!endsWith("\n")) append("\n")
     }
     if (stderr.isNotEmpty()) {
       if (isNotEmpty()) append("\n")
       append(app.getString(R.string.label_stderr))
       append("\n")
-      append(stderr)
-      if (!stderr.endsWith("\n")) append("\n")
+      if (stderrTruncated) {
+        append(stderr, stderr.length - maxOutputChars, stderr.length)
+        append("\n")
+        append(app.getString(R.string.msg_output_truncated))
+        append("\n")
+      } else {
+        append(stderr)
+      }
+      if (!endsWith("\n")) append("\n")
     }
     if (exitCode != null) {
       if (stdout.isEmpty() && stderr.isEmpty()) {
