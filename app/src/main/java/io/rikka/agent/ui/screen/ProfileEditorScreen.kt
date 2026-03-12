@@ -26,6 +26,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +50,12 @@ fun ProfileEditorScreen(
 ) {
   val vm: ProfileEditorViewModel = koinViewModel { parametersOf(profileId) }
   val form by vm.form.collectAsState()
+  val saved by vm.saved.collectAsState()
+  var attempted by remember { mutableStateOf(false) }
+
+  LaunchedEffect(saved) {
+    if (saved) onSaved()
+  }
 
   Scaffold(
     topBar = {
@@ -63,8 +70,8 @@ fun ProfileEditorScreen(
     },
     floatingActionButton = {
       FloatingActionButton(onClick = {
+        attempted = true
         vm.save()
-        onSaved()
       }) {
         Icon(Icons.Default.Check, contentDescription = "Save")
       }
@@ -97,6 +104,10 @@ fun ProfileEditorScreen(
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+        isError = attempted && form.host.isBlank(),
+        supportingText = if (attempted && form.host.isBlank()) {
+          { Text("Host is required") }
+        } else null,
       )
 
       OutlinedTextField(
@@ -116,6 +127,10 @@ fun ProfileEditorScreen(
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+        isError = attempted && form.username.isBlank(),
+        supportingText = if (attempted && form.username.isBlank()) {
+          { Text("Username is required") }
+        } else null,
       )
 
       AuthTypeDropdown(

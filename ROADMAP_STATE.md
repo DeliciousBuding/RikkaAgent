@@ -36,13 +36,16 @@
 用户 → DNS (vectorcontrol.tech / www.vectorcontrol.tech)
      → A 记录 20.195.40.11
      → sgp2 (Azure Singapore, 20.195.40.11)
-       ├─ nginx 443 → 静态文件 /var/www/vectorcontrol-gateway-portal/
-       ├─ /playground/ → proxy_pass http://100.96.101.24:4001/ (gz via Tailscale)
-       ├─ /api/, /v1/ → proxy_pass http://100.96.101.24:4001 (gz via Tailscale)
+       ├─ nginx 443 → 静态门户 /var/www/vectorcontrol-gateway-portal/
+       ├─ /management → proxy_pass gz:8317/management.html (CLIProxyAPI 管理界面)
+       ├─ /fund/ → alias /var/www/vectorcontrol-fund/ (React SPA 投研系统)
+       ├─ /playground/ → proxy_pass gz:4001/ (metapi Playground)
+       ├─ /api/, /v1/ → proxy_pass gz:4001 (metapi OpenAI API)
        └─ SSL cert: /etc/letsencrypt/live/www.vectorcontrol.tech/ (certbot + nginx authenticator)
 
 gz (Alibaba Cloud, 8.163.12.208 / Tailscale 100.96.101.24)
   ├─ metapi Docker (--network host, port 4001) = OpenAI 兼容 API 网关
+  ├─ CLIProxyAPI (binary, port 8317) = API 密钥管理 + 路由配置
   ├─ nginx 443 → /playground/ proxy to metapi (仅内部, 阿里云无备案拦截 443)
   └─ Tailscale 组网: gz ↔ sgp1 ↔ sgp2 ↔ 本机
 ```
@@ -74,6 +77,11 @@ gz (Alibaba Cloud, 8.163.12.208 / Tailscale 100.96.101.24)
 - ✅ 裸域 SSL 证书扩展（vectorcontrol.tech + www 双覆盖，到期 2026-06-10）
 - ✅ 高级视觉升级：Hero 辐射光晕、玻璃拟态面板、卡片 hover 交互、渐变标题、品牌脉冲动画
 - ✅ 私有 GitHub 仓库创建并推送 (DeliciousBuding/vectorcontrol-gateway-portal)
+- ✅ 裸域 → www 301 重定向
+- ✅ Fund 前端部署到 /fund/（React SPA, base: '/fund/'）
+- ✅ Management 路由代理到 gz:8317 的 CLIProxyAPI
+- ✅ 门户重构：移除建议型文案，新增 Services 服务入口卡片区（Management / Fund / Playground / API）
+- ✅ 所有子站点可访问验证（/, /management, /fund/, /playground/）
 
 ## 代码健康审查（2026-03-12 更新）
 

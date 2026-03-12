@@ -1,10 +1,14 @@
 package io.rikka.agent.vm
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import io.rikka.agent.model.AuthType
 import io.rikka.agent.model.SshProfile
+import io.rikka.agent.storage.RoomProfileStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import java.util.UUID
 
 data class ProfileForm(
   val name: String = "",
@@ -14,18 +18,30 @@ data class ProfileForm(
   val authType: AuthType = AuthType.PublicKey,
 )
 
-/**
- * Editor for creating / editing an SSH profile.
- * [profileId] is null for new profiles.
- */
-class ProfileEditorViewModel(profileId: String?) : ViewModel() {
+class ProfileEditorViewModel(
+  private val profileId: String?,
+  private val store: RoomProfileStore,
+) : ViewModel() {
 
   private val _form = MutableStateFlow(ProfileForm())
   val form: StateFlow<ProfileForm> = _form
 
+  private val _saved = MutableStateFlow(false)
+  val saved: StateFlow<Boolean> = _saved
+
   init {
     if (profileId != null) {
-      // TODO: load existing profile from storage
+      viewModelScope.launch {
+        store.getById(profileId)?.let { p ->
+          _form.value = ProfileForm(
+            name = p.name,
+            host = p.host,
+            port = p.port.toString(),
+            username = p.username,
+            authType = p.authType,
+          )
+        }
+      }
     }
   }
 
@@ -35,14 +51,18 @@ class ProfileEditorViewModel(profileId: String?) : ViewModel() {
 
   fun save() {
     val f = _form.value
-    val profile = SshProfile(
-      id = "p-${System.currentTimeMillis()}",
-      name = f.name,
-      host = f.host,
-      port = f.port.toIntOrNull() ?: 22,
-      username = f.username,
-      authType = f.authType,
-    )
-    // TODO: persist via ProfileStore
+    if (f.host.isBlank() || f.username.isBlank()) return
+    viewModelScope.launch {
+      val profile = SshProfile(
+        id = profileId ?: UUID.randomUUID().toString(),
+        name = f.name,
+        host = f.host.trim(),
+        port = f.port.toIntOrNull() ?: 22,
+        username = f.username.trim(),
+        authType = f.authType,
+      )
+      store.upsert(profile)
+      _saved.value = true
+    }
   }
 }

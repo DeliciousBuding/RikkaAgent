@@ -1,33 +1,22 @@
 package io.rikka.agent.vm
 
 import androidx.lifecycle.ViewModel
-import io.rikka.agent.model.AuthType
+import androidx.lifecycle.viewModelScope
 import io.rikka.agent.model.SshProfile
-import kotlinx.coroutines.flow.MutableStateFlow
+import io.rikka.agent.storage.RoomProfileStore
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
-/**
- * In-memory profile list. Will be backed by Room/DataStore once storage layer lands.
- */
-class ProfilesViewModel : ViewModel() {
+class ProfilesViewModel(
+  private val store: RoomProfileStore,
+) : ViewModel() {
 
-  private val _profiles = MutableStateFlow(
-    listOf(
-      SshProfile(
-        id = "demo-1",
-        name = "Dev Server",
-        host = "192.168.1.100",
-        port = 22,
-        username = "admin",
-        authType = AuthType.PublicKey,
-      ),
-    )
-  )
-
-  val profiles: StateFlow<List<SshProfile>> = _profiles
+  val profiles: StateFlow<List<SshProfile>> = store.observeProfiles()
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
   fun delete(profileId: String) {
-    _profiles.update { list -> list.filter { it.id != profileId } }
+    viewModelScope.launch { store.delete(profileId) }
   }
 }

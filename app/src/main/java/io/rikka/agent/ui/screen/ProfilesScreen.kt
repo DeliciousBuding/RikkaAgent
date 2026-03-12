@@ -2,6 +2,7 @@ package io.rikka.agent.ui.screen
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -15,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -25,8 +27,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -83,11 +88,38 @@ fun ProfilesScreen(
         verticalArrangement = Arrangement.spacedBy(8.dp),
       ) {
         items(profiles, key = { it.id }) { profile ->
-          ProfileCard(
-            profile = profile,
-            onClick = { onOpenSession(profile.id) },
-            onEdit = { onEditProfile(profile.id) },
+          val dismissState = rememberSwipeToDismissBoxState(
+            confirmValueChange = { value ->
+              if (value == SwipeToDismissBoxValue.EndToStart) {
+                vm.delete(profile.id)
+                true
+              } else false
+            },
           )
+          SwipeToDismissBox(
+            state = dismissState,
+            backgroundContent = {
+              Box(
+                modifier = Modifier
+                  .fillMaxSize()
+                  .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.CenterEnd,
+              ) {
+                Icon(
+                  Icons.Default.Delete,
+                  contentDescription = "Delete",
+                  tint = MaterialTheme.colorScheme.error,
+                )
+              }
+            },
+            enableDismissFromStartToEnd = false,
+          ) {
+            ProfileCard(
+              profile = profile,
+              onClick = { onOpenSession(profile.id) },
+              onEdit = { onEditProfile(profile.id) },
+            )
+          }
         }
       }
     }
