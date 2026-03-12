@@ -12,6 +12,7 @@ import io.rikka.agent.model.SshProfile
  */
 interface ProfileStore {
   suspend fun listProfiles(): List<SshProfile>
+  suspend fun getById(id: String): SshProfile?
   suspend fun upsert(profile: SshProfile)
   suspend fun delete(profileId: String)
 }

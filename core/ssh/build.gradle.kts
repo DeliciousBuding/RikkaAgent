@@ -25,4 +25,6 @@ dependencies {
   implementation(libs.kotlinx.serialization.json)
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.okio)
+  implementation(libs.sshj)
+  implementation(libs.slf4j.nop)
 }

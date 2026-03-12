@@ -8,7 +8,7 @@ import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
 val viewModelModule = module {
-  viewModel { ChatViewModel() }
+  viewModel { (profileId: String) -> ChatViewModel(profileId, get(), get(), get()) }
   viewModel { ProfilesViewModel(get()) }
   viewModel { (profileId: String?) -> ProfileEditorViewModel(profileId, get()) }
   viewModel { SettingsViewModel(get()) }
