@@ -18,23 +18,25 @@
 | 里程碑 | 状态 | 说明 |
 |--------|------|------|
 | M0 规范冻结 | ✅ 基本完成 | 剩余：spec 用词统一检查 |
-| M1 UI 骨架 | 🔶 55% | 6 屏完成；ProfilesVM/EditorVM 未连接 Room |
-| M2 渲染管线 | ⬜ 未开始 | CodeCard 基础完成，流式渲染待做 |
-| M3 SSH 引擎 | ✅ 主要完成 | sshj exec + 认证 + host key + 会话管理 + 密钥生成 |
-| M4 Codex 接入 | 🔶 40% | 基础集成完成：profile Codex 开关 + 工作目录 + exec 命令包装 |
+| M1 UI 骨架 | ✅ 主要完成 | 8 屏 + ProfilesVM/EditorVM/ChatVM 全部连接 Room |
+| M2 渲染管线 | 🔶 60% | Markdown 渲染 v1 完成，流式渲染待优化 |
+| M3 SSH 引擎 | ✅ 主要完成 | sshj exec + 认证 + host key + 会话管理 + 密钥生成 + 加密存储 |
+| M4 Codex 接入 | 🔶 50% | profile 开关 + exec 包装 + Markdown 渲染；JSONL 待做 |
 | M5 开源发布 | ⬜ 未开始 | CI workflow 已有 |
 
 ---
 
 ## M1 待完成
 
-- [ ] ProfilesVM / ProfileEditorVM 连接 Room 存储（真实 CRUD）
+- [x] ProfilesVM / ProfileEditorVM 连接 Room 存储（真实 CRUD）
+- [x] ChatViewModel 连接 Room（消息持久化 + 会话管理）
 - [ ] 更多密钥格式支持（PuTTY .ppk）
 - [ ] 规范冻结检查：spec 用词统一 + TODO 集中
 
 ## M2 待完成
 
-- [ ] Markdown 渲染 v1（段落/标题/列表/引用/链接/行内代码）
+- [x] Markdown 渲染 v1（段落/标题/列表/引用/链接/行内代码/代码块/表格/删除线）
+- [x] CodeCard 基础组件（折叠/展开/复制/语言标签）
 - [ ] 流式渲染策略（50-100ms 批处理，避免全量重解析）
 - [ ] 可选：Mermaid 渲染（WebView/JS bridge）
 
@@ -43,10 +45,11 @@
 - [x] Profile 增加 codexMode / codexWorkDir 字段
 - [x] ChatViewModel Codex exec 命令包装 (`codex exec --full-auto`)
 - [x] ProfileEditorScreen Codex 设置 UI（开关 + 工作目录）
-- [ ] 远端命令协议约定（`--json` JSONL 解析）
-- [ ] Codex 输出 Markdown 渲染
+- [x] Codex 输出 Markdown 渲染（复用 M2 MarkdownText）
 - [x] "一键运行"动作（复制/重跑/导出）
+- [ ] 远端命令协议约定（`--json` JSONL 解析）
 - [ ] 延迟优化（SSH 复用/流式/渲染缓存）
+- [ ] Codex API Key 管理（profile 级别配置，加密存储）
 
 ## M5 待完成
 

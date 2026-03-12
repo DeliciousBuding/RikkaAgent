@@ -28,8 +28,9 @@
 | AboutScreen | `app/.../ui/screen/AboutScreen.kt` | 应用信息, Apache 2.0 协议, OSS 依赖列表含许可证 |
 
 **组件 & 功能：**
-- ChatBubble（用户气泡 + 助手 CodeCard, 流式动画, 错误状态, 时间戳, 复制, 触觉反馈）
+- ChatBubble（用户气泡 + 助手 CodeCard/MarkdownText, 流式动画, 错误状态, 时间戳, 复制, 触觉反馈）
 - CodeCard（可折叠代码输出, 复制, 语言标签, 水平滚动, 自动折叠 15 行）
+- MarkdownText（标题/段落/列表/引用/链接/行内代码/代码块/表格/删除线）
 - ChatInput（多行输入, 回车发送, Monospace, Shell 占位符, 执行中禁用）
 - AnsiStripper（ANSI 转义码清理）
 - RikkaAgentTheme（亮色/暗色/AMOLED 三模式）
@@ -79,6 +80,28 @@
 - ✅ 会话删除确认
 - ✅ 配置复制 (长按菜单)
 - ✅ About 页面
+
+### M2 完成项（渲染管线）
+
+- ✅ commonmark-java 0.22.0 集成 (BSD-2-Clause)
+- ✅ GFM 表格 + 删除线扩展
+- ✅ MarkdownText 自定义 Compose 渲染器 (标题/段落/列表/引用/行内代码/代码块/表格/链接/粗体/斜体/删除线)
+- ✅ ChatBubble Markdown 自动检测 (looksLikeMarkdown 启发式)
+- ✅ Codex 输出 Markdown 渲染能力
+
+### M4 完成项（Codex 接入）
+
+- ✅ SshProfile + SshProfileEntity 增加 codexMode / codexWorkDir 字段
+- ✅ Room DB v2 → v3 (fallbackToDestructiveMigration)
+- ✅ entity ↔ model 映射更新
+- ✅ ProfileEditorScreen Codex 设置区（Switch 开关 + 工作目录输入）
+- ✅ ChatViewModel codex exec 命令包装 (codex exec --full-auto)
+- ✅ wrapForCodex + shellQuote 安全转义
+
+### 安全加固
+
+- ✅ SSH 密钥加密存储 (EncryptedFile, AES-256-GCM via AndroidX Security Crypto)
+- ✅ 旧明文密钥兼容读取 (graceful fallback)
 
 ---
 

@@ -13,11 +13,14 @@
 | 产品形态 | Android App（Kotlin + Jetpack Compose） |
 | 交互模式 | Mode A（非交互 exec channel；不做 PTY/ANSI 渲染） |
 | 连接方式 | Android 原生 SSH 直连；不引入"服务端 HTTP 远程执行中转" |
-| 安全原则 | Known-hosts 默认开启；host key mismatch 默认阻断；密钥不写日志 |
+| 安全原则 | Known-hosts 默认开启；host key mismatch 默认阻断；密钥加密存储 |
 | 开源协议 | Apache-2.0 |
 | Clean-room | 参考 UI "感觉"，不拷贝参考项目代码 |
 | SSH 库 | sshj 0.39.0 (BSD-2-Clause)，支持 Ed25519/RSA/ECDSA |
-| 持久化 | Room DB (聊天/配置) + DataStore (偏好) |
+| Markdown 解析 | commonmark-java 0.22.0 (BSD-2-Clause) + GFM tables/strikethrough |
+| 密钥存储 | EncryptedFile (AES-256-GCM via AndroidX Security Crypto) |
+| Codex 集成 | `codex exec --full-auto` via SSH (exec channel) |
+| 持久化 | Room DB v3 (聊天/配置/Codex字段) + DataStore (偏好) |
 | DI | Koin |
 | Spec 索引 | `docs/spec/00-index.md` |
 
