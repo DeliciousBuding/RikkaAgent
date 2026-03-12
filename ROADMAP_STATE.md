@@ -25,13 +25,14 @@
 
 | 屏幕 | 文件 | 状态 |
 |------|------|------|
-| ProfilesScreen | `app/.../ui/screen/ProfilesScreen.kt` | ✅ 完成（LargeTopAppBar, 滑动删除, 空状态, FAB） |
-| ProfileEditorScreen | `app/.../ui/screen/ProfileEditorScreen.kt` | ✅ 完成（Card 分组, 端口校验 1-65535, SectionLabel） |
-| ChatScreen | `app/.../ui/screen/ChatScreen.kt` | ✅ 完成（Scaffold, 自动滚动, 进度条, 取消按钮, Host Key 对话框, 空状态） |
-| SettingsScreen | `app/.../ui/screen/SettingsScreen.kt` | ✅ 完成（主题选择器, Shell 选择器） |
+| ProfilesScreen | `app/.../ui/screen/ProfilesScreen.kt` | ✅ 完成（LargeTopAppBar, 滑动删除, 空状态, FAB, 字母头像, 认证类型标签） |
+| ProfileEditorScreen | `app/.../ui/screen/ProfileEditorScreen.kt` | ✅ 完成（Card 分组, 端口校验 1-65535, SectionLabel, 私钥文件选择器 SAF） |
+| ChatScreen | `app/.../ui/screen/ChatScreen.kt` | ✅ 完成（会话侧边栏, 连接状态条, Host Key 对话框, 密码弹窗, 密钥密码弹窗, 配置名称显示） |
+| SettingsScreen | `app/.../ui/screen/SettingsScreen.kt` | ✅ 完成（主题选择器含 AMOLED, Shell 选择器） |
 
 **已完成的组件：**
-- ChatBubble（Markdown 渲染, 复制按钮, 流式动画, 错误状态红色容器, 时间戳, 流式打点动画）
+- ChatBubble（用户消息气泡 + 助手消息 CodeCard 渲染, 流式动画, 错误状态, 时间戳, 复制按钮）
+- CodeCard（可折叠代码输出, 复制按钮, 语言标签, 水平滚动, 自动折叠 15 行）
 - ChatInput（多行输入, 回车发送）
 - AnsiStripper（ANSI 转义码清理）
 - RikkaAgentTheme（亮色/暗色/AMOLED 三模式, ThemeMode enum, 从设置实时切换）
