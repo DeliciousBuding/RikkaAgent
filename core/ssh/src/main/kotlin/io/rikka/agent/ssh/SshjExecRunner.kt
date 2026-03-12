@@ -22,36 +22,27 @@ import java.util.concurrent.TimeUnit
  * Real SSH exec runner backed by sshj.
  *
  * Key design:
- * - One [SSHClient] per [run] invocation (v1 does not pool connections yet).
+ * - When [reuseConnections] is true, caches the SSH client across commands.
  * - stdout/stderr read concurrently on IO dispatcher.
  * - Host key verification delegates to [HostKeyCallback] + [KnownHostsStore].
+ * - Call [close] to release pooled connections when done.
  */
 class SshjExecRunner(
   private val knownHostsStore: KnownHostsStore,
   private val hostKeyCallback: HostKeyCallback,
   private val passwordProvider: PasswordProvider? = null,
   private val keyProvider: KeyProvider? = null,
+  private val reuseConnections: Boolean = false,
 ) : SshExecRunner {
 
+  @Volatile private var cachedClient: SSHClient? = null
+  @Volatile private var cachedProfileKey: String? = null
+
   override fun run(profile: SshProfile, command: String): Flow<ExecEvent> = callbackFlow {
+    var ownedClient: SSHClient? = null
     try {
-      val client = SSHClient()
-      client.loadKnownHosts() // load system known_hosts as baseline; we layer our own on top
-
-      // Host key verifier respecting per-profile policy
-      client.addHostKeyVerifier(buildVerifier(profile))
-
-      // Connect
-      withContext(Dispatchers.IO) {
-        client.connect(profile.host, profile.port)
-      }
-
-      // keepalive
-      client.connection.keepAlive.keepAliveInterval = profile.keepaliveIntervalSec
-
-      // Authenticate
-      withContext(Dispatchers.IO) {
-        authenticate(client, profile)
+      val client = acquireClient(profile).also {
+        if (!reuseConnections) ownedClient = it
       }
 
       // Open exec channel
@@ -83,10 +74,10 @@ class SshjExecRunner(
       val exitCode = cmd.exitStatus
       trySend(ExecEvent.Exit(exitCode))
 
-      // Cleanup
+      // Cleanup — only disconnect if we own the client (not pooled)
       withContext(Dispatchers.IO) {
         session.close()
-        client.disconnect()
+        ownedClient?.disconnect()
       }
 
       channel.close()
@@ -94,6 +85,13 @@ class SshjExecRunner(
       trySend(ExecEvent.Error("host_key_rejected", e.message ?: "Host key rejected"))
       channel.close()
     } catch (e: Exception) {
+      // If the cached connection died, evict it
+      if (reuseConnections) {
+        evictCachedClient()
+      }
+      ownedClient?.let {
+        try { it.disconnect() } catch (_: Exception) {}
+      }
       val category = when {
         e is java.net.ConnectException -> "connection_refused"
         e is java.net.SocketTimeoutException -> "timeout"
@@ -170,6 +168,46 @@ class SshjExecRunner(
         return mutableListOf()
       }
     }
+  }
+
+  private suspend fun acquireClient(profile: SshProfile): SSHClient {
+    if (reuseConnections) {
+      val profileKey = "[${profile.host}]:${profile.port}:${profile.username}"
+      val existing = cachedClient
+      if (existing != null && existing.isConnected && cachedProfileKey == profileKey) {
+        return existing
+      }
+      // Evict stale cache
+      evictCachedClient()
+      val client = createClient(profile)
+      cachedClient = client
+      cachedProfileKey = profileKey
+      return client
+    }
+    return createClient(profile)
+  }
+
+  private fun evictCachedClient() {
+    cachedClient?.let { c ->
+      try { c.disconnect() } catch (_: Exception) {}
+    }
+    cachedClient = null
+    cachedProfileKey = null
+  }
+
+  /** Release any cached connection. Call when this runner is no longer needed. */
+  fun close() {
+    evictCachedClient()
+  }
+
+  private suspend fun createClient(profile: SshProfile): SSHClient {
+    val client = SSHClient()
+    client.loadKnownHosts()
+    client.addHostKeyVerifier(buildVerifier(profile))
+    withContext(Dispatchers.IO) { client.connect(profile.host, profile.port) }
+    client.connection.keepAlive.keepAliveInterval = profile.keepaliveIntervalSec
+    withContext(Dispatchers.IO) { authenticate(client, profile) }
+    return client
   }
 
   private fun fingerprint(key: PublicKey): String {

@@ -39,8 +39,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.halilibo.richtext.commonmark.Markdown
-import com.halilibo.richtext.ui.material3.RichText
 import io.rikka.agent.model.ChatMessage
 import io.rikka.agent.model.ChatRole
 import io.rikka.agent.model.MessageStatus
@@ -84,42 +82,59 @@ fun ChatBubble(
     modifier = modifier.fillMaxWidth(),
     horizontalAlignment = if (isUser) Alignment.End else Alignment.Start,
   ) {
-    Surface(
-      tonalElevation = 0.dp,
-      shadowElevation = 0.dp,
-      color = bubbleColor,
-      shape = bubbleShape,
-      modifier = Modifier
-        .clip(bubbleShape)
-        .animateContentSize()
-        .padding(horizontal = 12.dp, vertical = 6.dp),
-    ) {
-      Box(
+    if (isUser) {
+      // User messages: chat bubble style
+      Surface(
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+        color = bubbleColor,
+        shape = bubbleShape,
         modifier = Modifier
-          .background(color = bubbleColor)
-          .padding(contentPadding),
+          .clip(bubbleShape)
+          .animateContentSize()
+          .padding(horizontal = 12.dp, vertical = 6.dp),
       ) {
-        Column {
-          if (isUser) {
-            Text(
-              text = message.content,
-              color = contentColor,
-              style = MaterialTheme.typography.bodyLarge,
-              overflow = TextOverflow.Clip,
-            )
-          } else if (isStreaming && message.content.isEmpty()) {
-            StreamingDots()
-          } else {
-            RichText(
-              modifier = if (isError) Modifier else Modifier,
-            ) {
-              Markdown(message.content)
-            }
-            if (isStreaming) {
-              Spacer(modifier = Modifier.height(4.dp))
-              StreamingDots()
-            }
-          }
+        Box(
+          modifier = Modifier
+            .background(color = bubbleColor)
+            .padding(contentPadding),
+        ) {
+          Text(
+            text = message.content,
+            color = contentColor,
+            style = MaterialTheme.typography.bodyLarge,
+            overflow = TextOverflow.Clip,
+          )
+        }
+      }
+    } else if (isStreaming && message.content.isEmpty()) {
+      // Empty streaming: dots in a minimal bubble
+      Surface(
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+        color = bubbleColor,
+        shape = bubbleShape,
+        modifier = Modifier
+          .clip(bubbleShape)
+          .padding(horizontal = 12.dp, vertical = 6.dp),
+      ) {
+        Box(modifier = Modifier.padding(contentPadding)) {
+          StreamingDots()
+        }
+      }
+    } else {
+      // Assistant messages: code card for output
+      Column(
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+      ) {
+        CodeCard(
+          code = message.content,
+          language = if (isError) "error" else null,
+          modifier = Modifier.fillMaxWidth(),
+        )
+        if (isStreaming) {
+          Spacer(modifier = Modifier.height(4.dp))
+          StreamingDots()
         }
       }
     }

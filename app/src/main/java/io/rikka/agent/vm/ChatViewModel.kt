@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.rikka.agent.model.ChatMessage
 import io.rikka.agent.model.ChatRole
+import io.rikka.agent.model.ChatThread
 import io.rikka.agent.model.MessageStatus
 import io.rikka.agent.model.SshProfile
 import io.rikka.agent.ssh.ExecEvent
@@ -16,10 +17,12 @@ import io.rikka.agent.storage.ProfileStore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -42,6 +45,10 @@ class ChatViewModel(
   private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
   val messages: StateFlow<List<ChatMessage>> = _messages
 
+  /** Observable list of past threads for this profile. */
+  val threads: StateFlow<List<ChatThread>> = chatRepository.observeThreads(profileId)
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
   private val _connectionState = MutableStateFlow(ConnectionState.IDLE)
   val connectionState: StateFlow<ConnectionState> = _connectionState
 
@@ -58,6 +65,7 @@ class ChatViewModel(
   private var currentProfile: SshProfile? = null
   private var runningJob: Job? = null
   private var threadId: String? = null
+  private var runner: SshjExecRunner? = null
 
   private val hostKeyCallback = object : HostKeyCallback {
     override suspend fun onUnknownHost(
@@ -105,6 +113,37 @@ class ChatViewModel(
     _passwordResponse.tryEmit(password)
   }
 
+  /** Start a fresh session (new thread). */
+  fun newSession() {
+    runningJob?.cancel()
+    threadId = null
+    _messages.value = emptyList()
+    _connectionState.value = if (currentProfile != null) ConnectionState.READY else ConnectionState.ERROR
+    val profile = currentProfile ?: return
+    appendSystemMessage("New session. Profile: **${profile.name}** (${profile.username}@${profile.host})")
+  }
+
+  /** Switch to an existing thread and load its messages. */
+  fun switchThread(targetThreadId: String) {
+    runningJob?.cancel()
+    threadId = targetThreadId
+    _connectionState.value = if (currentProfile != null) ConnectionState.READY else ConnectionState.ERROR
+    viewModelScope.launch {
+      val msgs = chatRepository.getMessages(targetThreadId)
+      _messages.value = msgs
+    }
+  }
+
+  /** Delete a thread and clear UI if it was the current one. */
+  fun deleteThread(targetThreadId: String) {
+    viewModelScope.launch {
+      chatRepository.deleteThread(targetThreadId)
+      if (threadId == targetThreadId) {
+        newSession()
+      }
+    }
+  }
+
   fun send(text: String) {
     val command = text.trim()
     if (command.isEmpty()) return
@@ -138,23 +177,13 @@ class ChatViewModel(
     runningJob?.cancel()
     _connectionState.value = ConnectionState.EXECUTING
 
-    val passwordProvider = PasswordProvider { profile ->
-      val desc = "${profile.username}@${profile.host}:${profile.port}"
-      _passwordRequest.emit(desc)
-      _passwordResponse.first() ?: throw IllegalStateException("Authentication cancelled")
-    }
-
-    val runner = SshjExecRunner(
-      knownHostsStore = knownHostsStore,
-      hostKeyCallback = hostKeyCallback,
-      passwordProvider = passwordProvider,
-    )
+    val execRunner = getOrCreateRunner()
 
     runningJob = viewModelScope.launch {
       val stdout = StringBuilder()
       val stderr = StringBuilder()
 
-      runner.run(profile, command).collect { event ->
+      execRunner.run(profile, command).collect { event ->
         when (event) {
           is ExecEvent.StdoutChunk -> {
             stdout.append(String(event.bytes, Charsets.UTF_8))
@@ -189,6 +218,29 @@ class ChatViewModel(
     runningJob?.cancel()
     runningJob = null
     _connectionState.value = ConnectionState.READY
+  }
+
+  private fun getOrCreateRunner(): SshjExecRunner {
+    runner?.let { return it }
+
+    val passwordProvider = PasswordProvider { profile ->
+      val desc = "${profile.username}@${profile.host}:${profile.port}"
+      _passwordRequest.emit(desc)
+      _passwordResponse.first() ?: throw IllegalStateException("Authentication cancelled")
+    }
+
+    return SshjExecRunner(
+      knownHostsStore = knownHostsStore,
+      hostKeyCallback = hostKeyCallback,
+      passwordProvider = passwordProvider,
+      reuseConnections = true,
+    ).also { runner = it }
+  }
+
+  override fun onCleared() {
+    super.onCleared()
+    runningJob?.cancel()
+    runner?.close()
   }
 
   private fun formatOutput(
@@ -229,8 +281,14 @@ class ChatViewModel(
 
   private fun persistMessage(msg: ChatMessage) {
     viewModelScope.launch {
+      val isNewThread = threadId == null
       val tid = threadId ?: chatRepository.createThread(profileId, "").also { threadId = it }
       chatRepository.insertMessage(tid, msg)
+      // Auto-title the thread from the first user command
+      if (isNewThread && msg.role == ChatRole.User) {
+        val title = msg.content.take(50).let { if (msg.content.length > 50) "$it…" else it }
+        chatRepository.updateThreadTitle(tid, title)
+      }
     }
   }
 
