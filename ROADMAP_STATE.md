@@ -26,9 +26,10 @@
 | 屏幕 | 文件 | 状态 |
 |------|------|------|
 | ProfilesScreen | `app/.../ui/screen/ProfilesScreen.kt` | ✅ 完成（LargeTopAppBar, 滑动删除, 空状态, FAB, 字母头像, 认证类型标签） |
-| ProfileEditorScreen | `app/.../ui/screen/ProfileEditorScreen.kt` | ✅ 完成（Card 分组, 端口校验 1-65535, SectionLabel, 私钥文件选择器 SAF） |
+| ProfileEditorScreen | `app/.../ui/screen/ProfileEditorScreen.kt` | ✅ 完成（Card 分组, 端口校验 1-65535, SectionLabel, 私钥文件选择器 SAF, IME padding） |
 | ChatScreen | `app/.../ui/screen/ChatScreen.kt` | ✅ 完成（会话侧边栏, 连接状态条, Host Key 对话框, 密码弹窗, 密钥密码弹窗, 配置名称显示） |
-| SettingsScreen | `app/.../ui/screen/SettingsScreen.kt` | ✅ 完成（主题选择器含 AMOLED, Shell 选择器） |
+| SettingsScreen | `app/.../ui/screen/SettingsScreen.kt` | ✅ 完成（主题选择器含 AMOLED, Shell 选择器, Known Hosts 导航） |
+| KnownHostsScreen | `app/.../ui/screen/KnownHostsScreen.kt` | ✅ 完成（已信任主机列表, 指纹/类型/日期显示, 单条删除确认, 空状态） |
 
 **已完成的组件：**
 - ChatBubble（用户消息气泡 + 助手消息 CodeCard 渲染, 流式动画, 错误状态, 时间戳, 复制按钮）
@@ -66,6 +67,14 @@
 - ✅ 私钥文件选择器（SAF 文件选取, ContentUri 持久化权限, ProfileEditor 集成）
 - ✅ 密钥密码短语支持（PassphraseProvider + 弹窗复用 PasswordDialog）
 - ✅ 内容模式密钥加载（OpenSSHKeyFile + StringReader, 不依赖文件路径）
+- ✅ Known Hosts 查看器（KnownHostsScreen: 列表 + 单条删除 + 空状态）
+- ✅ 导航路由完善（Screen.KnownHosts, type-safe navigation）
+- ✅ Edge-to-edge 优化（ProfileEditorScreen 添加 imePadding）
+- ✅ Shell 偏好生效（ChatViewModel 中 wrapWithShell, 非 /bin/sh 时包装命令）
+- ✅ 连接自动重试（stale cache → evict + reconnect once）
+- ✅ ChatInput 体感优化（Monospace 字体, Shell 占位符, 执行中禁用）
+- ✅ richtext-commonmark 依赖移除（CodeCard 替代 Markdown 渲染）
+- ✅ BuildConfig 版本号 + Apache 2.0 协议显示
 
 **待完成：**
 - ~~私钥文件选择器（keyRef 路径管理）~~ ✅ 已完成
