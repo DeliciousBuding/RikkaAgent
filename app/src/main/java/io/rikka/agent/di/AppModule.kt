@@ -19,7 +19,9 @@ val appModule = module {
 
   single { get<AppDatabase>().sshProfileDao() }
 
-  single<ProfileStore> { RoomProfileStore(get()) }
+  single { RoomProfileStore(get()) }
+
+  single<ProfileStore> { get<RoomProfileStore>() }
 
   single { AppPreferences(androidContext()) }
 }

@@ -9,23 +9,40 @@ This document describes the planned architecture for `rikka-agent`.
 - Security by default (encrypted keys, strict host verification)
 - Modular design so apps can reuse the SSH core without adopting the full UI
 
-## Suggested Module Layout
+## Module Layout
 
-- `:app`
-- `:core:model`
-  - Command / output event types
-  - Session state model
-- `:core:storage`
-  - Profile storage
-  - `known_hosts` store
-  - Encrypted key storage abstractions
-- `:core:ssh`
-  - Connection manager (reuse / lifecycle)
-  - Exec runner (`exec` channel)
-  - Streaming stdout/stderr
-- `:core:ui`
-  - Compose components: command cards, output cards
-  - Markdown/code rendering adapters
+- `:app` — Application entry, DI (Koin), Navigation, Screens, ViewModels
+- `:core:model` — Data classes: SshProfile, ChatMessage, AuthType, HostKeyPolicy, enums
+- `:core:storage` — Room database (AppDatabase, SshProfileEntity, DAO), DataStore (AppPreferences), ProfileStore
+- `:core:ssh` — SSH interfaces: SshExecRunner, ExecEvent, SshSessionManager (implementation pending)
+- `:core:ui` — Compose components: ChatBubble, ChatInput, AnsiStripper, Theme
+
+## Navigation Graph
+
+```
+ProfilesScreen (start)
+├── → ProfileEditorScreen (profileId: String?)
+├── → Session/ChatScreen (profileId: String)
+└── → SettingsScreen
+```
+
+Routes are defined as `@Serializable` data classes in `nav/Screen.kt` using Jetpack Navigation Compose with type-safe navigation.
+
+## DI Architecture (Koin 3.5)
+
+```
+AppModule
+├── AppDatabase (Room, singleton)
+├── SshProfileDao (from AppDatabase)
+├── RoomProfileStore (ProfileStore impl)
+└── AppPreferences (DataStore)
+
+ViewModelModule
+├── ChatViewModel
+├── ProfilesViewModel(RoomProfileStore)
+├── ProfileEditorViewModel(profileId, RoomProfileStore)
+└── SettingsViewModel(AppPreferences)
+```
 
 ## Data Flow (Exec Mode)
 
