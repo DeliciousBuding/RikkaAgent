@@ -21,7 +21,7 @@
 | M1 UI 骨架 | 🔶 55% | 6 屏完成；ProfilesVM/EditorVM 未连接 Room |
 | M2 渲染管线 | ⬜ 未开始 | CodeCard 基础完成，流式渲染待做 |
 | M3 SSH 引擎 | ✅ 主要完成 | sshj exec + 认证 + host key + 会话管理 + 密钥生成 |
-| M4 Codex 接入 | ⬜ 未开始 | — |
+| M4 Codex 接入 | 🔶 40% | 基础集成完成：profile Codex 开关 + 工作目录 + exec 命令包装 |
 | M5 开源发布 | ⬜ 未开始 | CI workflow 已有 |
 
 ---
@@ -40,8 +40,12 @@
 
 ## M4 待完成
 
-- [ ] 远端命令协议约定
-- [ ] "一键运行"动作（复制/重跑/导出）
+- [x] Profile 增加 codexMode / codexWorkDir 字段
+- [x] ChatViewModel Codex exec 命令包装 (`codex exec --full-auto`)
+- [x] ProfileEditorScreen Codex 设置 UI（开关 + 工作目录）
+- [ ] 远端命令协议约定（`--json` JSONL 解析）
+- [ ] Codex 输出 Markdown 渲染
+- [x] "一键运行"动作（复制/重跑/导出）
 - [ ] 延迟优化（SSH 复用/流式/渲染缓存）
 
 ## M5 待完成
