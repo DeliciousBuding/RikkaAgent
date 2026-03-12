@@ -45,44 +45,64 @@ class SshjExecRunner(
 
   override fun run(profile: SshProfile, command: String): Flow<ExecEvent> = callbackFlow {
     var ownedClient: SSHClient? = null
+    var retried = false
     try {
-      val client = acquireClient(profile).also {
-        if (!reuseConnections) ownedClient = it
-      }
+      // Retry loop: if a cached connection is stale, evict and reconnect once
+      while (true) {
+        try {
+          val client = acquireClient(profile).also {
+            if (!reuseConnections) ownedClient = it
+          }
 
-      // Open exec channel
-      val session: Session = withContext(Dispatchers.IO) { client.startSession() }
-      val cmd = withContext(Dispatchers.IO) { session.exec(command) }
+          // Open exec channel
+          val session: Session = withContext(Dispatchers.IO) { client.startSession() }
+          val cmd = withContext(Dispatchers.IO) { session.exec(command) }
 
-      // Read stdout and stderr concurrently
-      val stdoutJob = launch(Dispatchers.IO) {
-        readStream(cmd.inputStream) { bytes ->
-          trySend(ExecEvent.StdoutChunk(bytes))
+          // Read stdout and stderr concurrently
+          val stdoutJob = launch(Dispatchers.IO) {
+            readStream(cmd.inputStream) { bytes ->
+              trySend(ExecEvent.StdoutChunk(bytes))
+            }
+          }
+
+          val stderrJob = launch(Dispatchers.IO) {
+            readStream(cmd.errorStream) { bytes ->
+              trySend(ExecEvent.StderrChunk(bytes))
+            }
+          }
+
+          // Wait for both streams to finish
+          stdoutJob.join()
+          stderrJob.join()
+
+          // Wait for exit status with a timeout
+          withContext(Dispatchers.IO) {
+            cmd.join(30, TimeUnit.SECONDS)
+          }
+
+          val exitCode = cmd.exitStatus
+          trySend(ExecEvent.Exit(exitCode))
+
+          // Cleanup — only disconnect if we own the client (not pooled)
+          withContext(Dispatchers.IO) {
+            session.close()
+            ownedClient?.disconnect()
+          }
+
+          break // success, exit retry loop
+        } catch (e: Exception) {
+          // Only retry once for connection-level errors on cached connections
+          val isRetryable = reuseConnections && !retried &&
+            e !is SshHostKeyRejectedException &&
+            e.message?.contains("Auth") != true
+          if (isRetryable) {
+            retried = true
+            evictCachedClient()
+            ownedClient = null
+            continue // retry with fresh connection
+          }
+          throw e // re-throw for outer handler
         }
-      }
-
-      val stderrJob = launch(Dispatchers.IO) {
-        readStream(cmd.errorStream) { bytes ->
-          trySend(ExecEvent.StderrChunk(bytes))
-        }
-      }
-
-      // Wait for both streams to finish
-      stdoutJob.join()
-      stderrJob.join()
-
-      // Wait for exit status with a timeout
-      withContext(Dispatchers.IO) {
-        cmd.join(30, TimeUnit.SECONDS)
-      }
-
-      val exitCode = cmd.exitStatus
-      trySend(ExecEvent.Exit(exitCode))
-
-      // Cleanup — only disconnect if we own the client (not pooled)
-      withContext(Dispatchers.IO) {
-        session.close()
-        ownedClient?.disconnect()
       }
 
       channel.close()
@@ -90,7 +110,6 @@ class SshjExecRunner(
       trySend(ExecEvent.Error("host_key_rejected", e.message ?: "Host key rejected"))
       channel.close()
     } catch (e: Exception) {
-      // If the cached connection died, evict it
       if (reuseConnections) {
         evictCachedClient()
       }

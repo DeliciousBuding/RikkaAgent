@@ -14,6 +14,7 @@ import io.rikka.agent.ssh.KnownHostsStore
 import io.rikka.agent.ssh.PassphraseProvider
 import io.rikka.agent.ssh.PasswordProvider
 import io.rikka.agent.ssh.SshjExecRunner
+import io.rikka.agent.storage.AppPreferences
 import io.rikka.agent.storage.ChatRepository
 import io.rikka.agent.storage.ProfileStore
 import kotlinx.coroutines.Job
@@ -42,6 +43,7 @@ class ChatViewModel(
   private val profileStore: ProfileStore,
   private val knownHostsStore: KnownHostsStore,
   private val chatRepository: ChatRepository,
+  private val appPreferences: AppPreferences,
   private val keyContentProvider: KeyContentProvider? = null,
 ) : ViewModel() {
 
@@ -195,12 +197,13 @@ class ChatViewModel(
     _connectionState.value = ConnectionState.EXECUTING
 
     val execRunner = getOrCreateRunner()
+    val shellCommand = wrapWithShell(command)
 
     runningJob = viewModelScope.launch {
       val stdout = StringBuilder()
       val stderr = StringBuilder()
 
-      execRunner.run(profile, command).collect { event ->
+      execRunner.run(profile, shellCommand).collect { event ->
         when (event) {
           is ExecEvent.StdoutChunk -> {
             stdout.append(String(event.bytes, Charsets.UTF_8))
@@ -329,6 +332,22 @@ class ChatViewModel(
       status = MessageStatus.Final,
     )
     _messages.update { it + msg }
+  }
+
+  /**
+   * Wrap a user command with the configured default shell.
+   * SSH exec typically runs commands through the server's login shell,
+   * but this allows explicit shell selection (e.g., bash -c '...').
+   */
+  private fun wrapWithShell(command: String): String {
+    val shell = kotlinx.coroutines.runBlocking {
+      appPreferences.defaultShell.first()
+    }
+    // If shell is the standard /bin/sh, let SSH exec handle it natively
+    if (shell == "/bin/sh" || shell.isBlank()) return command
+    // Escape single quotes in the command for safe shell wrapping
+    val escaped = command.replace("'", "'\\''")
+    return "$shell -c '$escaped'"
   }
 }
 
