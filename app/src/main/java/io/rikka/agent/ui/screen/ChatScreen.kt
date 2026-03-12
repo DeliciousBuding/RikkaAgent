@@ -246,6 +246,25 @@ fun ChatScreen(
           }
         },
         actions = {
+          if (messages.isNotEmpty() && connectionState != ConnectionState.EXECUTING) {
+            IconButton(onClick = {
+              val text = vm.exportSession()
+              val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, text)
+                putExtra(Intent.EXTRA_SUBJECT, "SSH Session — $profileLabel")
+              }
+              context.startActivity(Intent.createChooser(intent, "Export session"))
+            }) {
+              Icon(
+                painter = androidx.compose.ui.res.painterResource(
+                  id = io.rikka.agent.ui.R.drawable.ic_share,
+                ),
+                contentDescription = "Export session",
+                modifier = Modifier.size(20.dp),
+              )
+            }
+          }
           when (connectionState) {
             ConnectionState.EXECUTING -> {
               IconButton(onClick = { vm.cancelRunning() }) {

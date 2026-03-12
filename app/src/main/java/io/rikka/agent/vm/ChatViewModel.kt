@@ -241,6 +241,21 @@ class ChatViewModel(
     _connectionState.value = ConnectionState.READY
   }
 
+  /** Export current session as plain text. */
+  fun exportSession(): String = buildString {
+    val profile = _profileLabel.value
+    appendLine("# Session: $profile")
+    appendLine()
+    for (msg in _messages.value) {
+      if (msg.role == ChatRole.User) {
+        appendLine("$ ${msg.content}")
+      } else {
+        appendLine(msg.content)
+      }
+      appendLine()
+    }
+  }
+
   private fun getOrCreateRunner(): SshjExecRunner {
     runner?.let { return it }
 
