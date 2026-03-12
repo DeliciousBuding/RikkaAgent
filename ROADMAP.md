@@ -94,6 +94,7 @@
 
 ## 当前优先级（下一步最优动作）
 
-1. 补齐/冻结 spec 中“待定项”集中清单（M0）
-2. 然后进入 M1：创建 Android 工程骨架（不接 SSH，先把 UI 跑起来）
+1. M1：将 ProfilesVM/ProfileEditorVM 连接 Room 存储（真实 CRUD）
+2. M1：补全 UI 骨架（代码块折叠/复制）
+3. M2：SSH exec 接入 JSch mwiede，实现流式输出
 

@@ -40,12 +40,21 @@ fun SettingsScreen(
   val theme by vm.theme.collectAsState()
   val defaultShell by vm.defaultShell.collectAsState()
   var showThemePicker by remember { mutableStateOf(false) }
+  var showShellPicker by remember { mutableStateOf(false) }
 
   if (showThemePicker) {
     ThemePickerDialog(
       current = theme,
       onSelect = { vm.setTheme(it); showThemePicker = false },
       onDismiss = { showThemePicker = false },
+    )
+  }
+
+  if (showShellPicker) {
+    ShellPickerDialog(
+      current = defaultShell,
+      onSelect = { vm.setDefaultShell(it); showShellPicker = false },
+      onDismiss = { showShellPicker = false },
     )
   }
 
@@ -76,7 +85,7 @@ fun SettingsScreen(
       SettingsItem(
         title = "Default shell",
         subtitle = defaultShell,
-        onClick = { /* TODO: shell picker */ },
+        onClick = { showShellPicker = true },
       )
 
       SectionHeader("Security")
@@ -107,7 +116,7 @@ private fun ThemePickerDialog(
   onSelect: (String) -> Unit,
   onDismiss: () -> Unit,
 ) {
-  val options = listOf("system", "light", "dark")
+  val options = listOf("system", "light", "dark", "amoled")
   AlertDialog(
     onDismissRequest = onDismiss,
     title = { Text("Theme") },
@@ -116,6 +125,38 @@ private fun ThemePickerDialog(
         options.forEach { option ->
           ListItem(
             headlineContent = { Text(option.replaceFirstChar { it.uppercase() }) },
+            leadingContent = {
+              RadioButton(
+                selected = current == option,
+                onClick = { onSelect(option) },
+              )
+            },
+            modifier = Modifier.clickable { onSelect(option) },
+          )
+        }
+      }
+    },
+    confirmButton = {
+      TextButton(onClick = onDismiss) { Text("Cancel") }
+    },
+  )
+}
+
+@Composable
+private fun ShellPickerDialog(
+  current: String,
+  onSelect: (String) -> Unit,
+  onDismiss: () -> Unit,
+) {
+  val options = listOf("/bin/bash", "/bin/sh", "/bin/zsh", "/bin/fish")
+  AlertDialog(
+    onDismissRequest = onDismiss,
+    title = { Text("Default Shell") },
+    text = {
+      Column {
+        options.forEach { option ->
+          ListItem(
+            headlineContent = { Text(option) },
             leadingContent = {
               RadioButton(
                 selected = current == option,
