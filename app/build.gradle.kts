@@ -91,4 +91,7 @@ dependencies {
 
   // DataStore (needed for DataStoreKnownHostsStore)
   implementation(libs.datastore.preferences)
+
+  // Encrypted storage for SSH keys
+  implementation(libs.security.crypto)
 }
