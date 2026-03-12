@@ -122,6 +122,7 @@
   <string name="msg_no_output">(no output)</string>
   <string name="msg_no_output_failed">(no output, failed)</string>
   <string name="msg_exit_code">exit: %d</string>
+  <string name="msg_output_truncated">⚠ Output truncated (showing last 256KB)</string>
   <string name="err_connection_refused">Connection refused — is the SSH server running on the target host?</string>
   <string name="err_timeout">Connection timed out — check the host address and network connectivity.</string>
   <string name="err_unknown_host">Host not found — verify the hostname or IP address.</string>

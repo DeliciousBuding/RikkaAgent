@@ -22,7 +22,7 @@
 | M2 渲染管线 | ✅ 主要完成 | Markdown v1 + 流式渲染优化 + CodeCard；Mermaid 可选 |
 | M3 SSH 引擎 | ✅ 主要完成 | sshj exec + 认证 + host key + 会话管理 + 密钥生成 + 加密存储 |
 | M4 Codex 接入 | ✅ 主要完成 | JSONL 解析 + API Key 管理 + exec --json + profile 开关 + Markdown 渲染 |
-| M5 开源发布 | ⬜ 未开始 | CI workflow 已有 |
+| M5 开源发布 | ✅ 主要完成 | 服务器指南 + 隐私审计 + Release checklist + 输出截断 |
 | i18n 中英双语 | ✅ 完成 | 全面国际化：120+ 字符串资源，中文优先，覆盖全部 UI 屏幕 + ViewModel |
 
 ---
@@ -54,9 +54,10 @@
 
 ## M5 待完成
 
-- [ ] 服务器指南（低权限用户/sshd_config/防火墙）
-- [ ] 隐私审计清单
-- [ ] Release checklist
+- [x] 服务器指南（低权限用户/sshd_config/防火墙）— `docs/server-hardening.md`
+- [x] 隐私审计清单 — `docs/privacy-audit.md`
+- [x] Release checklist — `docs/release-checklist.md`
+- [x] 输出截断保护（256KB 上限 + 截断提示）
 
 ---
 
