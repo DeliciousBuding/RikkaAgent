@@ -1,5 +1,6 @@
 package io.rikka.agent.ui.screen
 
+import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -68,6 +69,7 @@ import io.rikka.agent.vm.ConnectionState
 import io.rikka.agent.vm.HostKeyEvent
 import io.rikka.agent.ui.components.ChatBubble
 import io.rikka.agent.ui.components.ChatInput
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -87,6 +89,7 @@ fun ChatScreen(
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
   val drawerState = rememberDrawerState(DrawerValue.Closed)
+  val context = LocalContext.current
 
   // Elapsed timer for running commands
   var elapsedSeconds by remember { mutableStateOf(0) }
@@ -295,7 +298,21 @@ fun ChatScreen(
             verticalArrangement = Arrangement.spacedBy(2.dp),
           ) {
             items(messages, key = { it.id }) { msg ->
-              ChatBubble(message = msg)
+              ChatBubble(
+                message = msg,
+                onRerun = { cmd ->
+                  if (connectionState != ConnectionState.EXECUTING) vm.send(cmd)
+                },
+                onShare = { content ->
+                  val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, content)
+                  }
+                  context.startActivity(
+                    Intent.createChooser(intent, "Share output")
+                  )
+                },
+              )
             }
             item {
               Spacer(modifier = Modifier.height(12.dp))

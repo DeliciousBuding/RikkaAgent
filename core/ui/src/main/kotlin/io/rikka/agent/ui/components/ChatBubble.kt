@@ -57,6 +57,8 @@ fun ChatBubble(
   message: ChatMessage,
   modifier: Modifier = Modifier,
   contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+  onRerun: ((String) -> Unit)? = null,
+  onShare: ((String) -> Unit)? = null,
 ) {
   val isUser = message.role == ChatRole.User
   val isError = message.status == MessageStatus.Error
@@ -152,8 +154,14 @@ fun ChatBubble(
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
       )
+      if (isUser && onRerun != null && message.content.isNotBlank()) {
+        RerunButton(command = message.content, onRerun = onRerun)
+      }
       if (message.status == MessageStatus.Final && message.content.isNotBlank()) {
         CopyButton(content = message.content)
+        if (!isUser && onShare != null) {
+          ShareButton(content = message.content, onShare = onShare)
+        }
       }
     }
   }
@@ -211,6 +219,40 @@ private fun CopyButton(content: String) {
         modifier = Modifier.size(14.dp),
       )
     }
+  }
+}
+
+@Composable
+private fun RerunButton(command: String, onRerun: (String) -> Unit) {
+  val haptic = LocalHapticFeedback.current
+  IconButton(
+    onClick = {
+      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+      onRerun(command)
+    },
+    modifier = Modifier.size(24.dp),
+  ) {
+    Icon(
+      painter = painterResource(id = R.drawable.ic_replay),
+      contentDescription = "Re-run",
+      tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+      modifier = Modifier.size(14.dp),
+    )
+  }
+}
+
+@Composable
+private fun ShareButton(content: String, onShare: (String) -> Unit) {
+  IconButton(
+    onClick = { onShare(content) },
+    modifier = Modifier.size(24.dp),
+  ) {
+    Icon(
+      painter = painterResource(id = R.drawable.ic_share),
+      contentDescription = "Share",
+      tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+      modifier = Modifier.size(14.dp),
+    )
   }
 }
 
