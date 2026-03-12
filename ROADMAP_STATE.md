@@ -25,16 +25,17 @@
 
 | 屏幕 | 文件 | 状态 |
 |------|------|------|
-| ProfilesScreen | `app/.../ui/screen/ProfilesScreen.kt` | ✅ 完成（LargeTopAppBar, 滑动删除, 空状态, FAB, 字母头像, 认证类型标签） |
+| ProfilesScreen | `app/.../ui/screen/ProfilesScreen.kt` | ✅ 完成（LargeTopAppBar, 滑动删除, 空状态, FAB, 字母头像, 认证类型标签, 长按菜单, 配置复制） |
 | ProfileEditorScreen | `app/.../ui/screen/ProfileEditorScreen.kt` | ✅ 完成（Card 分组, 端口校验 1-65535, SectionLabel, 私钥文件选择器 SAF, IME padding） |
-| ChatScreen | `app/.../ui/screen/ChatScreen.kt` | ✅ 完成（会话侧边栏, 连接状态条, Host Key 对话框, 密码弹窗, 密钥密码弹窗, 配置名称显示） |
-| SettingsScreen | `app/.../ui/screen/SettingsScreen.kt` | ✅ 完成（主题选择器含 AMOLED, Shell 选择器, Known Hosts 导航） |
+| ChatScreen | `app/.../ui/screen/ChatScreen.kt` | ✅ 完成（会话侧边栏, 连接状态条, 执行计时器, Host Key 对话框, 密码弹窗, 命令建议芯片, 删除确认） |
+| SettingsScreen | `app/.../ui/screen/SettingsScreen.kt` | ✅ 完成（主题选择器含 AMOLED, Shell 选择器, Known Hosts 导航, About 导航） |
 | KnownHostsScreen | `app/.../ui/screen/KnownHostsScreen.kt` | ✅ 完成（已信任主机列表, 指纹/类型/日期显示, 单条删除确认, 空状态） |
+| AboutScreen | `app/.../ui/screen/AboutScreen.kt` | ✅ 完成（应用信息, Apache 2.0 协议, OSS 依赖列表含许可证） |
 
 **已完成的组件：**
-- ChatBubble（用户消息气泡 + 助手消息 CodeCard 渲染, 流式动画, 错误状态, 时间戳, 复制按钮）
-- CodeCard（可折叠代码输出, 复制按钮, 语言标签, 水平滚动, 自动折叠 15 行）
-- ChatInput（多行输入, 回车发送）
+- ChatBubble（用户消息气泡 + 助手消息 CodeCard 渲染, 流式动画, 错误状态, 时间戳, 复制按钮, 触觉反馈）
+- CodeCard（可折叠代码输出, 复制按钮, 语言标签, 水平滚动, 自动折叠 15 行, 触觉反馈）
+- ChatInput（多行输入, 回车发送, Monospace 字体, Shell 占位符, 执行中禁用, 触觉反馈）
 - AnsiStripper（ANSI 转义码清理）
 - RikkaAgentTheme（亮色/暗色/AMOLED 三模式, ThemeMode enum, 从设置实时切换）
 
@@ -75,10 +76,16 @@
 - ✅ ChatInput 体感优化（Monospace 字体, Shell 占位符, 执行中禁用）
 - ✅ richtext-commonmark 依赖移除（CodeCard 替代 Markdown 渲染）
 - ✅ BuildConfig 版本号 + Apache 2.0 协议显示
+- ✅ 空输出提示（命令无输出时显示 "(no output)" + exit code）
+- ✅ 执行计时器（TopAppBar 显示 "Running… Ns"）
+- ✅ 命令建议芯片（空会话时显示 uname/df/uptime 快捷命令）
+- ✅ 触觉反馈（复制按钮 + 发送按钮 HapticFeedback）
+- ✅ 会话删除确认（侧边栏删除需确认）
+- ✅ 配置复制（长按配置卡片弹出菜单: 编辑/复制）
+- ✅ About 页面（应用信息 + OSS 依赖列表 + 许可证）
+- ✅ 导航路由: 7 screens (Profiles, ProfileEditor, Session, Settings, KnownHosts, About)
 
 **待完成：**
-- ~~私钥文件选择器（keyRef 路径管理）~~ ✅ 已完成
-- 空输出优化（命令无输出时的 UI 提示）
 - 更多密钥格式支持（PKCS8, PuTTY）
 
 ## VectorControl Portal (原 Gateway Portal) 基础设施
