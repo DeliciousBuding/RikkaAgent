@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -36,6 +37,8 @@ import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -44,6 +47,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import io.rikka.agent.model.AuthType
 import io.rikka.agent.ssh.ContentUriKeyContentProvider
 import io.rikka.agent.vm.ProfileEditorViewModel
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
@@ -74,6 +79,8 @@ fun ProfileEditorScreen(
   var attempted by remember { mutableStateOf(false) }
   val context = LocalContext.current
   val clipboardManager = LocalClipboardManager.current
+  val snackbarHostState = remember { SnackbarHostState() }
+  val scope = rememberCoroutineScope()
 
   // SAF file picker for private key
   val keyPickerLauncher = rememberLauncherForActivityResult(
@@ -111,6 +118,7 @@ fun ProfileEditorScreen(
         Icon(Icons.Default.Check, contentDescription = "Save")
       }
     },
+    snackbarHost = { SnackbarHost(snackbarHostState) },
   ) { innerPadding ->
     Column(
       modifier = Modifier
@@ -191,6 +199,36 @@ fun ProfileEditorScreen(
         }
       }
 
+      // --- Test connection ---
+      val testResult by vm.testResult.collectAsState()
+      val testing by vm.testing.collectAsState()
+      OutlinedButton(
+        onClick = { vm.testConnection() },
+        enabled = !testing && form.host.isNotBlank(),
+        modifier = Modifier.fillMaxWidth(),
+      ) {
+        if (testing) {
+          CircularProgressIndicator(
+            modifier = Modifier.size(16.dp),
+            strokeWidth = 2.dp,
+          )
+          Spacer(Modifier.width(8.dp))
+          Text("Testing…")
+        } else {
+          Text("Test Connection")
+        }
+      }
+      if (testResult != null) {
+        Text(
+          text = testResult!!,
+          style = MaterialTheme.typography.bodySmall,
+          color = if (testResult!!.startsWith("OK"))
+            MaterialTheme.colorScheme.primary
+          else
+            MaterialTheme.colorScheme.error,
+        )
+      }
+
       // --- Authentication section ---
       SectionLabel("Authentication")
       Card(
@@ -227,6 +265,14 @@ fun ProfileEditorScreen(
                     if (clip.contains("PRIVATE KEY") || clip.startsWith("-----BEGIN")) {
                       val ref = keyProvider.savePastedKey(clip)
                       vm.updateForm(form.copy(keyRef = ref))
+                      scope.launch { snackbarHostState.showSnackbar("Key saved") }
+                    } else {
+                      scope.launch {
+                        snackbarHostState.showSnackbar(
+                          if (clip.isBlank()) "Clipboard is empty"
+                          else "Clipboard does not contain a private key"
+                        )
+                      }
                     }
                   },
                 ) {
