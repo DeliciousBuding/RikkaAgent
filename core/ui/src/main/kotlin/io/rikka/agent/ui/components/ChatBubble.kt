@@ -129,10 +129,11 @@ fun ChatBubble(
       }
     } else {
       // Assistant messages: markdown for rich content, code card for plain output/errors
+      // During streaming, skip markdown parsing (expensive) — render as CodeCard until finalized
       Column(
         modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
       ) {
-        if (isError || !looksLikeMarkdown(message.content)) {
+        if (isError || isStreaming || !looksLikeMarkdown(message.content)) {
           CodeCard(
             code = message.content,
             language = if (isError) "error" else null,
