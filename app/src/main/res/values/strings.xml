@@ -56,6 +56,10 @@
   <string name="codex_mode_desc">Commands will be sent as natural-language tasks via codex exec.</string>
   <string name="label_work_dir">Working Directory</string>
   <string name="placeholder_work_dir">/home/user/project</string>
+  <string name="label_api_key">OpenAI API Key</string>
+  <string name="placeholder_api_key">sk-…</string>
+  <string name="cd_toggle_api_key">Toggle API key visibility</string>
+  <string name="api_key_hint">Optional. If empty, the server\'s own API key will be used.</string>
 
   <!-- ChatScreen -->
   <string name="status_connecting">Connecting…</string>

@@ -27,6 +27,7 @@ data class ProfileForm(
   val keyRef: String? = null,
   val codexMode: Boolean = false,
   val codexWorkDir: String = "",
+  val codexApiKey: String = "",
 )
 
 class ProfileEditorViewModel(
@@ -60,6 +61,7 @@ class ProfileEditorViewModel(
             keyRef = p.keyRef,
             codexMode = p.codexMode,
             codexWorkDir = p.codexWorkDir ?: "",
+            codexApiKey = p.codexApiKey ?: "",
           )
         }
       }
@@ -88,6 +90,7 @@ class ProfileEditorViewModel(
         keyRef = f.keyRef,
         codexMode = f.codexMode,
         codexWorkDir = f.codexWorkDir.trim().ifBlank { null },
+        codexApiKey = f.codexApiKey.trim().ifBlank { null },
       )
       store.upsert(profile)
       _saved.value = true

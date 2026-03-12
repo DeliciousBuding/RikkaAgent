@@ -21,7 +21,7 @@
 | M1 UI 骨架 | ✅ 主要完成 | 8 屏 + ProfilesVM/EditorVM/ChatVM 全部连接 Room |
 | M2 渲染管线 | ✅ 主要完成 | Markdown v1 + 流式渲染优化 + CodeCard；Mermaid 可选 |
 | M3 SSH 引擎 | ✅ 主要完成 | sshj exec + 认证 + host key + 会话管理 + 密钥生成 + 加密存储 |
-| M4 Codex 接入 | 🔶 50% | profile 开关 + exec 包装 + Markdown 渲染；JSONL 待做 |
+| M4 Codex 接入 | ✅ 主要完成 | JSONL 解析 + API Key 管理 + exec --json + profile 开关 + Markdown 渲染 |
 | M5 开源发布 | ⬜ 未开始 | CI workflow 已有 |
 | i18n 中英双语 | ✅ 完成 | 全面国际化：120+ 字符串资源，中文优先，覆盖全部 UI 屏幕 + ViewModel |
 
@@ -48,9 +48,9 @@
 - [x] ProfileEditorScreen Codex 设置 UI（开关 + 工作目录）
 - [x] Codex 输出 Markdown 渲染（复用 M2 MarkdownText）
 - [x] "一键运行"动作（复制/重跑/导出）
-- [ ] 远端命令协议约定（`--json` JSONL 解析）
-- [ ] 延迟优化（SSH 复用/流式/渲染缓存）
-- [ ] Codex API Key 管理（profile 级别配置，加密存储）
+- [x] 远端命令协议约定（`--json` JSONL 解析 + JsonlParser + JsonlLineBuffer）
+- [x] 延迟优化（SSH 连接池复用 + 流式 JSONL 缓冲 + remember 渲染缓存）
+- [x] Codex API Key 管理（profile 级别配置，密码遮蔽 UI，OPENAI_API_KEY 环境变量注入）
 
 ## M5 待完成
 
@@ -64,19 +64,19 @@
 
 ### 服务重编排计划（进行中）
 
-> 详细方案: `docs/network.md` (v4)
+> 详细方案: `docs/network.md` (v5)
 
-**目标：** metapi+CPA → sgp1 (Docker) + 真 HK 作中国边缘入口
+**目标：** metapi+CPA → sgp1 (Docker) + HK 中国边缘入口 + OpenClaw → gz
 
 | 步骤 | 内容 | 状态 |
 |------|------|------|
 | 1 | CPA Docker 化 (Dockerfile + 去 SOCKS proxy) | ⬜ |
-| 2 | 数据备份 (hub.db + CPA config 从 gz 导出) | ⬜ |
+| 2 | 数据备份 (hub.db + CPA config 从 gz 导出) | ✅ (2026-06-10 本地备份) |
 | 3 | metapi + CPA Docker 部署到 sgp1 | ⬜ |
 | 4 | sgp2 nginx upstream 从 gz → sgp1 切流 | ⬜ |
 | 5 | 端到端验证 + gz 旧服务停止 | ⬜ |
-| 6 | 真 HK 就绪后: 初始化 + nginx 中国入口 | ⬜ (等待迁移) |
-| 7 | OpenClaw Docker 化 (sgp1) | ⬜ |
+| 6 | HK 边缘: nginx + certbot + 中国入口 | ⬜ (HK VPS 已就绪✅) |
+| 7 | OpenClaw 迁移到 gz | ⬜ |
 
 **预期收益：** 国际 API 延迟 350ms → 2ms (-99.4%)，中国 ~370ms → ~55ms (-85%)
 

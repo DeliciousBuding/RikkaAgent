@@ -66,8 +66,8 @@
 | SSH 别名 | `sgp1`（user: ding） |
 | OS | Ubuntu |
 | 资源 | 2GB RAM, 58GB disk |
-| 服务 | Docker VectorControl (nginx/backend/postgres on 443), OpenClaw (npm global, Node.js, 447MB RSS), danted SOCKS (TS-only 1080) |
-| 注意 | 内存压力 (1.0G/1.9G + 297M swap, disk 55%) |
+| 服务 | Docker VectorControl (nginx/backend/postgres on 443), danted SOCKS (TS-only 1080) |
+| 注意 | OpenClaw 将迁至 gz；迁走后释放 ~447MB，sgp1 专注 API 后端 |
 
 ### 2.4 hk — Azure 香港（East Asia）
 

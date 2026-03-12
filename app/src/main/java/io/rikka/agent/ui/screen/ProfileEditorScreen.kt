@@ -21,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -57,6 +59,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.rikka.agent.R
@@ -409,6 +413,31 @@ fun ProfileEditorScreen(
               placeholder = { Text(stringResource(R.string.placeholder_work_dir)) },
               singleLine = true,
               modifier = Modifier.fillMaxWidth(),
+            )
+            // API Key field with visibility toggle
+            var apiKeyVisible by remember { mutableStateOf(false) }
+            OutlinedTextField(
+              value = form.codexApiKey,
+              onValueChange = { vm.updateForm(form.copy(codexApiKey = it)) },
+              label = { Text(stringResource(R.string.label_api_key)) },
+              placeholder = { Text(stringResource(R.string.placeholder_api_key)) },
+              singleLine = true,
+              modifier = Modifier.fillMaxWidth(),
+              visualTransformation = if (apiKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
+              keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+              trailingIcon = {
+                IconButton(onClick = { apiKeyVisible = !apiKeyVisible }) {
+                  Icon(
+                    imageVector = if (apiKeyVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                    contentDescription = stringResource(R.string.cd_toggle_api_key),
+                  )
+                }
+              },
+            )
+            Text(
+              text = stringResource(R.string.api_key_hint),
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
           }
         }

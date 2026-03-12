@@ -20,6 +20,10 @@ sealed class ExecEvent {
   @Serializable
   data class StderrChunk(val bytes: ByteArray) : ExecEvent()
 
+  /** A parsed JSONL structured event from Codex output. */
+  @Serializable
+  data class StructuredEvent(val kind: String, val rawJson: String) : ExecEvent()
+
   @Serializable
   data class Exit(val code: Int?) : ExecEvent()
 
