@@ -92,6 +92,9 @@ fun ChatScreen(
   // Password dialog state
   var passwordTarget by remember { mutableStateOf<String?>(null) }
 
+  // Passphrase dialog state
+  var passphraseTarget by remember { mutableStateOf<String?>(null) }
+
   LaunchedEffect(Unit) {
     vm.hostKeyEvent.collect { event ->
       hostKeyEvent = event
@@ -101,6 +104,12 @@ fun ChatScreen(
   LaunchedEffect(Unit) {
     vm.passwordRequest.collect { target ->
       passwordTarget = target
+    }
+  }
+
+  LaunchedEffect(Unit) {
+    vm.passphraseRequest.collect { target ->
+      passphraseTarget = target
     }
   }
 
@@ -130,6 +139,23 @@ fun ChatScreen(
       onCancel = {
         vm.respondToPassword(null)
         passwordTarget = null
+      },
+    )
+  }
+
+  // Show passphrase dialog
+  passphraseTarget?.let { target ->
+    PasswordDialog(
+      target = target,
+      title = "Key Passphrase",
+      label = "Passphrase",
+      onSubmit = { passphrase ->
+        vm.respondToPassphrase(passphrase)
+        passphraseTarget = null
+      },
+      onCancel = {
+        vm.respondToPassphrase(null)
+        passphraseTarget = null
       },
     )
   }
@@ -416,6 +442,8 @@ private fun EmptySessionState(modifier: Modifier = Modifier) {
 @Composable
 private fun PasswordDialog(
   target: String,
+  title: String = "SSH Password",
+  label: String = "Password",
   onSubmit: (String) -> Unit,
   onCancel: () -> Unit,
 ) {
@@ -424,17 +452,17 @@ private fun PasswordDialog(
 
   AlertDialog(
     onDismissRequest = onCancel,
-    title = { Text("SSH Password") },
+    title = { Text(title) },
     text = {
       Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-          text = "Enter password for $target",
+          text = "Enter $label for $target",
           style = MaterialTheme.typography.bodyMedium,
         )
         androidx.compose.material3.OutlinedTextField(
           value = password,
           onValueChange = { password = it },
-          label = { Text("Password") },
+          label = { Text(label) },
           singleLine = true,
           visualTransformation = if (passwordVisible) {
             androidx.compose.ui.text.input.VisualTransformation.None

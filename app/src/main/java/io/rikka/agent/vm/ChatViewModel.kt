@@ -9,7 +9,9 @@ import io.rikka.agent.model.MessageStatus
 import io.rikka.agent.model.SshProfile
 import io.rikka.agent.ssh.ExecEvent
 import io.rikka.agent.ssh.HostKeyCallback
+import io.rikka.agent.ssh.KeyContentProvider
 import io.rikka.agent.ssh.KnownHostsStore
+import io.rikka.agent.ssh.PassphraseProvider
 import io.rikka.agent.ssh.PasswordProvider
 import io.rikka.agent.ssh.SshjExecRunner
 import io.rikka.agent.storage.ChatRepository
@@ -40,6 +42,7 @@ class ChatViewModel(
   private val profileStore: ProfileStore,
   private val knownHostsStore: KnownHostsStore,
   private val chatRepository: ChatRepository,
+  private val keyContentProvider: KeyContentProvider? = null,
 ) : ViewModel() {
 
   private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
@@ -61,6 +64,11 @@ class ChatViewModel(
   private val _passwordRequest = MutableSharedFlow<String>(extraBufferCapacity = 1)
   val passwordRequest: SharedFlow<String> = _passwordRequest.asSharedFlow()
   private val _passwordResponse = MutableSharedFlow<String?>(extraBufferCapacity = 1)
+
+  /** Key passphrase: emits profile description, waits for passphrase or null (cancel) */
+  private val _passphraseRequest = MutableSharedFlow<String>(extraBufferCapacity = 1)
+  val passphraseRequest: SharedFlow<String> = _passphraseRequest.asSharedFlow()
+  private val _passphraseResponse = MutableSharedFlow<String?>(extraBufferCapacity = 1)
 
   private var currentProfile: SshProfile? = null
   private var runningJob: Job? = null
@@ -97,7 +105,7 @@ class ChatViewModel(
       if (profile != null) {
         currentProfile = profile
         _connectionState.value = ConnectionState.READY
-        appendSystemMessage("Ready. Connected profile: **${profile.name}** (${profile.username}@${profile.host})")
+        appendSystemMessage("Ready. Profile: ${profile.name} (${profile.username}@${profile.host})")
       } else {
         _connectionState.value = ConnectionState.ERROR
         appendSystemMessage("Error: Profile not found.")
@@ -113,6 +121,10 @@ class ChatViewModel(
     _passwordResponse.tryEmit(password)
   }
 
+  fun respondToPassphrase(passphrase: String?) {
+    _passphraseResponse.tryEmit(passphrase)
+  }
+
   /** Start a fresh session (new thread). */
   fun newSession() {
     runningJob?.cancel()
@@ -120,7 +132,7 @@ class ChatViewModel(
     _messages.value = emptyList()
     _connectionState.value = if (currentProfile != null) ConnectionState.READY else ConnectionState.ERROR
     val profile = currentProfile ?: return
-    appendSystemMessage("New session. Profile: **${profile.name}** (${profile.username}@${profile.host})")
+    appendSystemMessage("New session. Profile: ${profile.name} (${profile.username}@${profile.host})")
   }
 
   /** Switch to an existing thread and load its messages. */
@@ -201,9 +213,9 @@ class ChatViewModel(
           }
           is ExecEvent.Error -> {
             val errorContent = if (stdout.isNotEmpty() || stderr.isNotEmpty()) {
-              formatOutput(stdout, stderr, exitCode = null) + "\n\n**Error**: ${event.message}"
+              formatOutput(stdout, stderr, exitCode = null) + "\nError: ${event.message}"
             } else {
-              "**Error** (${event.category}): ${event.message}"
+              "Error (${event.category}): ${event.message}"
             }
             updateAssistantMessage(assistantId, errorContent, MessageStatus.Error)
             persistUpdate(assistantId, errorContent, MessageStatus.Error)
@@ -229,10 +241,18 @@ class ChatViewModel(
       _passwordResponse.first() ?: throw IllegalStateException("Authentication cancelled")
     }
 
+    val passphraseProvider = PassphraseProvider { profile ->
+      val desc = "${profile.username}@${profile.host}:${profile.port}"
+      _passphraseRequest.emit(desc)
+      _passphraseResponse.first()
+    }
+
     return SshjExecRunner(
       knownHostsStore = knownHostsStore,
       hostKeyCallback = hostKeyCallback,
       passwordProvider = passwordProvider,
+      keyContentProvider = keyContentProvider,
+      passphraseProvider = passphraseProvider,
       reuseConnections = true,
     ).also { runner = it }
   }
@@ -249,21 +269,18 @@ class ChatViewModel(
     exitCode: Int?,
   ): String = buildString {
     if (stdout.isNotEmpty()) {
-      append("```\n")
       append(stdout)
       if (!stdout.endsWith("\n")) append("\n")
-      append("```")
     }
     if (stderr.isNotEmpty()) {
-      if (isNotEmpty()) append("\n\n")
-      append("**stderr:**\n```\n")
+      if (isNotEmpty()) append("\n")
+      append("[stderr]\n")
       append(stderr)
       if (!stderr.endsWith("\n")) append("\n")
-      append("```")
     }
     if (exitCode != null) {
-      if (isNotEmpty()) append("\n\n")
-      append("Exit code: `$exitCode`")
+      if (isNotEmpty()) append("\n")
+      append("exit: $exitCode")
     }
   }
 
