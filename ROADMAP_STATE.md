@@ -116,6 +116,14 @@ gz (Alibaba Cloud,  / Tailscale )
   ├─ CLIProxyAPI (binary v6.8.51, port 8317) = API 密钥管理 + 路由配置
   ├─ nginx 443 → /playground/ proxy to metapi (仅内部, 阿里云无备案拦截 443)
   └─ Tailscale 组网: gz ↔ prod ↔ prod ↔ 本机
+
+hk (Azure Hong Kong,  / Tailscale )  [2026-06-10 上线]
+  ├─ 2核1G, Ubuntu 24.04, kernel 6.14.0-1017-azure
+  ├─ Tailscale 已连接, UFW (80/443/41641, SSH 仅 Tailscale)
+  ├─ fail2ban + unattended-upgrades + SSH hardening
+  ├─ 角色: 备用公网入口候选
+  ├─ 延迟: → prod 0.5ms, → prod 22ms, → gz 82ms
+  └─ SSH 别名: hk (Tailscale IP)
 ```
 
 ### 关键事实
@@ -186,6 +194,32 @@ gz (Alibaba Cloud,  / Tailscale )
 **端到端验证（2026-06-10）：**
 - Portal: 200 ✅ | API Snapshot: 200 ✅ | API Tokens: 200 ✅ | v1/models: 401 ✅ (需认证)
 - gpt-5.4 completion (公网 → prod → gz → metapi → OpenAI): "OK" ✅
+
+### 服务重编排计划（2026-06-10）
+
+> 详细方案: `<local>\docs\service-reshuffle-plan.md`
+
+**目标：** gz ↔ prod 服务互换 + Docker 统一管理
+
+**推荐方案 (A+C)：**
+1. metapi + CPA → prod（全新 Docker image，保留 hub.db 统计数据和下游 key）
+2. OpenClaw → gz
+3. prod 入口不变，upstream 从 gz 改为 prod
+4. API 延迟: 87ms → 3ms (-97%)
+
+**Docker 化路径：**
+- 立即: metapi (已 Docker) + CPA Docker 化
+- 短期: OpenClaw Docker 化
+- 长期: 每台服务器 docker-compose.yml 声明式管理
+
+**HK VPS 状态：** 已初始化，Tailscale + UFW + fail2ban，备用入口候选
+
+**延迟矩阵（2026-06-10 实测）：**
+
+| 源→目标 | prod | prod | gz | hk |
+|---------|------|------|-----|-----|
+| prod | 3ms | - | 87ms | 0.5ms |
+| hk | 22ms | 0.5ms | 82ms | - |
 
 ### 性能指标（2026-03-12 最新）
 

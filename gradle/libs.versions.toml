@@ -26,6 +26,7 @@ kotlinx-coroutines-test = "1.8.1"
 turbine = "1.1.0"
 sshj = "0.39.0"
 slf4j = "2.0.13"
+bcprov = "1.78.1"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -72,3 +73,4 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 sshj = { module = "com.hierynomus:sshj", version.ref = "sshj" }
 slf4j-nop = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bcprov" }
