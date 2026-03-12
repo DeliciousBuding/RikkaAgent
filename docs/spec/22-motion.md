@@ -110,3 +110,5 @@ Errors should be noticeable without being alarming:
 - Expand/collapse code blocks must not cause layout “teleporting”.
 - Input bar expand/collapse must feel stable with IME on/off.
 - No “infinite animations” on screens users stare at for minutes (battery + distraction).
+
+Also see the broader visual craft checklist in `docs/spec/34-polish.md`.

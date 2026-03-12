@@ -34,11 +34,18 @@ Thumbs.db
 *.apk
 *.aab
 
+# Local scratch
+tmp/
+
 # Local databases / runtime artifacts (keep user data out of git)
 *.db
 *.sqlite
 *.sqlite3
 *.log
+
+# Gradle caches that may appear in repo root (should never be committed)
+native/
+notifications/
 
 # Gradle wrapper/metadata (optional; keep if you prefer)
 # gradle/wrapper/gradle-wrapper.jar

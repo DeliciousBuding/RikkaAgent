@@ -6,6 +6,12 @@ This file defines repository-specific guidance for coding agents and contributor
 
 Build a production-quality Android (Jetpack Compose) app that provides a chat-style UI to run SSH commands (Mode A: non-interactive `exec`) and render outputs beautifully (Markdown/code blocks), with security-by-default.
 
+## Project Planning (SSOT)
+
+- Roadmap: `ROADMAP.md`
+- Running state / decisions: `ROADMAP_STATE.md`
+- Specs: `docs/spec/00-index.md`
+
 ## Non-Negotiables (Security & Privacy)
 
 - Never commit or paste secrets:
@@ -31,4 +37,3 @@ Build a production-quality Android (Jetpack Compose) app that provides a chat-st
 - Prefer small, reversible changes.
 - Add docs before large refactors.
 - Include a brief verification note with changes (what was run / what was checked).
-

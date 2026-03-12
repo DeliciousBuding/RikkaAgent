@@ -5,6 +5,8 @@ This document defines the **visual language** of `rikka-agent` (Mode A).
 If you want implementable constants (spacing/typography/radius/motion timings), also read:
 
 - `docs/spec/25-design-tokens.md`
+- `docs/spec/35-theme-presets.md`
+- `docs/spec/34-polish.md`
 
 Goals:
 
@@ -36,6 +38,8 @@ Preset themes (suggested):
 - `ocean` (cool blue/teal accent, calmer containers)
 - `spring` / `autumn` (seasonal accents)
 - `black` (high-contrast neutral)
+
+For the authoritative preset list and constraints, see `docs/spec/35-theme-presets.md`.
 
 ## 2) Color Usage Rules
 
