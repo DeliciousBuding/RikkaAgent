@@ -70,6 +70,8 @@ import io.rikka.agent.vm.HostKeyEvent
 import io.rikka.agent.ui.components.ChatBubble
 import io.rikka.agent.ui.components.ChatInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import io.rikka.agent.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -164,8 +166,8 @@ fun ChatScreen(
   passphraseTarget?.let { target ->
     PasswordDialog(
       target = target,
-      title = "Key Passphrase",
-      label = "Passphrase",
+      title = stringResource(R.string.key_passphrase),
+      label = stringResource(R.string.label_passphrase),
       onSubmit = { passphrase ->
         vm.respondToPassphrase(passphrase)
         passphraseTarget = null
@@ -216,16 +218,16 @@ fun ChatScreen(
         title = {
           Column {
             Text(
-              text = profileLabel.ifBlank { "Session" },
+              text = profileLabel.ifBlank { stringResource(R.string.session_fallback_name) },
               style = MaterialTheme.typography.titleMedium,
               maxLines = 1,
               overflow = TextOverflow.Ellipsis,
             )
             val statusText = when (connectionState) {
-              ConnectionState.IDLE -> "Connecting…"
-              ConnectionState.READY -> "Ready"
-              ConnectionState.EXECUTING -> "Running… ${elapsedSeconds}s"
-              ConnectionState.ERROR -> "Error"
+              ConnectionState.IDLE -> stringResource(R.string.status_connecting)
+              ConnectionState.READY -> stringResource(R.string.status_ready)
+              ConnectionState.EXECUTING -> stringResource(R.string.status_running, elapsedSeconds)
+              ConnectionState.ERROR -> stringResource(R.string.status_error)
             }
             val statusColor = when (connectionState) {
               ConnectionState.READY -> MaterialTheme.colorScheme.primary
@@ -242,7 +244,7 @@ fun ChatScreen(
         },
         navigationIcon = {
           IconButton(onClick = { scope.launch { drawerState.open() } }) {
-            Icon(Icons.Default.Menu, contentDescription = "Sessions")
+            Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.sessions))
           }
         },
         actions = {
@@ -252,15 +254,15 @@ fun ChatScreen(
               val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
                 putExtra(Intent.EXTRA_TEXT, text)
-                putExtra(Intent.EXTRA_SUBJECT, "SSH Session — $profileLabel")
+                putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.ssh_session_subject, profileLabel))
               }
-              context.startActivity(Intent.createChooser(intent, "Export session"))
+              context.startActivity(Intent.createChooser(intent, context.getString(R.string.export_session)))
             }) {
               Icon(
                 painter = androidx.compose.ui.res.painterResource(
                   id = io.rikka.agent.ui.R.drawable.ic_share,
                 ),
-                contentDescription = "Export session",
+                contentDescription = stringResource(R.string.export_session),
                 modifier = Modifier.size(20.dp),
               )
             }
@@ -270,7 +272,7 @@ fun ChatScreen(
               IconButton(onClick = { vm.cancelRunning() }) {
                 Icon(
                   Icons.Default.Close,
-                  contentDescription = "Cancel",
+                  contentDescription = stringResource(R.string.cancel),
                   tint = MaterialTheme.colorScheme.error,
                 )
               }
@@ -279,7 +281,7 @@ fun ChatScreen(
               IconButton(onClick = onBack) {
                 Icon(
                   Icons.AutoMirrored.Filled.ArrowBack,
-                  contentDescription = "Back",
+                  contentDescription = stringResource(R.string.back),
                 )
               }
             }
@@ -328,7 +330,7 @@ fun ChatScreen(
                     putExtra(Intent.EXTRA_TEXT, content)
                   }
                   context.startActivity(
-                    Intent.createChooser(intent, "Share output")
+                    Intent.createChooser(intent, context.getString(R.string.share_output))
                   )
                 },
               )
@@ -363,7 +365,7 @@ fun ChatScreen(
         ) {
           Icon(
             Icons.Default.KeyboardArrowDown,
-            contentDescription = "Scroll to bottom",
+            contentDescription = stringResource(R.string.scroll_to_bottom),
             modifier = Modifier.size(20.dp),
           )
         }
@@ -394,15 +396,15 @@ private fun SessionDrawerContent(
     val thread = threads.find { it.id == id }
     AlertDialog(
       onDismissRequest = { confirmDeleteId = null },
-      title = { Text("Delete session?") },
-      text = { Text("Delete \"${thread?.title?.ifBlank { "Session" } ?: "Session"}\"? This cannot be undone.") },
+      title = { Text(stringResource(R.string.delete_session_title)) },
+      text = { Text(stringResource(R.string.delete_session_msg, thread?.title?.ifBlank { stringResource(R.string.session_fallback_name) } ?: stringResource(R.string.session_fallback_name))) },
       confirmButton = {
         TextButton(onClick = { onDeleteThread(id); confirmDeleteId = null }) {
-          Text("Delete", color = MaterialTheme.colorScheme.error)
+          Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
         }
       },
       dismissButton = {
-        TextButton(onClick = { confirmDeleteId = null }) { Text("Cancel") }
+        TextButton(onClick = { confirmDeleteId = null }) { Text(stringResource(R.string.cancel)) }
       },
     )
   }
@@ -415,12 +417,12 @@ private fun SessionDrawerContent(
       verticalAlignment = Alignment.CenterVertically,
     ) {
       Text(
-        text = "Sessions",
+        text = stringResource(R.string.sessions),
         style = MaterialTheme.typography.titleMedium,
         modifier = Modifier.weight(1f),
       )
       IconButton(onClick = onNewSession) {
-        Icon(Icons.Default.Add, contentDescription = "New session")
+        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.new_session))
       }
     }
     if (threads.isEmpty()) {
@@ -431,7 +433,7 @@ private fun SessionDrawerContent(
         contentAlignment = Alignment.Center,
       ) {
         Text(
-          text = "No past sessions",
+          text = stringResource(R.string.no_past_sessions),
           style = MaterialTheme.typography.bodyMedium,
           color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
         )
@@ -442,7 +444,7 @@ private fun SessionDrawerContent(
           ListItem(
             headlineContent = {
               Text(
-                text = thread.title.ifBlank { "Session" },
+                text = thread.title.ifBlank { stringResource(R.string.session_fallback_name) },
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
               )
@@ -454,7 +456,7 @@ private fun SessionDrawerContent(
               ) {
                 Icon(
                   Icons.Default.Delete,
-                  contentDescription = "Delete",
+                  contentDescription = stringResource(R.string.delete),
                   modifier = Modifier.size(16.dp),
                   tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 )
@@ -476,19 +478,12 @@ private fun HostKeyDialog(
 ) {
   val (title, text) = when (event) {
     is HostKeyEvent.UnknownHost -> {
-      "Trust this host?" to
-        "First connection to ${event.host}:${event.port}\n\n" +
-        "Key type: ${event.keyType}\n" +
-        "Fingerprint:\n${event.fingerprint}\n\n" +
-        "Do you want to trust this host?"
+      stringResource(R.string.trust_host_title) to
+        stringResource(R.string.trust_host_msg, event.host, event.port, event.keyType, event.fingerprint)
     }
     is HostKeyEvent.Mismatch -> {
-      "⚠️ Host key changed!" to
-        "WARNING: The host key for ${event.host}:${event.port} has changed!\n\n" +
-        "Expected: ${event.expectedFingerprint}\n" +
-        "Got: ${event.actualFingerprint}\n\n" +
-        "This could indicate a man-in-the-middle attack. " +
-        "Only accept if you know why the key changed."
+      stringResource(R.string.host_key_changed_title) to
+        stringResource(R.string.host_key_changed_msg, event.host, event.port, event.expectedFingerprint, event.actualFingerprint)
     }
   }
 
@@ -509,12 +504,12 @@ private fun HostKeyDialog(
     },
     confirmButton = {
       TextButton(onClick = onAccept) {
-        Text(if (event is HostKeyEvent.Mismatch) "Replace & Trust" else "Trust")
+        Text(if (event is HostKeyEvent.Mismatch) stringResource(R.string.btn_replace_trust) else stringResource(R.string.btn_trust))
       }
     },
     dismissButton = {
       TextButton(onClick = onReject) {
-        Text("Reject")
+        Text(stringResource(R.string.btn_reject))
       }
     },
   )
@@ -531,7 +526,7 @@ private fun EmptySessionState(
     verticalArrangement = Arrangement.Center,
   ) {
     Text(
-      text = "Type a command to run on the server",
+      text = stringResource(R.string.empty_chat_hint),
       style = MaterialTheme.typography.bodyMedium,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
       modifier = Modifier.alpha(0.6f),
@@ -560,8 +555,8 @@ private fun EmptySessionState(
 @Composable
 private fun PasswordDialog(
   target: String,
-  title: String = "SSH Password",
-  label: String = "Password",
+  title: String = stringResource(R.string.ssh_password),
+  label: String = stringResource(R.string.label_password),
   onSubmit: (String) -> Unit,
   onCancel: () -> Unit,
 ) {
@@ -574,7 +569,7 @@ private fun PasswordDialog(
     text = {
       Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-          text = "Enter $label for $target",
+          text = stringResource(R.string.password_prompt, label, target),
           style = MaterialTheme.typography.bodyMedium,
         )
         androidx.compose.material3.OutlinedTextField(
@@ -596,11 +591,11 @@ private fun PasswordDialog(
         onClick = { onSubmit(password) },
         enabled = password.isNotEmpty(),
       ) {
-        Text("Connect")
+        Text(stringResource(R.string.btn_connect))
       }
     },
     dismissButton = {
-      TextButton(onClick = onCancel) { Text("Cancel") }
+      TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel)) }
     },
   )
 }

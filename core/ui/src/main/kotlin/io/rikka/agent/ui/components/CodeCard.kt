@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.rikka.agent.ui.R
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -86,7 +87,7 @@ fun CodeCard(
         verticalAlignment = Alignment.CenterVertically,
       ) {
         Text(
-          text = language ?: "output",
+          text = language ?: stringResource(R.string.label_output),
           style = MaterialTheme.typography.labelMedium,
           color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
         )
@@ -127,8 +128,8 @@ fun CodeCard(
           modifier = Modifier.fillMaxWidth(),
         ) {
           Text(
-            text = if (expanded) "Collapse (${lines.size} lines)"
-            else "Show all ${lines.size} lines",
+            text = if (expanded) stringResource(R.string.collapse_lines, lines.size)
+            else stringResource(R.string.show_all_lines, lines.size),
             style = MaterialTheme.typography.labelMedium,
           )
         }
@@ -158,7 +159,7 @@ private fun CopyCodeButton(code: String) {
     } else {
       Icon(
         painter = painterResource(id = R.drawable.ic_copy),
-        contentDescription = "Copy code",
+        contentDescription = stringResource(R.string.copy_code),
         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
         modifier = Modifier.size(14.dp),
       )

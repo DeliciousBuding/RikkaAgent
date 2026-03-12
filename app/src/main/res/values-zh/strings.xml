@@ -1,0 +1,163 @@
+<resources>
+  <string name="app_name">Rikka Agent</string>
+
+  <!-- Navigation -->
+  <string name="back">返回</string>
+  <string name="save">保存</string>
+  <string name="cancel">取消</string>
+  <string name="delete">删除</string>
+  <string name="edit">编辑</string>
+  <string name="copy">复制</string>
+  <string name="share">分享</string>
+
+  <!-- ProfilesScreen -->
+  <string name="settings">设置</string>
+  <string name="new_profile">新建配置</string>
+  <string name="duplicate">复制配置</string>
+  <string name="no_profiles_title">还没有 SSH 配置</string>
+  <string name="no_profiles_subtitle">点击 + 添加你的第一台服务器</string>
+  <string name="profile_copy_suffix">%s（副本）</string>
+
+  <!-- ProfileEditorScreen -->
+  <string name="new_profile_title">新建配置</string>
+  <string name="edit_profile_title">编辑配置</string>
+  <string name="section_connection">连接</string>
+  <string name="label_name">名称</string>
+  <string name="placeholder_name">我的服务器</string>
+  <string name="label_host">主机</string>
+  <string name="placeholder_host">192.168.1.100</string>
+  <string name="error_host_required">主机不能为空</string>
+  <string name="label_port">端口</string>
+  <string name="error_port_range">1–65535</string>
+  <string name="label_username">用户名</string>
+  <string name="placeholder_username">root</string>
+  <string name="error_required">必填</string>
+  <string name="testing">测试中…</string>
+  <string name="test_connection">测试连接</string>
+  <string name="section_auth">认证方式</string>
+  <string name="label_auth_type">认证类型</string>
+  <string name="btn_select_file">选择文件</string>
+  <string name="btn_paste_key">粘贴密钥</string>
+  <string name="btn_generate_key">生成 Ed25519 密钥对</string>
+  <string name="snackbar_key_saved">密钥已保存</string>
+  <string name="snackbar_clipboard_empty">剪贴板为空</string>
+  <string name="snackbar_not_private_key">剪贴板内容不是私钥</string>
+  <string name="snackbar_key_generated">Ed25519 密钥对已生成</string>
+  <string name="snackbar_key_gen_failed">密钥生成失败：%s</string>
+  <string name="snackbar_pubkey_copied">公钥已复制</string>
+  <string name="btn_copy_pubkey">复制公钥</string>
+  <string name="pubkey_hint">公钥（添加到服务器的 ~/.ssh/authorized_keys）：</string>
+  <string name="remove_key">移除密钥</string>
+  <string name="no_key_hint">未选择密钥（将提示输入密码）</string>
+
+  <!-- Codex section -->
+  <string name="section_codex">Codex</string>
+  <string name="codex_mode">Codex 模式</string>
+  <string name="codex_mode_desc">命令将作为自然语言任务通过 codex exec 发送。</string>
+  <string name="label_work_dir">工作目录</string>
+  <string name="placeholder_work_dir">/home/user/project</string>
+
+  <!-- ChatScreen -->
+  <string name="status_connecting">连接中…</string>
+  <string name="status_ready">就绪</string>
+  <string name="status_running">执行中… %d秒</string>
+  <string name="status_error">错误</string>
+  <string name="sessions">会话</string>
+  <string name="export_session">导出会话</string>
+  <string name="new_session">新建会话</string>
+  <string name="scroll_to_bottom">回到底部</string>
+  <string name="delete_session_title">删除会话？</string>
+  <string name="delete_session_msg">删除「%s」？此操作不可撤销。</string>
+  <string name="session_fallback_name">会话</string>
+  <string name="no_past_sessions">暂无历史会话</string>
+  <string name="empty_chat_hint">输入要在服务器上执行的命令</string>
+  <string name="input_placeholder">$ 命令</string>
+  <string name="send">发送</string>
+
+  <!-- Host key dialog -->
+  <string name="trust_host_title">信任此主机？</string>
+  <string name="trust_host_msg">首次连接 %1$s:%2$d\n\n密钥类型：%3$s\n指纹：\n%4$s\n\n是否信任此主机？</string>
+  <string name="host_key_changed_title">⚠️ 主机密钥已变更！</string>
+  <string name="host_key_changed_msg">警告：%1$s:%2$d 的主机密钥已变更！\n\n预期指纹：\n%3$s\n\n实际指纹：\n%4$s\n\n这可能是中间人攻击。仅在确认密钥确实被更换时才继续。</string>
+  <string name="btn_trust">信任</string>
+  <string name="btn_replace_trust">替换并信任</string>
+  <string name="btn_reject">拒绝</string>
+
+  <!-- Passphrase dialog -->
+  <string name="key_passphrase">密钥口令</string>
+  <string name="label_passphrase">口令</string>
+
+  <!-- Password dialog -->
+  <string name="ssh_password">SSH 密码</string>
+  <string name="label_password">密码</string>
+  <string name="password_prompt">输入 %2$s 的%1$s</string>
+  <string name="btn_connect">连接</string>
+
+  <!-- Share -->
+  <string name="share_output">分享输出</string>
+  <string name="ssh_session_subject">SSH 会话 — %s</string>
+
+  <!-- ChatBubble -->
+  <string name="rerun">重新执行</string>
+  <string name="time_just_now">刚刚</string>
+  <string name="time_minutes_ago">%d分钟前</string>
+  <string name="time_hours_ago">%d小时前</string>
+
+  <!-- CodeCard -->
+  <string name="label_output">输出</string>
+  <string name="copy_code">复制代码</string>
+  <string name="collapse_lines">收起（%d 行）</string>
+  <string name="show_all_lines">显示全部 %d 行</string>
+
+  <!-- ChatViewModel messages -->
+  <string name="msg_profile_ready">就绪。配置：%1$s（%2$s@%3$s）</string>
+  <string name="msg_profile_not_found">错误：未找到配置。</string>
+  <string name="msg_new_session">新会话。配置：%1$s（%2$s@%3$s）</string>
+  <string name="msg_not_connected">未连接。未加载配置。</string>
+  <string name="label_stderr">[标准错误]</string>
+  <string name="msg_no_output">（无输出）</string>
+  <string name="msg_no_output_failed">（无输出，执行失败）</string>
+  <string name="msg_exit_code">退出码：%d</string>
+  <string name="err_connection_refused">连接被拒绝 — SSH 服务是否在目标主机上运行？</string>
+  <string name="err_timeout">连接超时 — 请检查主机地址和网络连通性。</string>
+  <string name="err_unknown_host">找不到主机 — 请确认主机名或 IP 地址。</string>
+  <string name="err_auth_failed">认证失败 — 请检查凭据或密钥文件。</string>
+  <string name="err_ssh_generic">SSH 错误：%s</string>
+
+  <!-- ProfileEditorViewModel test messages -->
+  <string name="test_host_empty">主机为空</string>
+  <string name="test_no_banner">已连接（无横幅）</string>
+  <string name="test_ok">正常 — %s</string>
+  <string name="test_refused">连接被拒绝 — %1$s:%2$d 上是否运行了 SSH？</string>
+  <string name="test_timeout">超时 — 主机 %s 可能不可达。</string>
+  <string name="test_host_not_found">找不到主机 — 请检查主机名。</string>
+  <string name="test_failed">失败：%s</string>
+
+  <!-- SettingsScreen -->
+  <string name="section_general">通用</string>
+  <string name="section_security">安全</string>
+  <string name="section_about">关于</string>
+  <string name="theme">主题</string>
+  <string name="default_shell">默认 Shell</string>
+  <string name="default_shell_title">默认 Shell</string>
+  <string name="known_hosts">已知主机</string>
+  <string name="known_hosts_subtitle">管理信任的服务器指纹</string>
+  <string name="version">版本</string>
+  <string name="license">许可证</string>
+  <string name="apache_license">Apache 许可证 2.0</string>
+
+  <!-- KnownHostsScreen -->
+  <string name="known_hosts_title">已知主机</string>
+  <string name="remove_host_key_title">移除主机密钥？</string>
+  <string name="remove_host_key_msg">移除 %s 的信任密钥？下次连接时将重新提示。</string>
+  <string name="btn_remove">移除</string>
+  <string name="no_known_hosts">暂无已知主机</string>
+  <string name="no_known_hosts_subtitle">连接服务器后，主机密钥将显示在此处</string>
+
+  <!-- AboutScreen -->
+  <string name="about">关于</string>
+  <string name="about_subtitle">安全的 Android SSH 命令执行器</string>
+  <string name="about_copyright">版权所有 2026 rikka-agent 贡献者</string>
+  <string name="section_license">许可证</string>
+  <string name="section_oss">开源依赖</string>
+</resources>

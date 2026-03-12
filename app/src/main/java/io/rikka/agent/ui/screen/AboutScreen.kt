@@ -23,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import io.rikka.agent.BuildConfig
+import io.rikka.agent.R
+import androidx.compose.ui.res.stringResource
 
 private data class OssLib(
   val name: String,
@@ -51,10 +53,10 @@ fun AboutScreen(
   Scaffold(
     topBar = {
       TopAppBar(
-        title = { Text("About") },
+        title = { Text(stringResource(R.string.about)) },
         navigationIcon = {
           IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
           }
         },
       )
@@ -71,7 +73,7 @@ fun AboutScreen(
       Spacer(modifier = Modifier.height(24.dp))
 
       Text(
-        text = "Rikka Agent",
+        text = stringResource(R.string.app_name),
         style = MaterialTheme.typography.headlineMedium,
       )
       Spacer(modifier = Modifier.height(4.dp))
@@ -82,7 +84,7 @@ fun AboutScreen(
       )
       Spacer(modifier = Modifier.height(8.dp))
       Text(
-        text = "Secure SSH command runner for Android",
+        text = stringResource(R.string.about_subtitle),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
@@ -91,18 +93,18 @@ fun AboutScreen(
 
       // License
       Text(
-        text = "LICENSE",
+        text = stringResource(R.string.section_license),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.fillMaxWidth(),
       )
       Spacer(modifier = Modifier.height(8.dp))
       Text(
-        text = "Apache License 2.0",
+        text = stringResource(R.string.apache_license),
         style = MaterialTheme.typography.bodyMedium,
       )
       Text(
-        text = "Copyright 2026 rikka-agent contributors",
+        text = stringResource(R.string.about_copyright),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
@@ -111,7 +113,7 @@ fun AboutScreen(
 
       // OSS libs
       Text(
-        text = "OPEN SOURCE LIBRARIES",
+        text = stringResource(R.string.section_oss),
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.fillMaxWidth(),

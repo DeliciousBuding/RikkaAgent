@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import io.rikka.agent.ui.R
 
 @Composable
@@ -66,7 +67,7 @@ fun ChatInput(
         enabled = enabled,
         placeholder = {
           Text(
-            "$ command",
+            stringResource(R.string.input_placeholder),
             style = MaterialTheme.typography.bodyMedium.copy(
               fontFamily = FontFamily.Monospace,
             ),
@@ -97,7 +98,7 @@ fun ChatInput(
     ) {
       Icon(
         painter = painterResource(id = R.drawable.ic_send),
-        contentDescription = "Send",
+        contentDescription = stringResource(R.string.cd_send),
         tint = MaterialTheme.colorScheme.primary,
       )
     }

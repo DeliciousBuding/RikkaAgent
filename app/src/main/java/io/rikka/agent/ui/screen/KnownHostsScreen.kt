@@ -31,8 +31,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import io.rikka.agent.R
 import io.rikka.agent.ssh.KnownHostsStore
 import io.rikka.agent.ssh.StoredHostKey
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import java.text.SimpleDateFormat
@@ -57,8 +59,8 @@ fun KnownHostsScreen(
   confirmDelete?.let { hostKey ->
     AlertDialog(
       onDismissRequest = { confirmDelete = null },
-      title = { Text("Remove host key?") },
-      text = { Text("Remove the trusted key for $hostKey? You'll be prompted again on next connection.") },
+      title = { Text(stringResource(R.string.remove_host_key_title)) },
+      text = { Text(stringResource(R.string.remove_host_key_msg, hostKey)) },
       confirmButton = {
         TextButton(onClick = {
           scope.launch {
@@ -70,11 +72,11 @@ fun KnownHostsScreen(
             confirmDelete = null
           }
         }) {
-          Text("Remove", color = MaterialTheme.colorScheme.error)
+          Text(stringResource(R.string.btn_remove), color = MaterialTheme.colorScheme.error)
         }
       },
       dismissButton = {
-        TextButton(onClick = { confirmDelete = null }) { Text("Cancel") }
+        TextButton(onClick = { confirmDelete = null }) { Text(stringResource(R.string.cancel)) }
       },
     )
   }
@@ -82,10 +84,10 @@ fun KnownHostsScreen(
   Scaffold(
     topBar = {
       TopAppBar(
-        title = { Text("Known Hosts") },
+        title = { Text(stringResource(R.string.known_hosts_title)) },
         navigationIcon = {
           IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
           }
         },
       )
@@ -100,12 +102,12 @@ fun KnownHostsScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
       ) {
         Text(
-          text = "No known hosts",
+          text = stringResource(R.string.no_known_hosts),
           style = MaterialTheme.typography.bodyLarge,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-          text = "Host keys will appear here after connecting",
+          text = stringResource(R.string.no_known_hosts_subtitle),
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
           modifier = Modifier.padding(top = 4.dp),
@@ -140,7 +142,7 @@ fun KnownHostsScreen(
               IconButton(onClick = { confirmDelete = hostKey }) {
                 Icon(
                   Icons.Default.Delete,
-                  contentDescription = "Remove",
+                  contentDescription = stringResource(R.string.btn_remove),
                   tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
                 )
               }

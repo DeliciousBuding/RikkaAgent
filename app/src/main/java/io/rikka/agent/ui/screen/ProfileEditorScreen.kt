@@ -54,10 +54,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.rikka.agent.R
 import io.rikka.agent.model.AuthType
 import io.rikka.agent.ssh.ContentUriKeyContentProvider
 import io.rikka.agent.ssh.SshKeyGenerator
@@ -105,10 +107,10 @@ fun ProfileEditorScreen(
   Scaffold(
     topBar = {
       TopAppBar(
-        title = { Text(if (profileId == null) "New Profile" else "Edit Profile") },
+        title = { Text(if (profileId == null) stringResource(R.string.new_profile_title) else stringResource(R.string.edit_profile_title)) },
         navigationIcon = {
           IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
           }
         },
       )
@@ -118,7 +120,7 @@ fun ProfileEditorScreen(
         attempted = true
         vm.save()
       }) {
-        Icon(Icons.Default.Check, contentDescription = "Save")
+        Icon(Icons.Default.Check, contentDescription = stringResource(R.string.save))
       }
     },
     snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -135,7 +137,7 @@ fun ProfileEditorScreen(
       Spacer(modifier = Modifier.height(4.dp))
 
       // --- Connection section ---
-      SectionLabel("Connection")
+      SectionLabel(stringResource(R.string.section_connection))
       Card(
         colors = CardDefaults.cardColors(
           containerColor = MaterialTheme.colorScheme.surface,
@@ -148,8 +150,8 @@ fun ProfileEditorScreen(
           OutlinedTextField(
             value = form.name,
             onValueChange = { vm.updateForm(form.copy(name = it)) },
-            label = { Text("Name") },
-            placeholder = { Text("My Server") },
+            label = { Text(stringResource(R.string.label_name)) },
+            placeholder = { Text(stringResource(R.string.placeholder_name)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
           )
@@ -157,14 +159,14 @@ fun ProfileEditorScreen(
           OutlinedTextField(
             value = form.host,
             onValueChange = { vm.updateForm(form.copy(host = it)) },
-            label = { Text("Host") },
-            placeholder = { Text("192.168.1.100") },
+            label = { Text(stringResource(R.string.label_host)) },
+            placeholder = { Text(stringResource(R.string.placeholder_host)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             isError = attempted && form.host.isBlank(),
             supportingText = if (attempted && form.host.isBlank()) {
-              { Text("Host is required") }
+              { Text(stringResource(R.string.error_host_required)) }
             } else null,
           )
 
@@ -172,7 +174,7 @@ fun ProfileEditorScreen(
             OutlinedTextField(
               value = form.port,
               onValueChange = { vm.updateForm(form.copy(port = it)) },
-              label = { Text("Port") },
+              label = { Text(stringResource(R.string.label_port)) },
               singleLine = true,
               modifier = Modifier.width(120.dp),
               keyboardOptions = KeyboardOptions(
@@ -181,21 +183,21 @@ fun ProfileEditorScreen(
               ),
               isError = attempted && (form.port.toIntOrNull()?.let { it !in 1..65535 } ?: true),
               supportingText = if (attempted && (form.port.toIntOrNull()?.let { it !in 1..65535 } ?: true)) {
-                { Text("1–65535") }
+                { Text(stringResource(R.string.error_port_range)) }
               } else null,
             )
             Spacer(modifier = Modifier.width(12.dp))
             OutlinedTextField(
               value = form.username,
               onValueChange = { vm.updateForm(form.copy(username = it)) },
-              label = { Text("Username") },
-              placeholder = { Text("root") },
+              label = { Text(stringResource(R.string.label_username)) },
+              placeholder = { Text(stringResource(R.string.placeholder_username)) },
               singleLine = true,
               modifier = Modifier.weight(1f),
               keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
               isError = attempted && form.username.isBlank(),
               supportingText = if (attempted && form.username.isBlank()) {
-                { Text("Required") }
+                { Text(stringResource(R.string.error_required)) }
               } else null,
             )
           }
@@ -233,7 +235,7 @@ fun ProfileEditorScreen(
       }
 
       // --- Authentication section ---
-      SectionLabel("Authentication")
+      SectionLabel(stringResource(R.string.section_auth))
       Card(
         colors = CardDefaults.cardColors(
           containerColor = MaterialTheme.colorScheme.surface,
@@ -260,7 +262,7 @@ fun ProfileEditorScreen(
                 FilledTonalButton(
                   onClick = { keyPickerLauncher.launch(arrayOf("*/*")) },
                 ) {
-                  Text("Select File")
+                  Text(stringResource(R.string.btn_select_file))
                 }
                 OutlinedButton(
                   onClick = {
@@ -268,18 +270,18 @@ fun ProfileEditorScreen(
                     if (clip.contains("PRIVATE KEY") || clip.startsWith("-----BEGIN")) {
                       val ref = keyProvider.savePastedKey(clip)
                       vm.updateForm(form.copy(keyRef = ref))
-                      scope.launch { snackbarHostState.showSnackbar("Key saved") }
+                      scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.snackbar_key_saved)) }
                     } else {
                       scope.launch {
                         snackbarHostState.showSnackbar(
-                          if (clip.isBlank()) "Clipboard is empty"
-                          else "Clipboard does not contain a private key"
+                          if (clip.isBlank()) context.getString(R.string.snackbar_clipboard_empty)
+                          else context.getString(R.string.snackbar_not_private_key)
                         )
                       }
                     }
                   },
                 ) {
-                  Text("Paste Key")
+                  Text(stringResource(R.string.btn_paste_key))
                 }
               }
               OutlinedButton(
@@ -290,15 +292,15 @@ fun ProfileEditorScreen(
                       val ref = keyProvider.savePastedKey(kp.privateKeyPem)
                       vm.updateForm(form.copy(keyRef = ref))
                       generatedPubKey = kp.publicKeyLine
-                      snackbarHostState.showSnackbar("Ed25519 key pair generated")
+                      snackbarHostState.showSnackbar(context.getString(R.string.snackbar_key_generated))
                     } catch (e: Exception) {
-                      snackbarHostState.showSnackbar("Key generation failed: ${e.message}")
+                      snackbarHostState.showSnackbar(context.getString(R.string.snackbar_key_gen_failed, e.message ?: ""))
                     }
                   }
                 },
                 modifier = Modifier.fillMaxWidth(),
               ) {
-                Text("Generate Ed25519 Key Pair")
+                Text(stringResource(R.string.btn_generate_key))
               }
               if (generatedPubKey != null) {
                 Card(
@@ -308,7 +310,7 @@ fun ProfileEditorScreen(
                 ) {
                   Column(modifier = Modifier.padding(12.dp)) {
                     Text(
-                      text = "Public key (add to server's ~/.ssh/authorized_keys):",
+                      text = stringResource(R.string.pubkey_hint),
                       style = MaterialTheme.typography.labelSmall,
                     )
                     Spacer(Modifier.height(4.dp))
@@ -325,10 +327,10 @@ fun ProfileEditorScreen(
                         clipboardManager.setText(
                           androidx.compose.ui.text.AnnotatedString(generatedPubKey!!)
                         )
-                        scope.launch { snackbarHostState.showSnackbar("Public key copied") }
+                        scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.snackbar_pubkey_copied)) }
                       },
                     ) {
-                      Text("Copy Public Key")
+                      Text(stringResource(R.string.btn_copy_pubkey))
                     }
                   }
                 }
@@ -355,14 +357,14 @@ fun ProfileEditorScreen(
                   ) {
                     Icon(
                       Icons.Default.Close,
-                      contentDescription = "Remove key",
+                      contentDescription = stringResource(R.string.remove_key),
                       modifier = Modifier.size(16.dp),
                     )
                   }
                 }
               } else {
                 Text(
-                  text = "No key selected (will prompt for password)",
+                  text = stringResource(R.string.no_key_hint),
                   style = MaterialTheme.typography.bodySmall,
                   color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 )
@@ -373,7 +375,7 @@ fun ProfileEditorScreen(
       }
 
       // --- Codex integration section ---
-      SectionLabel("Codex")
+      SectionLabel(stringResource(R.string.section_codex))
       Card(
         colors = CardDefaults.cardColors(
           containerColor = MaterialTheme.colorScheme.surface,
@@ -388,7 +390,7 @@ fun ProfileEditorScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
           ) {
-            Text("Codex Mode", style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(R.string.codex_mode), style = MaterialTheme.typography.bodyLarge)
             Switch(
               checked = form.codexMode,
               onCheckedChange = { vm.updateForm(form.copy(codexMode = it)) },
@@ -396,15 +398,15 @@ fun ProfileEditorScreen(
           }
           if (form.codexMode) {
             Text(
-              text = "Commands will be sent as natural-language tasks via codex exec.",
+              text = stringResource(R.string.codex_mode_desc),
               style = MaterialTheme.typography.bodySmall,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             OutlinedTextField(
               value = form.codexWorkDir,
               onValueChange = { vm.updateForm(form.copy(codexWorkDir = it)) },
-              label = { Text("Working Directory") },
-              placeholder = { Text("/home/user/project") },
+              label = { Text(stringResource(R.string.label_work_dir)) },
+              placeholder = { Text(stringResource(R.string.placeholder_work_dir)) },
               singleLine = true,
               modifier = Modifier.fillMaxWidth(),
             )
@@ -443,7 +445,7 @@ private fun AuthTypeDropdown(
       value = selected.name,
       onValueChange = {},
       readOnly = true,
-      label = { Text("Auth Type") },
+      label = { Text(stringResource(R.string.label_auth_type)) },
       trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
       modifier = Modifier
         .menuAnchor(MenuAnchorType.PrimaryNotEditable)
