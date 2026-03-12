@@ -1,7 +1,9 @@
 package io.rikka.agent.vm
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.rikka.agent.R
 import io.rikka.agent.model.AuthType
 import io.rikka.agent.model.SshProfile
 import io.rikka.agent.storage.RoomProfileStore
@@ -30,6 +32,7 @@ data class ProfileForm(
 class ProfileEditorViewModel(
   private val profileId: String?,
   private val store: RoomProfileStore,
+  private val app: Application,
 ) : ViewModel() {
 
   private val _form = MutableStateFlow(ProfileForm())
@@ -97,7 +100,7 @@ class ProfileEditorViewModel(
     val host = f.host.trim()
     val port = f.port.toIntOrNull() ?: 22
     if (host.isBlank()) {
-      _testResult.value = "Host is empty"
+      _testResult.value = app.getString(R.string.test_host_empty)
       return
     }
     _testing.value = true
@@ -109,17 +112,17 @@ class ProfileEditorViewModel(
             socket.connect(InetSocketAddress(host, port), 5000)
             socket.soTimeout = 3000
             val banner = BufferedReader(InputStreamReader(socket.getInputStream()))
-              .readLine() ?: "Connected (no banner)"
-            "OK — $banner"
+              .readLine() ?: app.getString(R.string.test_no_banner)
+            app.getString(R.string.test_ok, banner)
           }
         } catch (e: java.net.ConnectException) {
-          "Connection refused — is SSH running on $host:$port?"
+          app.getString(R.string.test_refused, host, port)
         } catch (e: java.net.SocketTimeoutException) {
-          "Timed out — host $host may be unreachable."
+          app.getString(R.string.test_timeout, host)
         } catch (e: java.net.UnknownHostException) {
-          "Host not found — check the hostname."
+          app.getString(R.string.test_host_not_found)
         } catch (e: Exception) {
-          "Failed: ${e.message}"
+          app.getString(R.string.test_failed, e.message ?: "unknown")
         }
       }
       _testing.value = false

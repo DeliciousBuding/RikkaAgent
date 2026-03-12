@@ -29,7 +29,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.rikka.agent.BuildConfig
+import io.rikka.agent.R
 import io.rikka.agent.vm.SettingsViewModel
+import androidx.compose.ui.res.stringResource
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,10 +66,10 @@ fun SettingsScreen(
   Scaffold(
     topBar = {
       TopAppBar(
-        title = { Text("Settings") },
+        title = { Text(stringResource(R.string.settings)) },
         navigationIcon = {
           IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
           }
         },
       )
@@ -79,34 +81,34 @@ fun SettingsScreen(
         .padding(innerPadding)
         .verticalScroll(rememberScrollState()),
     ) {
-      SectionHeader("General")
+      SectionHeader(stringResource(R.string.section_general))
       SettingsItem(
-        title = "Theme",
+        title = stringResource(R.string.theme),
         subtitle = theme.replaceFirstChar { it.uppercase() },
         onClick = { showThemePicker = true },
       )
       SettingsItem(
-        title = "Default shell",
+        title = stringResource(R.string.default_shell),
         subtitle = defaultShell,
         onClick = { showShellPicker = true },
       )
 
-      SectionHeader("Security")
+      SectionHeader(stringResource(R.string.section_security))
       SettingsItem(
-        title = "Known hosts",
-        subtitle = "Manage trusted server fingerprints",
+        title = stringResource(R.string.known_hosts),
+        subtitle = stringResource(R.string.known_hosts_subtitle),
         onClick = onOpenKnownHosts,
       )
 
-      SectionHeader("About")
+      SectionHeader(stringResource(R.string.section_about))
       SettingsItem(
-        title = "Version",
+        title = stringResource(R.string.version),
         subtitle = BuildConfig.VERSION_NAME,
         onClick = onOpenAbout,
       )
       SettingsItem(
-        title = "License",
-        subtitle = "Apache License 2.0",
+        title = stringResource(R.string.license),
+        subtitle = stringResource(R.string.apache_license),
         onClick = onOpenAbout,
       )
     }
@@ -122,7 +124,7 @@ private fun ThemePickerDialog(
   val options = listOf("system", "light", "dark", "amoled")
   AlertDialog(
     onDismissRequest = onDismiss,
-    title = { Text("Theme") },
+    title = { Text(stringResource(R.string.theme)) },
     text = {
       Column {
         options.forEach { option ->
@@ -140,7 +142,7 @@ private fun ThemePickerDialog(
       }
     },
     confirmButton = {
-      TextButton(onClick = onDismiss) { Text("Cancel") }
+      TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
     },
   )
 }
@@ -154,7 +156,7 @@ private fun ShellPickerDialog(
   val options = listOf("/bin/bash", "/bin/sh", "/bin/zsh", "/bin/fish")
   AlertDialog(
     onDismissRequest = onDismiss,
-    title = { Text("Default Shell") },
+    title = { Text(stringResource(R.string.default_shell_title)) },
     text = {
       Column {
         options.forEach { option ->
@@ -172,7 +174,7 @@ private fun ShellPickerDialog(
       }
     },
     confirmButton = {
-      TextButton(onClick = onDismiss) { Text("Cancel") }
+      TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
     },
   )
 }

@@ -20,6 +20,7 @@
 | Markdown 解析 | commonmark-java 0.22.0 (BSD-2-Clause) + GFM tables/strikethrough |
 | 密钥存储 | EncryptedFile (AES-256-GCM via AndroidX Security Crypto) |
 | Codex 集成 | `codex exec --full-auto` via SSH (exec channel) |
+| 国际化 | 中英双语 (values/strings.xml + values-zh/strings.xml)，中文优先 |
 | 持久化 | Room DB v3 (聊天/配置/Codex字段) + DataStore (偏好) |
 | DI | Koin |
 | Spec 索引 | `docs/spec/00-index.md` |
@@ -68,17 +69,18 @@
 | 服务 | Docker VectorControl (nginx/backend/postgres on 443), OpenClaw (npm global, Node.js, 447MB RSS), danted SOCKS (TS-only 1080) |
 | 注意 | 内存压力 (1.0G/1.9G + 297M swap, disk 55%) |
 
-### 2.4 sgp3 — Azure 新加坡（原命名 "hk"，实际位于新加坡）
+### 2.4 sgp3/hk — Azure（正从新加坡迁移至香港）
 
 | 条目 | 值 |
 |------|-----|
-| 公网 IP | 20.191.156.135 |
-| Tailscale IP | 100.79.22.119 |
-| SSH 别名 | `sgp3`（user: azureuser）← 原 `hk`，建议改名 |
+| 公网 IP | 20.191.156.135（迁移后可能变更） |
+| Tailscale IP | 100.79.22.119（迁移后需重新连接） |
+| SSH 别名 | `hk`（user: azureuser） |
 | OS | Ubuntu 24.04, kernel 6.14.0-1017-azure |
 | 资源 | 2核, 847MB RAM, 29GB disk |
-| 实际地理 | **新加坡**（ipinfo.io 验证: city=Singapore, country=SG） |
-| 角色 | API 后端候选（metapi+CPA 迁移目标） |
+| 当前地理 | **新加坡**（ipinfo.io 验证）→ 正迁移至 Azure East Asia（香港） |
+| 目标角色 | 中国用户边缘入口（nginx → proxy sgp1） |
+| 限制 | **香港无法访问 OpenAI** → 不能运行 metapi/CPA |
 | 安全 | UFW (80/443/41641, SSH 仅 Tailscale), fail2ban, unattended-upgrades, SSH hardening |
 
 ### 2.5 doris — 本地 WSL
@@ -97,21 +99,27 @@
      → A 记录 20.195.40.11
      → sgp2 (Azure Singapore)
        ├─ nginx 443 → 静态门户 /var/www/vectorcontrol-portal/
-       ├─ /management → proxy_pass gz:8317/management.html (CPA 管理界面)
+       ├─ /management → proxy_pass sgp1:8317 (2ms, 迁移后)
        ├─ /fund/ → alias /var/www/vectorcontrol-fund/ (React SPA 投研系统)
-       ├─ /playground/ → proxy_pass gz:4001/ (metapi Playground)
-       ├─ /api/, /v1/ → proxy_pass gz:4001 (metapi OpenAI API)
+       ├─ /playground/ → proxy_pass sgp1:4001 (2ms, 迁移后)
+       ├─ /api/, /v1/ → proxy_pass sgp1:4001 (2ms, 迁移后)
        └─ SSL: /etc/letsencrypt/live/www.vectorcontrol.tech/ (certbot + nginx)
 
-gz (Alibaba Cloud)
-  ├─ metapi Docker (--network host, port 4001) = OpenAI 兼容 API 网关
-  ├─ CPA v6.8.51 (binary, port 8317) = API 密钥管理 + 路由配置
-  └─ nginx 443 → /playground/ proxy to metapi
+sgp1 (DigitalOcean Singapore) [迁移后的 API 后端]
+  ├─ metapi Docker (port 4001) = OpenAI 兼容 API 网关
+  ├─ CPA Docker (port 8317) = API 密钥管理（直连 OpenAI，无需 SOCKS）
+  ├─ OpenClaw (447MB Node.js) = API 网关
+  └─ VectorControl Docker (nginx+backend+postgres on 443)
 
-sgp3 (Azure Singapore, 原名"hk") [备用]
-  └─ 已初始化, Tailscale + UFW + fail2ban, 待分配 API 后端角色
+gz (Alibaba Cloud) [当前 API 后端，迁移后变为监控+备份]
+  ├─ metapi Docker (--network host, port 4001) ← 将迁走
+  ├─ CPA v6.8.51 (binary, port 8317) ← 将迁走
+  └─ cron 监控脚本 (measure-snapshot.py, token-stats.py)
 
-Tailscale 组网: gz ↔ sgp1 ↔ sgp2 ↔ sgp3 ↔ doris ↔ 本机
+hk (Azure East Asia) [正迁移，未来中国边缘入口]
+  └─ nginx → proxy sgp1:4001 (中国用户 ~20ms → HK → ~35ms → SGP1)
+
+Tailscale 组网: gz ↔ sgp1 ↔ sgp2 ↔ hk ↔ doris ↔ 本机
 ```
 
 ### 关键事实

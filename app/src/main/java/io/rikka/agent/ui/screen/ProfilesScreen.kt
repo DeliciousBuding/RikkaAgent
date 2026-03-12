@@ -49,11 +49,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.rikka.agent.model.AuthType
 import io.rikka.agent.model.SshProfile
-import io.rikka.agent.ui.R
+import io.rikka.agent.R
 import io.rikka.agent.vm.ProfilesViewModel
 import org.koin.androidx.compose.koinViewModel
 
@@ -72,10 +73,10 @@ fun ProfilesScreen(
     modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
     topBar = {
       LargeTopAppBar(
-        title = { Text("Rikka Agent") },
+        title = { Text(stringResource(R.string.app_name)) },
         actions = {
           IconButton(onClick = onOpenSettings) {
-            Icon(Icons.Default.Settings, contentDescription = "Settings")
+            Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.settings))
           }
         },
         scrollBehavior = scrollBehavior,
@@ -83,7 +84,7 @@ fun ProfilesScreen(
     },
     floatingActionButton = {
       FloatingActionButton(onClick = { onEditProfile(null) }) {
-        Icon(Icons.Default.Add, contentDescription = "New profile")
+        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.new_profile))
       }
     },
   ) { innerPadding ->
@@ -120,7 +121,7 @@ fun ProfilesScreen(
               ) {
                 Icon(
                   Icons.Default.Delete,
-                  contentDescription = "Delete",
+                  contentDescription = stringResource(R.string.delete),
                   tint = MaterialTheme.colorScheme.error,
                 )
               }
@@ -221,11 +222,11 @@ private fun ProfileCard(
       onDismissRequest = { showMenu = false },
     ) {
       DropdownMenuItem(
-        text = { Text("Edit") },
+        text = { Text(stringResource(R.string.edit)) },
         onClick = { showMenu = false; onEdit() },
       )
       DropdownMenuItem(
-        text = { Text("Duplicate") },
+        text = { Text(stringResource(R.string.duplicate)) },
         onClick = { showMenu = false; onDuplicate() },
       )
     }
@@ -243,13 +244,13 @@ private fun EmptyState(
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
     Text(
-      text = "No SSH profiles yet",
+      text = stringResource(R.string.no_profiles_title),
       style = MaterialTheme.typography.titleMedium,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Spacer(modifier = Modifier.height(8.dp))
     Text(
-      text = "Tap + to add your first server",
+      text = stringResource(R.string.no_profiles_subtitle),
       style = MaterialTheme.typography.bodyMedium,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )

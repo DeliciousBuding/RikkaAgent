@@ -45,6 +45,7 @@ import io.rikka.agent.model.ChatMessage
 import io.rikka.agent.model.ChatRole
 import io.rikka.agent.model.MessageStatus
 import io.rikka.agent.ui.R
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -221,7 +222,7 @@ private fun CopyButton(content: String) {
     } else {
       Icon(
         painter = painterResource(id = R.drawable.ic_copy),
-        contentDescription = "Copy",
+        contentDescription = stringResource(R.string.cd_copy),
         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
         modifier = Modifier.size(14.dp),
       )
@@ -241,7 +242,7 @@ private fun RerunButton(command: String, onRerun: (String) -> Unit) {
   ) {
     Icon(
       painter = painterResource(id = R.drawable.ic_replay),
-      contentDescription = "Re-run",
+      contentDescription = stringResource(R.string.cd_rerun),
       tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
       modifier = Modifier.size(14.dp),
     )
@@ -256,20 +257,21 @@ private fun ShareButton(content: String, onShare: (String) -> Unit) {
   ) {
     Icon(
       painter = painterResource(id = R.drawable.ic_share),
-      contentDescription = "Share",
+      contentDescription = stringResource(R.string.cd_share),
       tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
       modifier = Modifier.size(14.dp),
     )
   }
 }
 
+@Composable
 private fun formatTimestamp(timestampMs: Long): String {
   val now = System.currentTimeMillis()
   val diff = now - timestampMs
   return when {
-    diff < TimeUnit.MINUTES.toMillis(1) -> "just now"
-    diff < TimeUnit.HOURS.toMillis(1) -> "${TimeUnit.MILLISECONDS.toMinutes(diff)}m ago"
-    diff < TimeUnit.DAYS.toMillis(1) -> "${TimeUnit.MILLISECONDS.toHours(diff)}h ago"
+    diff < TimeUnit.MINUTES.toMillis(1) -> stringResource(R.string.time_just_now)
+    diff < TimeUnit.HOURS.toMillis(1) -> stringResource(R.string.time_minutes_ago, TimeUnit.MILLISECONDS.toMinutes(diff).toInt())
+    diff < TimeUnit.DAYS.toMillis(1) -> stringResource(R.string.time_hours_ago, TimeUnit.MILLISECONDS.toHours(diff).toInt())
     else -> SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()).format(Date(timestampMs))
   }
 }

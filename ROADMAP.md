@@ -23,6 +23,7 @@
 | M3 SSH 引擎 | ✅ 主要完成 | sshj exec + 认证 + host key + 会话管理 + 密钥生成 + 加密存储 |
 | M4 Codex 接入 | 🔶 50% | profile 开关 + exec 包装 + Markdown 渲染；JSONL 待做 |
 | M5 开源发布 | ⬜ 未开始 | CI workflow 已有 |
+| i18n 中英双语 | ✅ 完成 | 全面国际化：120+ 字符串资源，中文优先，覆盖全部 UI 屏幕 + ViewModel |
 
 ---
 
@@ -63,19 +64,21 @@
 
 ### 服务重编排计划（进行中）
 
-> 详细方案: `C:\Users\Ding\docs\service-reshuffle-plan.md`
+> 详细方案: `docs/network.md` (v4)
 
-**目标：** gz ↔ sgp1 服务互换 + Docker 统一管理
+**目标：** metapi+CPA → sgp1 (Docker) + 真 HK 作中国边缘入口
 
 | 步骤 | 内容 | 状态 |
 |------|------|------|
-| 1 | metapi + CPA → sgp1（全新 Docker image，保留 hub.db 统计+key） | ⬜ |
-| 2 | OpenClaw → gz | ⬜ |
-| 3 | sgp2 upstream 从 gz 改为 sgp1 | ⬜ |
-| 4 | Docker 化 CPA + OpenClaw | ⬜ |
-| 5 | 每台服务器 docker-compose.yml 声明式管理 | ⬜ |
+| 1 | CPA Docker 化 (Dockerfile + 去 SOCKS proxy) | ⬜ |
+| 2 | 数据备份 (hub.db + CPA config 从 gz 导出) | ⬜ |
+| 3 | metapi + CPA Docker 部署到 sgp1 | ⬜ |
+| 4 | sgp2 nginx upstream 从 gz → sgp1 切流 | ⬜ |
+| 5 | 端到端验证 + gz 旧服务停止 | ⬜ |
+| 6 | 真 HK 就绪后: 初始化 + nginx 中国入口 | ⬜ (等待迁移) |
+| 7 | OpenClaw Docker 化 (sgp1) | ⬜ |
 
-**预期收益：** API 延迟 87ms → 2ms (-97%)
+**预期收益：** 国际 API 延迟 350ms → 2ms (-99.4%)，中国 ~370ms → ~55ms (-85%)
 
 ### 关注项
 

@@ -1,7 +1,9 @@
 package io.rikka.agent.vm
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.rikka.agent.R
 import io.rikka.agent.model.ChatMessage
 import io.rikka.agent.model.ChatRole
 import io.rikka.agent.model.ChatThread
@@ -45,6 +47,7 @@ class ChatViewModel(
   private val chatRepository: ChatRepository,
   private val appPreferences: AppPreferences,
   private val keyContentProvider: KeyContentProvider? = null,
+  private val app: Application,
 ) : ViewModel() {
 
   private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
@@ -112,10 +115,10 @@ class ChatViewModel(
         currentProfile = profile
         _profileLabel.value = profile.name.ifBlank { "${profile.username}@${profile.host}" }
         _connectionState.value = ConnectionState.READY
-        appendSystemMessage("Ready. Profile: ${profile.name} (${profile.username}@${profile.host})")
+        appendSystemMessage(app.getString(R.string.msg_profile_ready, profile.name, profile.username, profile.host))
       } else {
         _connectionState.value = ConnectionState.ERROR
-        appendSystemMessage("Error: Profile not found.")
+        appendSystemMessage(app.getString(R.string.msg_profile_not_found))
       }
     }
   }
@@ -139,7 +142,7 @@ class ChatViewModel(
     _messages.value = emptyList()
     _connectionState.value = if (currentProfile != null) ConnectionState.READY else ConnectionState.ERROR
     val profile = currentProfile ?: return
-    appendSystemMessage("New session. Profile: ${profile.name} (${profile.username}@${profile.host})")
+    appendSystemMessage(app.getString(R.string.msg_new_session, profile.name, profile.username, profile.host))
   }
 
   /** Switch to an existing thread and load its messages. */
@@ -168,7 +171,7 @@ class ChatViewModel(
     if (command.isEmpty()) return
 
     val profile = currentProfile ?: run {
-      appendSystemMessage("Not connected. No profile loaded.")
+      appendSystemMessage(app.getString(R.string.msg_not_connected))
       return
     }
 
@@ -302,26 +305,27 @@ class ChatViewModel(
     }
     if (stderr.isNotEmpty()) {
       if (isNotEmpty()) append("\n")
-      append("[stderr]\n")
+      append(app.getString(R.string.label_stderr))
+      append("\n")
       append(stderr)
       if (!stderr.endsWith("\n")) append("\n")
     }
     if (exitCode != null) {
       if (stdout.isEmpty() && stderr.isEmpty()) {
-        append(if (exitCode == 0) "(no output)" else "(no output, failed)")
+        append(if (exitCode == 0) app.getString(R.string.msg_no_output) else app.getString(R.string.msg_no_output_failed))
         append("\n")
       }
       if (isNotEmpty()) append("\n")
-      append("exit: $exitCode")
+      append(app.getString(R.string.msg_exit_code, exitCode))
     }
   }
 
   private fun friendlyErrorMessage(category: String, raw: String): String = when (category) {
-    "connection_refused" -> "Connection refused — is the SSH server running on the target host?"
-    "timeout" -> "Connection timed out — check the host address and network connectivity."
-    "unknown_host" -> "Host not found — verify the hostname or IP address."
-    "auth_failed" -> "Authentication failed — check your credentials or key file."
-    else -> "SSH error: $raw"
+    "connection_refused" -> app.getString(R.string.err_connection_refused)
+    "timeout" -> app.getString(R.string.err_timeout)
+    "unknown_host" -> app.getString(R.string.err_unknown_host)
+    "auth_failed" -> app.getString(R.string.err_auth_failed)
+    else -> app.getString(R.string.err_ssh_generic, raw)
   }
 
   private fun updateAssistantContent(id: String, content: String) {
