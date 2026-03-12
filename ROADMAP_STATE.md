@@ -56,11 +56,15 @@
 - ✅ AMOLED 纯黑主题模式（0x000000 背景, ThemeMode.Amoled）
 - ✅ 主题实时切换（MainActivity 观察 AppPreferences.theme → ThemeMode 映射）
 - ✅ Room DB v1→v2 迁移（fallbackToDestructiveMigration）
+- ✅ SSH 连接复用（SshjExecRunner 内部缓存, reuseConnections 标志）
+- ✅ 会话管理侧边栏（ModalNavigationDrawer: 线程列表, 新建/切换/删除）
+- ✅ 聊天历史加载/恢复（switchThread 从 Room 加载）
+- ✅ 线程自动标题（首条用户命令前 50 字符）
+- ✅ CodeCard 组件（可折叠代码输出, 复制按钮, 语言标签, 水平滚动）
+- ✅ ChatBubble 重构（助手消息改用 CodeCard 渲染, 用户消息保持气泡样式）
 
 **待完成：**
 - 私钥文件选择器（keyRef 路径管理）
-- SSH 连接复用（当前每次命令创建新连接）
-- 聊天历史加载（恢复已保存的历史记录到 UI）
 
 ## VectorControl Portal (原 Gateway Portal) 基础设施
 
