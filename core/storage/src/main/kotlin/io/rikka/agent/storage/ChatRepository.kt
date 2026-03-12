@@ -18,6 +18,7 @@ interface ChatRepository {
   suspend fun updateMessage(id: String, content: String, status: MessageStatus)
   fun observeMessages(threadId: String): Flow<List<ChatMessage>>
   suspend fun getMessages(threadId: String): List<ChatMessage>
+  suspend fun updateThreadTitle(threadId: String, title: String)
 }
 
 class RoomChatRepository(private val dao: ChatMessageDao) : ChatRepository {
@@ -71,6 +72,10 @@ class RoomChatRepository(private val dao: ChatMessageDao) : ChatRepository {
 
   override suspend fun getMessages(threadId: String): List<ChatMessage> =
     dao.getMessages(threadId).map { it.toModel() }
+
+  override suspend fun updateThreadTitle(threadId: String, title: String) {
+    dao.updateThread(threadId, title, System.currentTimeMillis())
+  }
 
   private fun ChatMessageEntity.toModel() = ChatMessage(
     id = id,

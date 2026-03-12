@@ -4,10 +4,12 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,27 +17,36 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -49,6 +60,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.rikka.agent.model.MessageStatus
 import io.rikka.agent.vm.ChatViewModel
@@ -69,8 +81,10 @@ fun ChatScreen(
   val vm: ChatViewModel = koinViewModel { parametersOf(profileId) }
   val messages by vm.messages.collectAsState()
   val connectionState by vm.connectionState.collectAsState()
+  val threads by vm.threads.collectAsState()
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
+  val drawerState = rememberDrawerState(DrawerValue.Closed)
 
   // Host key verification dialog state
   var hostKeyEvent by remember { mutableStateOf<HostKeyEvent?>(null) }
@@ -136,6 +150,23 @@ fun ChatScreen(
     }
   }
 
+  ModalNavigationDrawer(
+    drawerState = drawerState,
+    drawerContent = {
+      SessionDrawerContent(
+        threads = threads,
+        onNewSession = {
+          vm.newSession()
+          scope.launch { drawerState.close() }
+        },
+        onSelectThread = { threadId ->
+          vm.switchThread(threadId)
+          scope.launch { drawerState.close() }
+        },
+        onDeleteThread = { threadId -> vm.deleteThread(threadId) },
+      )
+    },
+  ) {
   Scaffold(
     topBar = {
       TopAppBar(
@@ -146,11 +177,8 @@ fun ChatScreen(
           )
         },
         navigationIcon = {
-          IconButton(onClick = onBack) {
-            Icon(
-              imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-              contentDescription = "Back",
-            )
+          IconButton(onClick = { scope.launch { drawerState.open() } }) {
+            Icon(Icons.Default.Menu, contentDescription = "Sessions")
           }
         },
         actions = {
@@ -164,7 +192,14 @@ fun ChatScreen(
                 )
               }
             }
-            else -> {}
+            else -> {
+              IconButton(onClick = onBack) {
+                Icon(
+                  Icons.AutoMirrored.Filled.ArrowBack,
+                  contentDescription = "Back",
+                )
+              }
+            }
           }
         },
         colors = TopAppBarDefaults.topAppBarColors(
@@ -237,6 +272,75 @@ fun ChatScreen(
       // Input bar at bottom
       Box(modifier = Modifier.align(Alignment.BottomCenter)) {
         ChatInput(onSend = { text -> vm.send(text) })
+      }
+    }
+  }
+  } // ModalNavigationDrawer
+}
+
+@Composable
+private fun SessionDrawerContent(
+  threads: List<io.rikka.agent.model.ChatThread>,
+  onNewSession: () -> Unit,
+  onSelectThread: (String) -> Unit,
+  onDeleteThread: (String) -> Unit,
+) {
+  ModalDrawerSheet(modifier = Modifier.width(280.dp)) {
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp, vertical = 12.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Text(
+        text = "Sessions",
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.weight(1f),
+      )
+      IconButton(onClick = onNewSession) {
+        Icon(Icons.Default.Add, contentDescription = "New session")
+      }
+    }
+    if (threads.isEmpty()) {
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(32.dp),
+        contentAlignment = Alignment.Center,
+      ) {
+        Text(
+          text = "No past sessions",
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+        )
+      }
+    } else {
+      LazyColumn {
+        items(threads, key = { it.id }) { thread ->
+          ListItem(
+            headlineContent = {
+              Text(
+                text = thread.title.ifBlank { "Session" },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+              )
+            },
+            trailingContent = {
+              IconButton(
+                onClick = { onDeleteThread(thread.id) },
+                modifier = Modifier.size(32.dp),
+              ) {
+                Icon(
+                  Icons.Default.Delete,
+                  contentDescription = "Delete",
+                  modifier = Modifier.size(16.dp),
+                  tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                )
+              }
+            },
+            modifier = Modifier.clickable { onSelectThread(thread.id) },
+          )
+        }
       }
     }
   }
