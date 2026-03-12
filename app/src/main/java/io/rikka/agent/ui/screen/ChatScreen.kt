@@ -68,6 +68,7 @@ import io.rikka.agent.vm.ConnectionState
 import io.rikka.agent.vm.HostKeyEvent
 import io.rikka.agent.ui.components.ChatBubble
 import io.rikka.agent.ui.components.ChatInput
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -86,6 +87,18 @@ fun ChatScreen(
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
   val drawerState = rememberDrawerState(DrawerValue.Closed)
+
+  // Elapsed timer for running commands
+  var elapsedSeconds by remember { mutableStateOf(0) }
+  LaunchedEffect(connectionState) {
+    if (connectionState == ConnectionState.EXECUTING) {
+      elapsedSeconds = 0
+      while (true) {
+        delay(1000)
+        elapsedSeconds++
+      }
+    }
+  }
 
   // Host key verification dialog state
   var hostKeyEvent by remember { mutableStateOf<HostKeyEvent?>(null) }
@@ -208,7 +221,7 @@ fun ChatScreen(
             val statusText = when (connectionState) {
               ConnectionState.IDLE -> "Connecting…"
               ConnectionState.READY -> "Ready"
-              ConnectionState.EXECUTING -> "Running…"
+              ConnectionState.EXECUTING -> "Running… ${elapsedSeconds}s"
               ConnectionState.ERROR -> "Error"
             }
             val statusColor = when (connectionState) {
@@ -270,7 +283,10 @@ fun ChatScreen(
         }
 
         if (messages.isEmpty()) {
-          EmptySessionState(modifier = Modifier.weight(1f).fillMaxWidth())
+          EmptySessionState(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            onSuggestionClick = { vm.send(it) },
+          )
         } else {
           LazyColumn(
             state = listState,
@@ -450,10 +466,14 @@ private fun HostKeyDialog(
 }
 
 @Composable
-private fun EmptySessionState(modifier: Modifier = Modifier) {
-  Box(
+private fun EmptySessionState(
+  modifier: Modifier = Modifier,
+  onSuggestionClick: (String) -> Unit = {},
+) {
+  Column(
     modifier = modifier,
-    contentAlignment = Alignment.Center,
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.Center,
   ) {
     Text(
       text = "Type a command to run on the server",
@@ -461,6 +481,24 @@ private fun EmptySessionState(modifier: Modifier = Modifier) {
       color = MaterialTheme.colorScheme.onSurfaceVariant,
       modifier = Modifier.alpha(0.6f),
     )
+    Spacer(modifier = Modifier.height(16.dp))
+    Row(
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+      listOf("uname -a", "df -h", "uptime").forEach { cmd ->
+        androidx.compose.material3.SuggestionChip(
+          onClick = { onSuggestionClick(cmd) },
+          label = {
+            Text(
+              text = cmd,
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+              ),
+            )
+          },
+        )
+      }
+    }
   }
 }
 

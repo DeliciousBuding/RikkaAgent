@@ -287,6 +287,10 @@ class ChatViewModel(
       if (!stderr.endsWith("\n")) append("\n")
     }
     if (exitCode != null) {
+      if (stdout.isEmpty() && stderr.isEmpty()) {
+        append(if (exitCode == 0) "(no output)" else "(no output, failed)")
+        append("\n")
+      }
       if (isNotEmpty()) append("\n")
       append("exit: $exitCode")
     }
