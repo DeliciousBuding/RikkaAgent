@@ -150,6 +150,30 @@ gz (Alibaba Cloud, 8.163.12.208 / Tailscale 100.96.101.24)
 - ✅ 前端从 API 拉取实时数据，加载骨架屏 + 自刷新倒计时
 - ✅ 基础设施加固审计 prompt 已保存 (docs/infra-audit-prompt.md)
 
+### 基础设施深度审计（2026-06-10）
+
+**已修复：**
+- ✅ metapi 503 大规模故障：`token_routes` 和 `route_channels` 表清空（Docker 重建副作用）→ 从备份恢复 17 routes + 17 channels，重新激活账户，gpt-5.4 completion 验证通过
+- ✅ 前端 XSS 加固：`renderSnapshot()` 中 6 处 innerHTML（summaryTags / snapshotGrid / topology / hopGrid / branchGrid / renderMetricList）未调用 `escapeHtml()` → 全部修复并部署 (commit `1ce4f92`)
+- ✅ sgp1 rp_filter 从 loose (2) 修复为 strict (1)：`/etc/sysctl.d/99-rp-filter.conf`
+
+**审计确认（安全状态良好）：**
+- ✅ gz: fail2ban active, unattended-upgrades, kernel 6.8.0-63, Docker restart=unless-stopped, CPA restart=always
+- ✅ gz: 8317/8443 端口公网不可达（UFW default deny + ISP 阻断）
+- ✅ gz: SSH 有效配置安全（99-delicious-hardening.conf 覆盖：PermitRootLogin no, PasswordAuthentication no）
+- ✅ sgp2: fail2ban active, unattended-upgrades, UFW policy DROP, kernel 6.14.0-1017-azure
+- ✅ sgp2: certbot.timer active, SSL 到期 2026-06-10
+- ✅ sgp2: 仅开放 22/80/443 + Tailscale SOCKS (1080 限定 IP)
+
+**关注项（低风险）：**
+- ⚠️ sgp1: 内存压力 (1.0G/1.9G + 297M swap, disk 55%)
+- ⚠️ sgp2: 内存 469M/847M + 69M swap
+- ⚠️ sgp1: Docker HTTPS (443) 上的 VectorControl 部署无独立 Let's Encrypt（cert 可能在容器内）
+
+**端到端验证（2026-06-10）：**
+- Portal: 200 ✅ | API Snapshot: 200 ✅ | API Tokens: 200 ✅ | v1/models: 401 ✅ (需认证)
+- gpt-5.4 completion (公网 → sgp2 → gz → metapi → OpenAI): "OK" ✅
+
 ### 性能指标（2026-03-12 最新）
 
 | 资源 | 原始 | gzip | TTFB |
