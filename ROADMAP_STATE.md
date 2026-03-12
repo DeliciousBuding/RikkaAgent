@@ -87,12 +87,17 @@
 
 - ✅ Android SSH 认证修复：PublicKey 无密钥时降级密码认证（不再尝试不存在的 ~/.ssh/）
 - ✅ 剪贴板粘贴私钥：internal-key:// scheme, 保存到 app 私有 filesDir/ssh_keys/
-- ✅ ProfileEditorScreen 密钥操作："Select File" + "Paste Key" 双按钮布局, 删除按钮
+- ✅ ProfileEditorScreen 密钥操作："Select File" + "Paste Key" + "Generate Ed25519 Key Pair" 三按钮布局
 - ✅ Koin 双注册（ContentUriKeyContentProvider 同时作为具体类型和 KeyContentProvider 接口）
+- ✅ 应用内 Ed25519 密钥对生成（SshKeyGenerator + BouncyCastle, PKCS8 PEM 私钥 + OpenSSH 公钥格式）
+- ✅ 公钥展示卡片 + 一键复制（用于添加到服务器 authorized_keys）
+- ✅ 友好 SSH 错误提示（connection_refused/timeout/unknown_host/auth_failed → 用户可操作描述）
+- ✅ 连接测试按钮（TCP 可达性检查 + SSH banner 显示, 超时 5s）
+- ✅ Profile 自动命名（空名称时 → username@host:port）
+- ✅ 粘贴密钥 Snackbar 反馈（成功/空剪贴板/格式无效）
 
 **待完成：**
-- 更多密钥格式支持（PKCS8, PuTTY）
-- SSH 密钥对应用内生成
+- 更多密钥格式支持（PuTTY .ppk）
 
 ## VectorControl Portal (原 Gateway Portal) 基础设施
 
