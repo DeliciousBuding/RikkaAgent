@@ -352,6 +352,25 @@ private fun SessionDrawerContent(
   onSelectThread: (String) -> Unit,
   onDeleteThread: (String) -> Unit,
 ) {
+  var confirmDeleteId by remember { mutableStateOf<String?>(null) }
+
+  confirmDeleteId?.let { id ->
+    val thread = threads.find { it.id == id }
+    AlertDialog(
+      onDismissRequest = { confirmDeleteId = null },
+      title = { Text("Delete session?") },
+      text = { Text("Delete \"${thread?.title?.ifBlank { "Session" } ?: "Session"}\"? This cannot be undone.") },
+      confirmButton = {
+        TextButton(onClick = { onDeleteThread(id); confirmDeleteId = null }) {
+          Text("Delete", color = MaterialTheme.colorScheme.error)
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = { confirmDeleteId = null }) { Text("Cancel") }
+      },
+    )
+  }
+
   ModalDrawerSheet(modifier = Modifier.width(280.dp)) {
     Row(
       modifier = Modifier
@@ -394,7 +413,7 @@ private fun SessionDrawerContent(
             },
             trailingContent = {
               IconButton(
-                onClick = { onDeleteThread(thread.id) },
+                onClick = { confirmDeleteId = thread.id },
                 modifier = Modifier.size(32.dp),
               ) {
                 Icon(

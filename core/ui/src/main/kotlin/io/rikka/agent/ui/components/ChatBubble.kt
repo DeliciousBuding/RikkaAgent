@@ -34,7 +34,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
@@ -179,12 +181,14 @@ private fun StreamingDots() {
 @Composable
 private fun CopyButton(content: String) {
   val clipboardManager = LocalClipboardManager.current
+  val haptic = LocalHapticFeedback.current
   val scope = rememberCoroutineScope()
   var copied by remember { mutableStateOf(false) }
 
   IconButton(
     onClick = {
       clipboardManager.setText(AnnotatedString(content))
+      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
       copied = true
       scope.launch {
         delay(1500)

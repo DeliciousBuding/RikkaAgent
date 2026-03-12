@@ -21,6 +21,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -36,6 +38,15 @@ fun ChatInput(
 ) {
   var text by remember { mutableStateOf("") }
   val shape = RoundedCornerShape(24.dp)
+  val haptic = LocalHapticFeedback.current
+
+  fun doSend() {
+    if (text.isNotBlank()) {
+      haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+      onSend(text.trim())
+      text = ""
+    }
+  }
 
   Row(
     modifier = modifier
@@ -75,23 +86,13 @@ fun ChatInput(
         maxLines = 5,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
         keyboardActions = KeyboardActions(
-          onSend = {
-            if (text.isNotBlank()) {
-              onSend(text.trim())
-              text = ""
-            }
-          }
+          onSend = { doSend() }
         ),
       )
     }
 
     IconButton(
-      onClick = {
-        if (text.isNotBlank()) {
-          onSend(text.trim())
-          text = ""
-        }
-      },
+      onClick = { doSend() },
       modifier = Modifier.padding(start = 8.dp),
     ) {
       Icon(
