@@ -37,6 +37,7 @@ import org.koin.androidx.compose.koinViewModel
 fun SettingsScreen(
   onBack: () -> Unit,
   onOpenKnownHosts: () -> Unit = {},
+  onOpenAbout: () -> Unit = {},
 ) {
   val vm: SettingsViewModel = koinViewModel()
   val theme by vm.theme.collectAsState()
@@ -101,12 +102,12 @@ fun SettingsScreen(
       SettingsItem(
         title = "Version",
         subtitle = BuildConfig.VERSION_NAME,
-        onClick = {},
+        onClick = onOpenAbout,
       )
       SettingsItem(
         title = "License",
         subtitle = "Apache License 2.0",
-        onClick = { /* TODO: show license text */ },
+        onClick = onOpenAbout,
       )
     }
   }

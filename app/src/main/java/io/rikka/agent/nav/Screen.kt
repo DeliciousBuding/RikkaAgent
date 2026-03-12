@@ -18,4 +18,7 @@ sealed interface Screen {
 
   @Serializable
   data object KnownHosts : Screen
+
+  @Serializable
+  data object About : Screen
 }
