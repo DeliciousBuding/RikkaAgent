@@ -33,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -46,14 +47,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.rikka.agent.model.AuthType
+import io.rikka.agent.ssh.ContentUriKeyContentProvider
 import io.rikka.agent.vm.ProfileEditorViewModel
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,10 +68,12 @@ fun ProfileEditorScreen(
   onSaved: () -> Unit,
 ) {
   val vm: ProfileEditorViewModel = koinViewModel { parametersOf(profileId) }
+  val keyProvider: ContentUriKeyContentProvider = koinInject()
   val form by vm.form.collectAsState()
   val saved by vm.saved.collectAsState()
   var attempted by remember { mutableStateOf(false) }
   val context = LocalContext.current
+  val clipboardManager = LocalClipboardManager.current
 
   // SAF file picker for private key
   val keyPickerLauncher = rememberLauncherForActivityResult(
@@ -203,38 +209,60 @@ fun ProfileEditorScreen(
 
           // Private key file selector (visible when PublicKey auth)
           if (form.authType == AuthType.PublicKey) {
-            Row(
+            Column(
               modifier = Modifier.fillMaxWidth(),
-              verticalAlignment = Alignment.CenterVertically,
-              horizontalArrangement = Arrangement.spacedBy(8.dp),
+              verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-              FilledTonalButton(
-                onClick = { keyPickerLauncher.launch(arrayOf("*/*")) },
+              Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
               ) {
-                Text("Select Key File")
+                FilledTonalButton(
+                  onClick = { keyPickerLauncher.launch(arrayOf("*/*")) },
+                ) {
+                  Text("Select File")
+                }
+                OutlinedButton(
+                  onClick = {
+                    val clip = clipboardManager.getText()?.text ?: ""
+                    if (clip.contains("PRIVATE KEY") || clip.startsWith("-----BEGIN")) {
+                      val ref = keyProvider.savePastedKey(clip)
+                      vm.updateForm(form.copy(keyRef = ref))
+                    }
+                  },
+                ) {
+                  Text("Paste Key")
+                }
               }
               if (form.keyRef != null) {
-                Text(
-                  text = extractDisplayName(form.keyRef!!),
-                  style = MaterialTheme.typography.bodySmall,
-                  color = MaterialTheme.colorScheme.onSurfaceVariant,
-                  maxLines = 1,
-                  overflow = TextOverflow.Ellipsis,
-                  modifier = Modifier.weight(1f),
-                )
-                IconButton(
-                  onClick = { vm.updateForm(form.copy(keyRef = null)) },
-                  modifier = Modifier.size(24.dp),
+                Row(
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                  Icon(
-                    Icons.Default.Close,
-                    contentDescription = "Remove key",
-                    modifier = Modifier.size(16.dp),
+                  Text(
+                    text = extractKeyDisplayName(form.keyRef!!),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
                   )
+                  IconButton(
+                    onClick = {
+                      keyProvider.deleteKey(form.keyRef!!)
+                      vm.updateForm(form.copy(keyRef = null))
+                    },
+                    modifier = Modifier.size(24.dp),
+                  ) {
+                    Icon(
+                      Icons.Default.Close,
+                      contentDescription = "Remove key",
+                      modifier = Modifier.size(16.dp),
+                    )
+                  }
                 }
               } else {
                 Text(
-                  text = "No key selected (will try defaults)",
+                  text = "No key selected (will prompt for password)",
                   style = MaterialTheme.typography.bodySmall,
                   color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 )
@@ -298,8 +326,9 @@ private fun AuthTypeDropdown(
   }
 }
 
-/** Extract a readable display name from a content URI string. */
-private fun extractDisplayName(uriString: String): String {
+/** Extract a readable display name from a key URI string (content:// or internal-key://). */
+private fun extractKeyDisplayName(uriString: String): String {
+  if (uriString.startsWith("internal-key://")) return "Pasted key"
   val uri = Uri.parse(uriString)
   val lastSegment = uri.lastPathSegment ?: return uriString
   // SAF URIs often have "primary:path/to/file" format

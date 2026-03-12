@@ -248,8 +248,13 @@ class SshjExecRunner(
           keyFile.init(StringReader(keyContent), null, pwFinder)
           client.authPublickey(profile.username, listOf(keyFile))
         } else {
-          // Try default key locations (~/.ssh/id_rsa, etc.)
-          client.authPublickey(profile.username)
+          // No key file selected — Android has no ~/.ssh/, so fall back to password
+          val password = passwordProvider?.getPassword(profile)
+            ?: throw IllegalStateException(
+              "No private key selected. Please select a key file in profile settings " +
+                "or switch to password authentication."
+            )
+          client.authPassword(profile.username, password)
         }
       }
       AuthType.Password -> {
