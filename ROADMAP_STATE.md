@@ -26,7 +26,7 @@
 | 屏幕 | 文件 | 状态 |
 |------|------|------|
 | ProfilesScreen | `app/.../ui/screen/ProfilesScreen.kt` | ✅ 完成（LargeTopAppBar, 滑动删除, 空状态, FAB, 字母头像, 认证类型标签, 长按菜单, 配置复制） |
-| ProfileEditorScreen | `app/.../ui/screen/ProfileEditorScreen.kt` | ✅ 完成（Card 分组, 端口校验 1-65535, SectionLabel, 私钥文件选择器 SAF, IME padding） |
+| ProfileEditorScreen | `app/.../ui/screen/ProfileEditorScreen.kt` | ✅ 完成（Card 分组, 端口校验 1-65535, SectionLabel, 私钥文件选择器 SAF, 剪贴板粘贴密钥, internal-key://, IME padding） |
 | ChatScreen | `app/.../ui/screen/ChatScreen.kt` | ✅ 完成（会话侧边栏, 连接状态条, 执行计时器, Host Key 对话框, 密码弹窗, 命令建议芯片, 删除确认） |
 | SettingsScreen | `app/.../ui/screen/SettingsScreen.kt` | ✅ 完成（主题选择器含 AMOLED, Shell 选择器, Known Hosts 导航, About 导航） |
 | KnownHostsScreen | `app/.../ui/screen/KnownHostsScreen.kt` | ✅ 完成（已信任主机列表, 指纹/类型/日期显示, 单条删除确认, 空状态） |
@@ -85,8 +85,14 @@
 - ✅ About 页面（应用信息 + OSS 依赖列表 + 许可证）
 - ✅ 导航路由: 7 screens (Profiles, ProfileEditor, Session, Settings, KnownHosts, About)
 
+- ✅ Android SSH 认证修复：PublicKey 无密钥时降级密码认证（不再尝试不存在的 ~/.ssh/）
+- ✅ 剪贴板粘贴私钥：internal-key:// scheme, 保存到 app 私有 filesDir/ssh_keys/
+- ✅ ProfileEditorScreen 密钥操作："Select File" + "Paste Key" 双按钮布局, 删除按钮
+- ✅ Koin 双注册（ContentUriKeyContentProvider 同时作为具体类型和 KeyContentProvider 接口）
+
 **待完成：**
 - 更多密钥格式支持（PKCS8, PuTTY）
+- SSH 密钥对应用内生成
 
 ## VectorControl Portal (原 Gateway Portal) 基础设施
 
