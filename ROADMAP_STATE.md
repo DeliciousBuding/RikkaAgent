@@ -95,6 +95,9 @@
 - ✅ 连接测试按钮（TCP 可达性检查 + SSH banner 显示, 超时 5s）
 - ✅ Profile 自动命名（空名称时 → username@host:port）
 - ✅ 粘贴密钥 Snackbar 反馈（成功/空剪贴板/格式无效）
+- ✅ 命令重执行按钮（用户消息 ↻ 图标, 一键重跑同一命令）
+- ✅ 分享输出按钮（助手消息 ↗ 图标, Android ACTION_SEND）
+- ✅ 会话导出/分享（TopAppBar 分享图标, 输出 "$ cmd\noutput" 文本格式）
 
 **待完成：**
 - 更多密钥格式支持（PuTTY .ppk）
