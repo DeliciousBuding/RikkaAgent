@@ -38,5 +38,6 @@ val appModule = module {
 
   // SSH
   single<KnownHostsStore> { DataStoreKnownHostsStore(androidContext()) }
-  single<KeyContentProvider> { ContentUriKeyContentProvider(androidContext()) }
+  single { ContentUriKeyContentProvider(androidContext()) }
+  single<KeyContentProvider> { get<ContentUriKeyContentProvider>() }
 }
