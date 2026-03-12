@@ -25,7 +25,7 @@ class RoomProfileStore(
   fun observeProfiles(): Flow<List<SshProfile>> =
     dao.observeAll().map { list -> list.map { it.toModel() } }
 
-  suspend fun getById(id: String): SshProfile? =
+  override suspend fun getById(id: String): SshProfile? =
     dao.getById(id)?.toModel()
 
   override suspend fun upsert(profile: SshProfile) {
