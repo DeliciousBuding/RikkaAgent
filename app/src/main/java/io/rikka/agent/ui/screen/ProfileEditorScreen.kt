@@ -59,6 +59,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.rikka.agent.model.AuthType
 import io.rikka.agent.ssh.ContentUriKeyContentProvider
+import io.rikka.agent.ssh.SshKeyGenerator
 import io.rikka.agent.vm.ProfileEditorViewModel
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -81,6 +82,7 @@ fun ProfileEditorScreen(
   val clipboardManager = LocalClipboardManager.current
   val snackbarHostState = remember { SnackbarHostState() }
   val scope = rememberCoroutineScope()
+  var generatedPubKey by remember { mutableStateOf<String?>(null) }
 
   // SAF file picker for private key
   val keyPickerLauncher = rememberLauncherForActivityResult(
@@ -279,6 +281,57 @@ fun ProfileEditorScreen(
                   Text("Paste Key")
                 }
               }
+              OutlinedButton(
+                onClick = {
+                  scope.launch {
+                    try {
+                      val kp = SshKeyGenerator.generateEd25519()
+                      val ref = keyProvider.savePastedKey(kp.privateKeyPem)
+                      vm.updateForm(form.copy(keyRef = ref))
+                      generatedPubKey = kp.publicKeyLine
+                      snackbarHostState.showSnackbar("Ed25519 key pair generated")
+                    } catch (e: Exception) {
+                      snackbarHostState.showSnackbar("Key generation failed: ${e.message}")
+                    }
+                  }
+                },
+                modifier = Modifier.fillMaxWidth(),
+              ) {
+                Text("Generate Ed25519 Key Pair")
+              }
+              if (generatedPubKey != null) {
+                Card(
+                  colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                  ),
+                ) {
+                  Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                      text = "Public key (add to server's ~/.ssh/authorized_keys):",
+                      style = MaterialTheme.typography.labelSmall,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                      text = generatedPubKey!!,
+                      style = MaterialTheme.typography.bodySmall.copy(
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                      ),
+                      modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    FilledTonalButton(
+                      onClick = {
+                        clipboardManager.setText(
+                          androidx.compose.ui.text.AnnotatedString(generatedPubKey!!)
+                        )
+                        scope.launch { snackbarHostState.showSnackbar("Public key copied") }
+                      },
+                    ) {
+                      Text("Copy Public Key")
+                    }
+                  }
+                }
+              }
               if (form.keyRef != null) {
                 Row(
                   verticalAlignment = Alignment.CenterVertically,
@@ -374,7 +427,7 @@ private fun AuthTypeDropdown(
 
 /** Extract a readable display name from a key URI string (content:// or internal-key://). */
 private fun extractKeyDisplayName(uriString: String): String {
-  if (uriString.startsWith("internal-key://")) return "Pasted key"
+  if (uriString.startsWith("internal-key://")) return "App key"
   val uri = Uri.parse(uriString)
   val lastSegment = uri.lastPathSegment ?: return uriString
   // SAF URIs often have "primary:path/to/file" format

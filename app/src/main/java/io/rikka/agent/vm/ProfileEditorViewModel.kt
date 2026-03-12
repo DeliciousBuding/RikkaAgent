@@ -67,9 +67,13 @@ class ProfileEditorViewModel(
     val f = _form.value
     if (f.host.isBlank() || f.username.isBlank()) return
     viewModelScope.launch {
+      val autoName = f.name.ifBlank {
+        val portSuffix = if ((f.port.toIntOrNull() ?: 22) != 22) ":${f.port}" else ""
+        "${f.username.trim()}@${f.host.trim()}$portSuffix"
+      }
       val profile = SshProfile(
         id = profileId ?: UUID.randomUUID().toString(),
-        name = f.name,
+        name = autoName,
         host = f.host.trim(),
         port = f.port.toIntOrNull() ?: 22,
         username = f.username.trim(),

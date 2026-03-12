@@ -26,5 +26,6 @@ dependencies {
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.okio)
   implementation(libs.sshj)
+  implementation(libs.bcprov)
   implementation(libs.slf4j.nop)
 }
