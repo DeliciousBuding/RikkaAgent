@@ -27,6 +27,8 @@ turbine = "1.1.0"
 sshj = "0.39.0"
 slf4j = "2.0.13"
 bcprov = "1.78.1"
+commonmark = "0.22.0"
+security-crypto = "1.1.0-alpha06"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -74,3 +76,7 @@ turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 sshj = { module = "com.hierynomus:sshj", version.ref = "sshj" }
 slf4j-nop = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bcprov" }
+commonmark = { module = "org.commonmark:commonmark", version.ref = "commonmark" }
+commonmark-ext-gfm-tables = { module = "org.commonmark:commonmark-ext-gfm-tables", version.ref = "commonmark" }
+commonmark-ext-gfm-strikethrough = { module = "org.commonmark:commonmark-ext-gfm-strikethrough", version.ref = "commonmark" }
+security-crypto = { module = "androidx.security:security-crypto", version.ref = "security-crypto" }

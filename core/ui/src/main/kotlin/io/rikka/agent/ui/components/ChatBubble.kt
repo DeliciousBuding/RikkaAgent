@@ -127,15 +127,22 @@ fun ChatBubble(
         }
       }
     } else {
-      // Assistant messages: code card for output
+      // Assistant messages: markdown for rich content, code card for plain output/errors
       Column(
         modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
       ) {
-        CodeCard(
-          code = message.content,
-          language = if (isError) "error" else null,
-          modifier = Modifier.fillMaxWidth(),
-        )
+        if (isError || !looksLikeMarkdown(message.content)) {
+          CodeCard(
+            code = message.content,
+            language = if (isError) "error" else null,
+            modifier = Modifier.fillMaxWidth(),
+          )
+        } else {
+          MarkdownText(
+            markdown = message.content,
+            modifier = Modifier.fillMaxWidth(),
+          )
+        }
         if (isStreaming) {
           Spacer(modifier = Modifier.height(4.dp))
           StreamingDots()
@@ -265,4 +272,18 @@ private fun formatTimestamp(timestampMs: Long): String {
     diff < TimeUnit.DAYS.toMillis(1) -> "${TimeUnit.MILLISECONDS.toHours(diff)}h ago"
     else -> SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()).format(Date(timestampMs))
   }
+}
+
+/** Heuristic: does the text contain markdown formatting worth rendering? */
+private fun looksLikeMarkdown(text: String): Boolean {
+  if (text.length < 4) return false
+  val sample = if (text.length > 2000) text.substring(0, 2000) else text
+  return sample.contains("```") ||
+    sample.contains("## ") ||
+    sample.contains("# ") ||
+    sample.contains("**") ||
+    sample.contains("- ") ||
+    sample.contains("1. ") ||
+    sample.contains("> ") ||
+    sample.contains("[") && sample.contains("](")
 }

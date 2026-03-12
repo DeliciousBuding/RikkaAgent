@@ -30,6 +30,9 @@ dependencies {
   implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.coil.compose)
+  implementation(libs.commonmark)
+  implementation(libs.commonmark.ext.gfm.tables)
+  implementation(libs.commonmark.ext.gfm.strikethrough)
   implementation(projects.core.model)
 
   testImplementation(libs.junit4)

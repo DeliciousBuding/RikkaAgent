@@ -65,16 +65,17 @@
 | 服务 | Docker VectorControl (nginx/backend/postgres on 443), OpenClaw (npm global, Node.js, 447MB RSS), danted SOCKS (TS-only 1080) |
 | 注意 | 内存压力 (1.0G/1.9G + 297M swap, disk 55%) |
 
-### 2.4 hk — Azure 香港
+### 2.4 prod — Azure 新加坡（原命名 "hk"，实际位于新加坡）
 
 | 条目 | 值 |
 |------|-----|
 | 公网 IP |  |
 | Tailscale IP |  |
-| SSH 别名 | `hk`（user: azureuser） |
+| SSH 别名 | `prod`（user: azureuser）← 原 `hk`，建议改名 |
 | OS | Ubuntu 24.04, kernel 6.14.0-1017-azure |
 | 资源 | 2核, 847MB RAM, 29GB disk |
-| 角色 | 备用公网入口候选（2026-06-10 上线） |
+| 实际地理 | **新加坡**（ipinfo.io 验证: city=Singapore, country=SG） |
+| 角色 | API 后端候选（metapi+CPA 迁移目标） |
 | 安全 | UFW (80/443/41641, SSH 仅 Tailscale), fail2ban, unattended-upgrades, SSH hardening |
 
 ### 2.5 doris — 本地 WSL
@@ -104,10 +105,10 @@ gz (Alibaba Cloud)
   ├─ CPA v6.8.51 (binary, port 8317) = API 密钥管理 + 路由配置
   └─ nginx 443 → /playground/ proxy to metapi
 
-hk (Azure Hong Kong) [备用]
-  └─ 已初始化, Tailscale + UFW + fail2ban, 待分配角色
+prod (Azure Singapore, 原名"hk") [备用]
+  └─ 已初始化, Tailscale + UFW + fail2ban, 待分配 API 后端角色
 
-Tailscale 组网: gz ↔ prod ↔ prod ↔ hk ↔ doris ↔ 本机
+Tailscale 组网: gz ↔ prod ↔ prod ↔ prod ↔ doris ↔ 本机
 ```
 
 ### 关键事实
@@ -132,31 +133,33 @@ Tailscale 组网: gz ↔ prod ↔ prod ↔ hk ↔ doris ↔ 本机
 
 ### 4.1 Tailscale 网络延迟
 
-| 源 ＼ 目标 | gz | prod | prod | hk | doris |
+| 源 ＼ 目标 | gz | prod | prod | prod | doris |
 |-----------|-----|------|------|----|-------|
 | **Local** | 62ms | 253ms* | 95ms | 80ms | 292ms* |
 | **gz** | — | 341ms | 87ms | 110ms | 10ms |
 | **prod** | 345ms | — | 5ms | 4ms | 200ms |
 | **prod** | 87ms | 2ms | — | 2ms | 95ms |
-| **hk** | 110ms | 2ms | 0.6ms | — | 96ms |
+| **prod** | 110ms | 2ms | 0.6ms | — | 96ms |
+| **doris** | 202ms | 196ms | 99ms | 73ms | — |
 
 > \* 抖动大（prod: 59-352ms, doris: 104-666ms）
 
 ### 4.2 公网延迟
 
-| 源 ＼ 目标 | gz () | prod (103.253.145.251) | prod () | hk () |
+| 源 ＼ 目标 | gz () | prod (103.253.145.251) | prod () | prod () |
 |-----------|-------------------|----------------------|--------------------|--------------------|
 | **Local** | 22ms | 391ms | TIMEOUT | TIMEOUT |
 | **gz** | — | 340ms | TIMEOUT | TIMEOUT |
 | **prod** | 340ms | — | TIMEOUT | TIMEOUT |
 | **prod** | 90ms | 2ms | — | TIMEOUT |
-| **hk** | 84ms | 3ms | TIMEOUT | — |
+| **prod** | 84ms | 3ms | TIMEOUT | — |
+| **doris** | 10ms | 59ms | TIMEOUT | TIMEOUT |
 
-> prod/hk 公网 ICMP 被 Azure 阻断；prod→prod 公网 2ms 说明两者物理相近
+> prod/prod 公网 ICMP 被 Azure 阻断；三台 SGP 节点均在新加坡，<5ms 互联
 
 ### 4.3 延迟分析
 
-- **SGP 集群**（prod ↔ prod ↔ hk）：0.6~5ms，同区域极低延迟
+- **SGP 集群**（prod ↔ prod ↔ prod）：0.6~5ms，均在新加坡
 - **gz 孤岛**：至 SGP 集群 87~345ms；至本机/doris 10~22ms（均在中国境内）
 - **最优 API 路径**：用户 → prod(0ms)→ prod/hk(2ms) 远优于现有 prod→gz(87ms)
 - **结论**：metapi + CPA 迁至 prod 后，API 延迟 87ms → 2ms（-97%）
