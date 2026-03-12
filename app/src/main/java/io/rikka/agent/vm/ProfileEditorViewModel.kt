@@ -16,6 +16,7 @@ data class ProfileForm(
   val port: String = "22",
   val username: String = "root",
   val authType: AuthType = AuthType.PublicKey,
+  val keyRef: String? = null,
 )
 
 class ProfileEditorViewModel(
@@ -39,6 +40,7 @@ class ProfileEditorViewModel(
             port = p.port.toString(),
             username = p.username,
             authType = p.authType,
+            keyRef = p.keyRef,
           )
         }
       }
@@ -60,6 +62,7 @@ class ProfileEditorViewModel(
         port = f.port.toIntOrNull() ?: 22,
         username = f.username.trim(),
         authType = f.authType,
+        keyRef = f.keyRef,
       )
       store.upsert(profile)
       _saved.value = true

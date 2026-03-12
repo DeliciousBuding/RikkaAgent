@@ -1,5 +1,8 @@
 package io.rikka.agent.ui.screen
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -15,12 +19,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,9 +43,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.rikka.agent.model.AuthType
 import io.rikka.agent.vm.ProfileEditorViewModel
@@ -57,6 +66,20 @@ fun ProfileEditorScreen(
   val form by vm.form.collectAsState()
   val saved by vm.saved.collectAsState()
   var attempted by remember { mutableStateOf(false) }
+  val context = LocalContext.current
+
+  // SAF file picker for private key
+  val keyPickerLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.OpenDocument(),
+  ) { uri: Uri? ->
+    if (uri != null) {
+      // Take persistable permission so the URI survives app restarts
+      context.contentResolver.takePersistableUriPermission(
+        uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+      )
+      vm.updateForm(form.copy(keyRef = uri.toString()))
+    }
+  }
 
   LaunchedEffect(saved) {
     if (saved) onSaved()
@@ -175,6 +198,47 @@ fun ProfileEditorScreen(
             selected = form.authType,
             onSelect = { vm.updateForm(form.copy(authType = it)) },
           )
+
+          // Private key file selector (visible when PublicKey auth)
+          if (form.authType == AuthType.PublicKey) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+              FilledTonalButton(
+                onClick = { keyPickerLauncher.launch(arrayOf("*/*")) },
+              ) {
+                Text("Select Key File")
+              }
+              if (form.keyRef != null) {
+                Text(
+                  text = extractDisplayName(form.keyRef!!),
+                  style = MaterialTheme.typography.bodySmall,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  maxLines = 1,
+                  overflow = TextOverflow.Ellipsis,
+                  modifier = Modifier.weight(1f),
+                )
+                IconButton(
+                  onClick = { vm.updateForm(form.copy(keyRef = null)) },
+                  modifier = Modifier.size(24.dp),
+                ) {
+                  Icon(
+                    Icons.Default.Close,
+                    contentDescription = "Remove key",
+                    modifier = Modifier.size(16.dp),
+                  )
+                }
+              } else {
+                Text(
+                  text = "No key selected (will try defaults)",
+                  style = MaterialTheme.typography.bodySmall,
+                  color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                )
+              }
+            }
+          }
         }
       }
 
@@ -230,4 +294,14 @@ private fun AuthTypeDropdown(
       }
     }
   }
+}
+
+/** Extract a readable display name from a content URI string. */
+private fun extractDisplayName(uriString: String): String {
+  val uri = Uri.parse(uriString)
+  val lastSegment = uri.lastPathSegment ?: return uriString
+  // SAF URIs often have "primary:path/to/file" format
+  return lastSegment.substringAfterLast('/')
+    .substringAfterLast(':')
+    .ifBlank { lastSegment }
 }

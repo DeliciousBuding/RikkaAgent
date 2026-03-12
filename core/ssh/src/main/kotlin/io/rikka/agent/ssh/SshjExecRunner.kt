@@ -14,7 +14,11 @@ import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.common.SecurityUtils
 import net.schmizz.sshj.connection.channel.direct.Session
 import net.schmizz.sshj.transport.verification.HostKeyVerifier
+import net.schmizz.sshj.userauth.keyprovider.OpenSSHKeyFile
+import net.schmizz.sshj.userauth.password.PasswordFinder
+import net.schmizz.sshj.common.IOUtils
 import java.io.InputStream
+import java.io.StringReader
 import java.security.PublicKey
 import java.util.concurrent.TimeUnit
 
@@ -31,7 +35,8 @@ class SshjExecRunner(
   private val knownHostsStore: KnownHostsStore,
   private val hostKeyCallback: HostKeyCallback,
   private val passwordProvider: PasswordProvider? = null,
-  private val keyProvider: KeyProvider? = null,
+  private val keyContentProvider: KeyContentProvider? = null,
+  private val passphraseProvider: PassphraseProvider? = null,
   private val reuseConnections: Boolean = false,
 ) : SshExecRunner {
 
@@ -217,11 +222,14 @@ class SshjExecRunner(
   private suspend fun authenticate(client: SSHClient, profile: SshProfile) {
     when (profile.authType) {
       AuthType.PublicKey -> {
-        val keyPath = profile.keyRef
-        if (keyPath != null) {
-          client.authPublickey(profile.username, keyPath)
+        val keyContent = keyContentProvider?.getKeyContent(profile)
+        if (keyContent != null) {
+          val pwFinder = buildPassphraseFinder(profile)
+          val keyFile = OpenSSHKeyFile()
+          keyFile.init(StringReader(keyContent), null, pwFinder)
+          client.authPublickey(profile.username, listOf(keyFile))
         } else {
-          // Try default key locations
+          // Try default key locations (~/.ssh/id_rsa, etc.)
           client.authPublickey(profile.username)
         }
       }
@@ -229,6 +237,26 @@ class SshjExecRunner(
         val password = passwordProvider?.getPassword(profile)
           ?: throw IllegalStateException("Password required but no provider configured")
         client.authPassword(profile.username, password)
+      }
+    }
+  }
+
+  private suspend fun buildPassphraseFinder(profile: SshProfile): PasswordFinder? {
+    val provider = passphraseProvider ?: return null
+    return object : PasswordFinder {
+      private var passphrase: CharArray? = null
+
+      override fun reqPassword(resource: net.schmizz.sshj.userauth.password.Resource<*>?): CharArray {
+        if (passphrase == null) {
+          passphrase = kotlinx.coroutines.runBlocking {
+            provider.getPassphrase(profile)
+          }?.toCharArray() ?: charArrayOf()
+        }
+        return passphrase ?: charArrayOf()
+      }
+
+      override fun shouldRetry(resource: net.schmizz.sshj.userauth.password.Resource<*>?): Boolean {
+        return false
       }
     }
   }
@@ -263,8 +291,15 @@ fun interface PasswordProvider {
 
 /**
  * Provides private key content for SSH authentication.
- * Could read from file system, Android Keystore, etc.
+ * Returns the PEM-encoded key content as a String, or null if unavailable.
  */
-fun interface KeyProvider {
-  suspend fun getKeyPath(profile: SshProfile): String?
+fun interface KeyContentProvider {
+  suspend fun getKeyContent(profile: SshProfile): String?
+}
+
+/**
+ * Provides passphrase for encrypted private keys.
+ */
+fun interface PassphraseProvider {
+  suspend fun getPassphrase(profile: SshProfile): String?
 }
