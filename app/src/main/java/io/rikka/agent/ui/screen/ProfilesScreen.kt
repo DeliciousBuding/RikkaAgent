@@ -1,7 +1,8 @@
 package io.rikka.agent.ui.screen
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -38,6 +41,9 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -125,6 +131,7 @@ fun ProfilesScreen(
               profile = profile,
               onClick = { onOpenSession(profile.id) },
               onEdit = { onEditProfile(profile.id) },
+              onDuplicate = { vm.duplicate(profile) },
             )
           }
         }
@@ -133,16 +140,23 @@ fun ProfilesScreen(
   }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ProfileCard(
   profile: SshProfile,
   onClick: () -> Unit,
   onEdit: () -> Unit,
+  onDuplicate: () -> Unit,
 ) {
+  var showMenu by remember { mutableStateOf(false) }
+
   Card(
     modifier = Modifier
       .fillMaxWidth()
-      .clickable(onClick = onClick),
+      .combinedClickable(
+        onClick = onClick,
+        onLongClick = { showMenu = true },
+      ),
     colors = CardDefaults.cardColors(
       containerColor = MaterialTheme.colorScheme.surface,
     ),
@@ -199,6 +213,20 @@ private fun ProfileCard(
           .clip(MaterialTheme.shapes.small)
           .background(MaterialTheme.colorScheme.secondaryContainer)
           .padding(horizontal = 8.dp, vertical = 4.dp),
+      )
+    }
+
+    DropdownMenu(
+      expanded = showMenu,
+      onDismissRequest = { showMenu = false },
+    ) {
+      DropdownMenuItem(
+        text = { Text("Edit") },
+        onClick = { showMenu = false; onEdit() },
+      )
+      DropdownMenuItem(
+        text = { Text("Duplicate") },
+        onClick = { showMenu = false; onDuplicate() },
       )
     }
   }
