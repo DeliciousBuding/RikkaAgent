@@ -11,6 +11,7 @@ import io.rikka.agent.model.MessageStatus
 import io.rikka.agent.model.SshProfile
 import io.rikka.agent.ssh.ExecEvent
 import io.rikka.agent.ssh.HostKeyCallback
+import io.rikka.agent.ssh.JsonlLineBuffer
 import io.rikka.agent.ssh.KeyContentProvider
 import io.rikka.agent.ssh.KnownHostsStore
 import io.rikka.agent.ssh.PassphraseProvider
@@ -200,8 +201,9 @@ class ChatViewModel(
     _connectionState.value = ConnectionState.EXECUTING
 
     val execRunner = getOrCreateRunner()
-    val shellCommand = if (profile.codexMode) {
-      wrapForCodex(command, profile.codexWorkDir)
+    val isCodex = profile.codexMode
+    val shellCommand = if (isCodex) {
+      wrapForCodex(command, profile.codexWorkDir, profile.codexApiKey)
     } else {
       wrapWithShell(command)
     }
@@ -209,19 +211,74 @@ class ChatViewModel(
     runningJob = viewModelScope.launch {
       val stdout = StringBuilder()
       val stderr = StringBuilder()
+      // For Codex mode: parse JSONL, accumulate markdown deltas
+      val jsonlBuffer = if (isCodex) JsonlLineBuffer() else null
+      val markdownAccum = if (isCodex) StringBuilder() else null
 
       execRunner.run(profile, shellCommand).collect { event ->
         when (event) {
           is ExecEvent.StdoutChunk -> {
-            stdout.append(String(event.bytes, Charsets.UTF_8))
-            updateAssistantContent(assistantId, formatOutput(stdout, stderr, exitCode = null))
+            if (isCodex && jsonlBuffer != null && markdownAccum != null) {
+              val parsed = jsonlBuffer.feed(event.bytes)
+              for (e in parsed) {
+                when (e) {
+                  is ExecEvent.StructuredEvent -> {
+                    if (e.kind == "markdown_delta") {
+                      markdownAccum.append(e.rawJson)
+                      updateAssistantContent(assistantId, markdownAccum.toString())
+                    }
+                    // status events could update a progress indicator (future)
+                  }
+                  is ExecEvent.StdoutChunk -> {
+                    // Non-JSON line from Codex — append to raw stdout
+                    stdout.append(String(e.bytes, Charsets.UTF_8))
+                  }
+                  else -> { /* ignore */ }
+                }
+              }
+              // If no markdown deltas yet, show raw output as fallback
+              if (markdownAccum.isEmpty() && stdout.isNotEmpty()) {
+                updateAssistantContent(assistantId, formatOutput(stdout, stderr, exitCode = null))
+              }
+            } else {
+              stdout.append(String(event.bytes, Charsets.UTF_8))
+              updateAssistantContent(assistantId, formatOutput(stdout, stderr, exitCode = null))
+            }
           }
           is ExecEvent.StderrChunk -> {
             stderr.append(String(event.bytes, Charsets.UTF_8))
             updateAssistantContent(assistantId, formatOutput(stdout, stderr, exitCode = null))
           }
+          is ExecEvent.StructuredEvent -> { /* handled via jsonlBuffer above */ }
           is ExecEvent.Exit -> {
-            val finalContent = formatOutput(stdout, stderr, event.code)
+            // Flush remaining JSONL buffer
+            if (isCodex && jsonlBuffer != null && markdownAccum != null) {
+              for (e in jsonlBuffer.flush()) {
+                if (e is ExecEvent.StructuredEvent && e.kind == "markdown_delta") {
+                  markdownAccum.append(e.rawJson)
+                } else if (e is ExecEvent.StdoutChunk) {
+                  stdout.append(String(e.bytes, Charsets.UTF_8))
+                }
+              }
+            }
+
+            val finalContent = if (isCodex && markdownAccum != null && markdownAccum.isNotEmpty()) {
+              val extra = buildString {
+                if (stderr.isNotEmpty()) {
+                  append("\n\n")
+                  append(app.getString(R.string.label_stderr))
+                  append("\n")
+                  append(stderr)
+                }
+                if (event.code != null && event.code != 0) {
+                  append("\n")
+                  append(app.getString(R.string.msg_exit_code, event.code))
+                }
+              }
+              markdownAccum.toString() + extra
+            } else {
+              formatOutput(stdout, stderr, event.code)
+            }
             updateAssistantMessage(assistantId, finalContent, MessageStatus.Final)
             persistUpdate(assistantId, finalContent, MessageStatus.Final)
             _connectionState.value = ConnectionState.READY
@@ -375,11 +432,12 @@ class ChatViewModel(
    * SSH exec typically runs commands through the server's login shell,
    * but this allows explicit shell selection (e.g., bash -c '...').
    */
-  /** Wrap a natural-language task as a `codex exec` command. */
-  private fun wrapForCodex(task: String, workDir: String?): String {
+  /** Wrap a natural-language task as a `codex exec --json` command. */
+  private fun wrapForCodex(task: String, workDir: String?, apiKey: String? = null): String {
     val escaped = task.replace("\"", "\\\"")
     val cdPart = if (!workDir.isNullOrBlank()) "cd ${shellQuote(workDir)} && " else ""
-    return "${cdPart}codex exec --full-auto \"$escaped\""
+    val envPart = if (!apiKey.isNullOrBlank()) "OPENAI_API_KEY=${shellQuote(apiKey)} " else ""
+    return "${cdPart}${envPart}codex exec --json --full-auto \"$escaped\""
   }
 
   private fun shellQuote(s: String): String {

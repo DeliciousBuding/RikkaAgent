@@ -76,6 +76,7 @@ dependencies {
   implementation(libs.androidx.lifecycle.viewmodel.compose)
   implementation(libs.androidx.navigation.compose)
   implementation(libs.material3)
+  implementation("androidx.compose.material:material-icons-extended")
   implementation(libs.koin.android)
   implementation(libs.koin.compose)
   implementation(libs.coil.compose)

@@ -15,6 +15,7 @@ data class SshProfile(
   val keepaliveIntervalSec: Int = 60,
   val codexMode: Boolean = false,
   val codexWorkDir: String? = null,
+  val codexApiKey: String? = null,
 )
 
 @Serializable

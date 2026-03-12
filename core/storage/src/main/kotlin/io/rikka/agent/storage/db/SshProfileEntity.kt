@@ -16,4 +16,5 @@ data class SshProfileEntity(
   val keepaliveIntervalSec: Int,
   val codexMode: Boolean = false,
   val codexWorkDir: String? = null,
+  val codexApiKey: String? = null,
 )

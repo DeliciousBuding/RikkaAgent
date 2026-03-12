@@ -16,6 +16,7 @@ fun SshProfileEntity.toModel(): SshProfile = SshProfile(
   keepaliveIntervalSec = keepaliveIntervalSec,
   codexMode = codexMode,
   codexWorkDir = codexWorkDir,
+  codexApiKey = codexApiKey,
 )
 
 fun SshProfile.toEntity(): SshProfileEntity = SshProfileEntity(
@@ -30,4 +31,5 @@ fun SshProfile.toEntity(): SshProfileEntity = SshProfileEntity(
   keepaliveIntervalSec = keepaliveIntervalSec,
   codexMode = codexMode,
   codexWorkDir = codexWorkDir,
+  codexApiKey = codexApiKey,
 )
