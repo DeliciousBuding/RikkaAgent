@@ -12,6 +12,7 @@ import androidx.navigation.toRoute
 import io.rikka.agent.ui.screen.ChatScreen
 import io.rikka.agent.ui.screen.ProfileEditorScreen
 import io.rikka.agent.ui.screen.ProfilesScreen
+import io.rikka.agent.ui.screen.KnownHostsScreen
 import io.rikka.agent.ui.screen.SettingsScreen
 
 @Composable
@@ -59,6 +60,13 @@ fun AppNavHost() {
 
     composable<Screen.Settings> {
       SettingsScreen(
+        onBack = { navController.popBackStack() },
+        onOpenKnownHosts = { navController.navigate(Screen.KnownHosts) },
+      )
+    }
+
+    composable<Screen.KnownHosts> {
+      KnownHostsScreen(
         onBack = { navController.popBackStack() },
       )
     }

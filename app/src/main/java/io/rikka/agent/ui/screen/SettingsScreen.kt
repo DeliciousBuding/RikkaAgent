@@ -36,6 +36,7 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun SettingsScreen(
   onBack: () -> Unit,
+  onOpenKnownHosts: () -> Unit = {},
 ) {
   val vm: SettingsViewModel = koinViewModel()
   val theme by vm.theme.collectAsState()
@@ -93,7 +94,7 @@ fun SettingsScreen(
       SettingsItem(
         title = "Known hosts",
         subtitle = "Manage trusted server fingerprints",
-        onClick = { /* TODO */ },
+        onClick = onOpenKnownHosts,
       )
 
       SectionHeader("About")
