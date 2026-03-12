@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 class ProfilesViewModel(
   private val store: RoomProfileStore,
@@ -18,5 +19,16 @@ class ProfilesViewModel(
 
   fun delete(profileId: String) {
     viewModelScope.launch { store.delete(profileId) }
+  }
+
+  fun duplicate(profile: SshProfile) {
+    viewModelScope.launch {
+      store.upsert(
+        profile.copy(
+          id = UUID.randomUUID().toString(),
+          name = "${profile.name} (copy)",
+        ),
+      )
+    }
   }
 }
