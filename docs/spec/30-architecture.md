@@ -31,6 +31,12 @@ so that we can iterate on UI polish without destabilizing security-sensitive cod
   - reusable Compose components (command/output cards)
   - Markdown/code rendering adapters
 
+Also read:
+
+- `docs/spec/32-ssh.md`
+- `docs/spec/33-remote-exec.md`
+- `docs/spec/36-acp.md` (v2+)
+
 ## 3) Key Interfaces (Stability Targets)
 
 ### 3.1 `SshSessionManager`

@@ -47,7 +47,8 @@ Fields (conceptual):
 
 Default:
 
-- Store profiles + history locally (DataStore/Room - TBD).
+- Store profiles + history locally using **Room** (structured queries + migrations).
+- Store app preferences (rendering toggles, haptics, safety defaults) using **DataStore**.
 - Store private keys only in encrypted storage, referenced by `keyRef`.
 - Store known_hosts locally and treat it as security-critical state.
 
@@ -67,4 +68,3 @@ Export:
 
 - export output as plain text or Markdown
 - show warning before export
-

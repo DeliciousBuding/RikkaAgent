@@ -8,15 +8,15 @@ Important constraints:
 - We treat RikkaHub as **UX inspiration only**.
 - `rikka-agent` must be a clean-room implementation (see `docs/adr/0002-clean-room.md`).
 
-Reference repo path (local):
+Reference repo:
 
-- `D:\Code\Projects\rikkahub`
+- https://github.com/re-ovo/rikkahub
 
 ## 1) Theme & “Overall Look”
 
 Theme entrypoint:
 
-- `D:\Code\Projects\rikkahub\app\src\main\java\me\rerere\rikkahub\ui\theme\Theme.kt`
+- `rikkahub: app\src\main\java\me\rerere\rikkahub\ui\theme\Theme.kt`
 
 Key observations:
 
@@ -29,8 +29,8 @@ Key observations:
 
 Preset themes entrypoints:
 
-- `D:\Code\Projects\rikkahub\app\src\main\java\me\rerere\rikkahub\ui\theme\PresetTheme.kt`
-- Example palette: `D:\Code\Projects\rikkahub\app\src\main\java\me\rerere\rikkahub\ui\theme\presets\SakuraTheme.kt`
+- `rikkahub: app\src\main\java\me\rerere\rikkahub\ui\theme\PresetTheme.kt`
+- Example palette: `rikkahub: app\src\main\java\me\rerere\rikkahub\ui\theme\presets\SakuraTheme.kt`
 
 What makes it “pretty”:
 
@@ -42,8 +42,8 @@ What makes it “pretty”:
 
 Navigation + screen entry:
 
-- `D:\Code\Projects\rikkahub\app\src\main\java\me\rerere\rikkahub\RouteActivity.kt`
-- `D:\Code\Projects\rikkahub\app\src\main\java\me\rerere\rikkahub\ui\pages\chat\ChatPage.kt`
+- `rikkahub: app\src\main\java\me\rerere\rikkahub\RouteActivity.kt`
+- `rikkahub: app\src\main\java\me\rerere\rikkahub\ui\pages\chat\ChatPage.kt`
 
 Key observations:
 
@@ -56,7 +56,7 @@ Key observations:
 
 Chat input entry:
 
-- `D:\Code\Projects\rikkahub\app\src\main\java\me\rerere\rikkahub\ui\components\ai\ChatInput.kt`
+- `rikkahub: app\src\main\java\me\rerere\rikkahub\ui\components\ai\ChatInput.kt`
 
 Key observations:
 
@@ -73,7 +73,7 @@ Key observations:
 
 Message component entry:
 
-- `D:\Code\Projects\rikkahub\app\src\main\java\me\rerere\rikkahub\ui\components\message\ChatMessage.kt`
+- `rikkahub: app\src\main\java\me\rerere\rikkahub\ui\components\message\ChatMessage.kt`
 
 Key observations:
 
@@ -90,7 +90,7 @@ Implication for `rikka-agent`:
 
 Markdown renderer entry:
 
-- `D:\Code\Projects\rikkahub\app\src\main\java\me\rerere\rikkahub\ui\components\richtext\Markdown.kt`
+- `rikkahub: app\src\main\java\me\rerere\rikkahub\ui\components\richtext\Markdown.kt`
 
 Key observations:
 
@@ -102,7 +102,7 @@ Key observations:
 
 Code block renderer entry:
 
-- `D:\Code\Projects\rikkahub\app\src\main\java\me\rerere\rikkahub\ui\components\richtext\HighlightCodeBlock.kt`
+- `rikkahub: app\src\main\java\me\rerere\rikkahub\ui\components\richtext\HighlightCodeBlock.kt`
 
 Key observations:
 
@@ -114,9 +114,9 @@ Key observations:
 
 Mermaid entry:
 
-- `D:\Code\Projects\rikkahub\app\src\main\java\me\rerere\rikkahub\ui\components\richtext\Mermaid.kt`
+- `rikkahub: app\src\main\java\me\rerere\rikkahub\ui\components\richtext\Mermaid.kt`
 - WebView wrapper:
-  - `D:\Code\Projects\rikkahub\app\src\main\java\me\rerere\rikkahub\ui\components\webview\WebView.kt`
+  - `rikkahub: app\src\main\java\me\rerere\rikkahub\ui\components\webview\WebView.kt`
 
 Key observations:
 
@@ -134,7 +134,7 @@ Implication for `rikka-agent`:
 
 Entry:
 
-- `D:\Code\Projects\rikkahub\app\src\main\java\me\rerere\rikkahub\ui\modifier\Shimmer.kt`
+- `rikkahub: app\src\main\java\me\rerere\rikkahub\ui\modifier\Shimmer.kt`
 
 Key observations:
 
@@ -145,9 +145,86 @@ Implication:
 
 - We can implement shimmer as an optional polish layer for loading placeholders.
 
-## 7) Takeaways (Concrete “Feel” Targets)
+## 7) Architecture Patterns (2026-03-12 Update)
 
-If `rikka-agent` matches these, we’re in the right territory:
+Entrypoints:
+
+- DI: `rikkahub: app\src\main\java\me\rerere\rikkahub\di\`
+- Repository: `rikkahub: app\src\main\java\me\rerere\rikkahub\data\repository\`
+- Service: `rikkahub: app\src\main\java\me\rerere\rikkahub\service\ChatService.kt`
+- Transformers: `rikkahub: app\src\main\java\me\rerere\rikkahub\data\ai\transformers\`
+
+Key observations:
+
+- **MVVM + Clean Architecture + Repository pattern**.
+- **Dependency Injection via Koin** (v4.1.1) — modules split by layer:
+  - `AppModule` (singletons), `DataSourceModule` (DB/API), `RepositoryModule`, `ViewModelModule`
+- **Repository pattern**: `ConversationRepository` wraps Room DAO for thread-safe data access.
+- **ChatService** orchestrates AI calls (maps to our SSH exec orchestration).
+- **Message Transformation Pipeline**: Transformers modify messages before/after sending:
+  - `TemplateTransformer` → Pebble template variables
+  - `ThinkTagTransformer` → Extract `<think>` tags into reasoning parts
+  - `RegexOutputTransformer` → Regex replacements on output
+  - `OcrTransformer`, `DocumentAsPromptTransformer`, `TimeReminderTransformer`
+- For RikkaAgent: we could adopt a simpler transformer pipeline for SSH output formatting (ANSI strip, Markdown wrap, etc.)
+
+Data model pattern:
+
+- **MessageNode** (branching): stores multiple message alternatives (for "regenerate"):
+  ```
+  MessageNode { messages: List<UIMessage>, selectIndex: Int }
+  ```
+- **UIMessage**: uses `parts: List<UIMessagePart>` (sealed class: Text, Image, Reasoning, ToolCall, ToolResult)
+- For RikkaAgent: simpler model (command input → text output), but branching could map to "re-run command with different params"
+
+Navigation:
+
+- Uses **Navigation 3** (latest beta, replaces Navigation 2.x)
+- `rikkahub: app\src\main\java\me\rerere\rikkahub\RouteActivity.kt`
+- Shared element transitions between screens
+- For RikkaAgent: we currently use Navigation 2.8 — can consider upgrading later
+
+Build stack (reference, not target):
+
+- AGP 9.0.1, Kotlin 2.3.10, Compose BOM 2026.02.01, minSdk 26, targetSdk 36
+- OkHttp 5.3.2, Retrofit 3.0.0, Room 2.8.4, Koin 4.1.1
+- These are significantly newer than RikkaAgent's current stack; upgrade incrementally as needed
+
+## 8) Key Differences: RikkaHub vs. RikkaAgent
+
+| Aspect | RikkaHub | RikkaAgent |
+|--------|----------|-----------|
+| Purpose | LLM chat client | SSH command → Codex bridge |
+| Backend | HTTP/SSE to LLM APIs | Native SSH exec channel |
+| Data Flow | User message → AI → streaming response | User command → SSH → stdout/stderr stream |
+| Providers | OpenAI, Google, Claude | SSH profiles (host/user/key) |
+| Message Types | Text, images, reasoning, tools | Command input, text/code output |
+| Transformation | Template, CoT, OCR, regex | ANSI strip, Markdown wrap |
+| Profile model | Assistant (system prompt, model, temp) | SSH profile (host, port, user, auth) |
+| Session | Conversation history with branching | Command execution log |
+
+## 9) Reusable Design Patterns for RikkaAgent
+
+What to adapt (design inspiration, not code copy):
+
+1. **Surface + tonalElevation bubble pattern** — already adopted ✅
+2. **Code card component** — header action row (copy/save) + collapsible body + syntax highlight
+3. **Koin DI structure** — consider adopting for clean testability
+4. **Repository + DataStore/Room pattern** — needed for ProfileStore implementation
+5. **Message transformer pipeline** — simplify to `AnsiStripper → MarkdownWrapper → OutputTruncator`
+6. **Async Markdown parsing** — parse off main thread, especially for streaming output
+7. **Adaptive drawer** — `PermanentNavigationDrawer` (tablet) / `ModalNavigationDrawer` (phone)
+
+What NOT to adapt:
+
+- Provider abstraction (we have SSH, not multiple AI APIs)
+- Multimodal input (images/documents irrelevant for SSH commands)
+- MCP support (out of scope for v1)
+- Web UI module (Android-only for now)
+
+## 10) Takeaways (Concrete "Feel" Targets)
+
+If `rikka-agent` matches these, we're in the right territory:
 
 - Soft surface hierarchy using Material3 `surfaceContainer*`.
 - Calm typography with monospace for code blocks + chips.
@@ -156,3 +233,5 @@ If `rikka-agent` matches these, we’re in the right territory:
   - expand/collapse with stable layout
 - Optional blur/glass input bar.
 - Rich output rendering with effortless copy/export.
+- Clean layer separation with DI for testability.
+- Interface-first design for all external integrations (SSH, storage).
