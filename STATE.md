@@ -69,19 +69,21 @@
 | 服务 | Docker VectorControl (nginx/backend/postgres on 443), OpenClaw (npm global, Node.js, 447MB RSS), danted SOCKS (TS-only 1080) |
 | 注意 | 内存压力 (1.0G/1.9G + 297M swap, disk 55%) |
 
-### 2.4 sgp3/hk — Azure（正从新加坡迁移至香港）
+### 2.4 hk — Azure 香港（East Asia）
 
 | 条目 | 值 |
 |------|-----|
-| 公网 IP | 20.191.156.135（迁移后可能变更） |
-| Tailscale IP | 100.79.22.119（迁移后需重新连接） |
+| 公网 IP | 104.214.176.143 |
+| Tailscale IP | 100.96.116.54 |
 | SSH 别名 | `hk`（user: azureuser） |
 | OS | Ubuntu 24.04, kernel 6.14.0-1017-azure |
-| 资源 | 2核, 847MB RAM, 29GB disk |
-| 当前地理 | **新加坡**（ipinfo.io 验证）→ 正迁移至 Azure East Asia（香港） |
+| 资源 | 2核, 1GiB RAM (843MB), Standard B2ats v2 |
+| 地理 | **香港**（ipinfo.io 验证: `city: Hong Kong, country: HK`） |
 | 目标角色 | 中国用户边缘入口（nginx → proxy sgp1） |
-| 限制 | **香港无法访问 OpenAI** → 不能运行 metapi/CPA |
-| 安全 | UFW (80/443/41641, SSH 仅 Tailscale), fail2ban, unattended-upgrades, SSH hardening |
+| 限制 | **OpenAI 返回 403 Forbidden**（地区封锁）→ 不能运行 metapi/CPA |
+| 安全 | UFW (22/80/443/41641, Tailscale 100.64.0.0/10), fail2ban, SSH hardening (PasswordAuth no) |
+| 创建日期 | 2026-06-12 |
+| 注意 | 本机公网 ICMP 不通（Azure 或路由问题），需通过 Tailscale 或 ProxyJump=gz |
 
 ### 2.5 doris — 本地 WSL
 
@@ -108,16 +110,16 @@
 sgp1 (DigitalOcean Singapore) [迁移后的 API 后端]
   ├─ metapi Docker (port 4001) = OpenAI 兼容 API 网关
   ├─ CPA Docker (port 8317) = API 密钥管理（直连 OpenAI，无需 SOCKS）
-  ├─ OpenClaw (447MB Node.js) = API 网关
   └─ VectorControl Docker (nginx+backend+postgres on 443)
 
-gz (Alibaba Cloud) [当前 API 后端，迁移后变为监控+备份]
+gz (Alibaba Cloud) [当前 API 后端 → 迁移后变为 OpenClaw + 监控]
   ├─ metapi Docker (--network host, port 4001) ← 将迁走
   ├─ CPA v6.8.51 (binary, port 8317) ← 将迁走
+  ├─ OpenClaw (迁移后) ← 个人 AI 助手, 调用 metapi
   └─ cron 监控脚本 (measure-snapshot.py, token-stats.py)
 
-hk (Azure East Asia) [正迁移，未来中国边缘入口]
-  └─ nginx → proxy sgp1:4001 (中国用户 ~20ms → HK → ~35ms → SGP1)
+hk (Azure East Asia / 真正香港) [中国边缘入口]
+  └─ nginx → proxy sgp1 (中国用户 ~20ms → HK → 33ms → SGP1 = ~53ms)
 
 Tailscale 组网: gz ↔ sgp1 ↔ sgp2 ↔ hk ↔ doris ↔ 本机
 ```
@@ -140,40 +142,46 @@ Tailscale 组网: gz ↔ sgp1 ↔ sgp2 ↔ hk ↔ doris ↔ 本机
 
 ---
 
-## 4. 延迟矩阵（2026-06-10 全量实测）
+## 4. 延迟矩阵（2026-06-12 全量实测，含真正 HK 节点）
 
-### 4.1 Tailscale 网络延迟
+### 4.1 Tailscale 网络延迟（`tailscale ping` 直连值）
 
-| 源 ＼ 目标 | gz | sgp1 | sgp2 | sgp3 | doris |
-|-----------|-----|------|------|----|-------|
-| **Local** | 62ms | 253ms* | 95ms | 80ms | 292ms* |
-| **gz** | — | 341ms | 87ms | 110ms | 10ms |
-| **sgp1** | 345ms | — | 5ms | 4ms | 200ms |
-| **sgp2** | 87ms | 2ms | — | 2ms | 95ms |
-| **sgp3** | 110ms | 2ms | 0.6ms | — | 96ms |
-| **doris** | 202ms | 196ms | 99ms | 73ms | — |
+| 源 ＼ 目标 | gz | sgp1 | sgp2 | **hk** | doris |
+|-----------|-----|------|------|--------|-------|
+| **Local** | 17ms | 181ms | 82ms | **93ms** | 147ms |
+| **gz** | — | 339ms | 87ms | **77ms** | 10ms |
+| **sgp1** | 338ms | — | 4ms | **33ms** | 78ms |
+| **sgp2** | 87ms | 2ms | — | **60ms** | 69ms |
+| **hk** | **77ms** | **32ms** | **33ms** | — | **81ms** |
+| **doris** | 148ms | 63ms | 52ms | **83ms** | — |
 
-> \* 抖动大（sgp1: 59-352ms, doris: 104-666ms）
+> 注: gz/本机 ICMP 首测可能含 DERP 预热（偏高 2-3x），上表为 tailscale ping 直连稳定值
 
 ### 4.2 公网延迟
 
-| 源 ＼ 目标 | gz (8.163.12.208) | sgp1 (103.253.145.251) | sgp2 (20.195.40.11) | sgp3 (20.191.156.135) |
-|-----------|-------------------|----------------------|--------------------|--------------------|
-| **Local** | 22ms | 391ms | TIMEOUT | TIMEOUT |
-| **gz** | — | 340ms | TIMEOUT | TIMEOUT |
-| **sgp1** | 340ms | — | TIMEOUT | TIMEOUT |
-| **sgp2** | 90ms | 2ms | — | TIMEOUT |
-| **sgp3** | 84ms | 3ms | TIMEOUT | — |
-| **doris** | 10ms | 59ms | TIMEOUT | TIMEOUT |
+| 源 ＼ 目标 | gz (8.163.12.208) | sgp1 (103.253.145.251) | sgp2 (20.195.40.11) | **hk (104.214.176.143)** |
+|-----------|-------------------|----------------------|---------------------|--------------------------|
+| **Local** | 23ms | 353ms | TIMEOUT | **TIMEOUT** |
+| **gz** | — | 340ms | TIMEOUT | **TIMEOUT** |
+| **sgp1** | 340ms | — | TIMEOUT | **TIMEOUT** |
+| **sgp2** | 90ms | 2ms | — | **TIMEOUT** |
+| **hk** | **77ms** | **32ms** | TIMEOUT | — |
+| **doris** | 10ms | 59ms | TIMEOUT | **TIMEOUT** |
 
-> sgp2/sgp3 公网 ICMP 被 Azure 阻断；三台 SGP 节点均在新加坡，<5ms 互联
+> Azure VM (sgp2/hk) 公网 ICMP 被阻断；hk→gz 公网 77ms 与 Tailscale 一致
 
 ### 4.3 延迟分析
 
-- **SGP 集群**（sgp1 ↔ sgp2 ↔ sgp3）：0.6~5ms，均在新加坡
-- **gz 孤岛**：至 SGP 集群 87~345ms；至本机/doris 10~22ms（均在中国境内）
-- **最优 API 路径**：用户 → sgp2(0ms)→ sgp1/hk(2ms) 远优于现有 sgp2→gz(87ms)
-- **结论**：metapi + CPA 迁至 sgp1 后，API 延迟 87ms → 2ms（-97%）
+- **SGP 集群**（sgp1 ↔ sgp2）：2~4ms，均在新加坡
+- **HK ↔ SGP**：32~60ms（真正香港到新加坡的物理距离 ~2500km）
+- **HK ↔ GZ**：77ms（香港到广州 ~150km，但经公网路由偏高）
+- **gz 孤岛**：至 SGP 集群 87~339ms；至本机/doris 10~17ms（均在中国境内）
+- **OpenAI 可达性**: gz=✘(GFW), sgp1/sgp2=✅(401), hk=✘(403地区封锁)
+- **最优 API 路径**：
+  - 国际: 用户→sgp2(0ms)→sgp1(2ms) = **2ms**
+  - 中国: 用户→hk(~20ms)→sgp1(33ms) = **~53ms**
+  - 当前: sgp2(87ms)→gz(87ms)→SOCKS→sgp2(87ms)→OpenAI = **350ms+**
+- **结论**：metapi+CPA 迁至 sgp1 后，国际 87ms→2ms(-97%), 中国加 HK 边缘后 350ms→53ms(-85%)
 
 ---
 

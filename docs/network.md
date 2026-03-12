@@ -1,25 +1,31 @@
-# 网络架构与服务重编排方案 v4
+# 网络架构与服务重编排方案 v5
 
-> 日期：2026-06-10 ｜ 基于全量延迟测试 + 实际地理验证
+> 日期：2026-06-12 ｜ 基于全量延迟测试（含真正 HK 节点）+ 地理验证
 >
-> **v4 更新**：sgp3(原假HK)正在迁移至真正的 Azure East Asia（香港）区域。
-> OpenAI 不在香港提供服务 → metapi+CPA 必须部署在新加坡节点。
+> **v5 更新**：
+> 1. 真正 HK VPS 已创建 (Azure East Asia, 104.214.176.143)，ipinfo 确认 `city: Hong Kong`
+> 2. HK 初始化完成: Tailscale (100.96.116.54) + UFW + fail2ban + SSH hardening
+> 3. OpenAI HK 测试: 返回 **403 Forbidden**（地区封锁确认）
+> 4. OpenClaw 定位修正: 个人 AI 助手（非 API 网关），调用 metapi → 部署到 gz
+> 5. 全量延迟矩阵更新（含 6 节点）
 
 ---
 
 ## 1. 关键发现
 
-### 1.1 "hk" VPS 实际在新加坡
+### 1.1 历史回顾: "hk" VPS 实际在新加坡
 
-通过 `ipinfo.io` 验证：
-- **hk (20.191.156.135)**：`city: Singapore, region: Singapore, country: SG`
-- **sgp2 (20.195.40.11)**：`city: Singapore, region: Singapore, country: SG`
+通过 `ipinfo.io` 验证（2026-06-10）：旧 "hk" (20.191.156.135) 实际在新加坡。
+已于 2026-06-12 创建新 VPS，**真正部署在 Azure East Asia（香港）**：
 
-"hk" 并非在香港，而是 Azure 新加坡的另一台机器。以下统一改称 **sgp3**。
+```
+$ ssh hk 'curl -s ipinfo.io | grep -E "ip|city|country"'
+  "ip": "104.214.176.143",
+  "city": "Hong Kong",
+  "country": "HK",
+```
 
-**这解释了 0.6ms 的"奇迹延迟"——三台新加坡机器之间的内网级延迟。**
-
-### 1.2 当前 API 请求链路极度低效
+### 1.2 当前 API 请求链路极度低效（待迁移解决）
 
 ```
 用户 → sgp2(nginx:443)
@@ -34,65 +40,72 @@
 
 **原因**：gz（广州）无法直接访问 OpenAI（`curl api.openai.com` 超时），CPA 必须通过 sgp2 的 SOCKS 代理出口。
 
-### 1.3 sgp3 可以直接访问 OpenAI（但迁移后将不能）
+### 1.3 OpenAI 在各节点的可达性
 
-```
-$ ssh sgp3 'curl -s -o /dev/null -w "%{http_code} %{time_total}s" https://api.openai.com/v1/models'
-401 0.228947s   ← 目前在新加坡，API 可达
-```
+| 节点 | 位置 | 结果 | 详情 |
+|------|------|------|------|
+| sgp1 | 新加坡 | ✅ 401 (0.23s) | API 可达，仅认证失败 |
+| sgp2 | 新加坡 | ✅ | 同上 |
+| gz | 广州(中国) | ✘ 000 (5.0s) | GFW 阻断，curl 超时 |
+| **hk** | **香港** | **✘ 403 (0.034s)** | **OpenAI 地区封锁** |
 
-**但 sgp3 正在迁移到真正的 Azure 香港 (East Asia)**。香港不在 OpenAI 支持区域列表中，迁移后将无法访问 OpenAI。
-
-**因此：metapi+CPA 必须部署在新加坡节点（sgp1）。**
+**结论**：
+- metapi+CPA 必须部署在**新加坡节点 (sgp1)**
+- **OpenClaw** 是个人 AI 助手（非 API 网关），通过调用 metapi 间接访问模型 → 可部署到 gz（gz→sgp1 RPC 延迟可接受）
 
 ---
 
-## 2. 全量延迟矩阵（2026-06-10 实测）
+## 2. 全量延迟矩阵（2026-06-12 实测，含真 HK 节点）
 
-### 2.1 Tailscale 网络
+### 2.1 Tailscale 网络（`tailscale ping` 直连稳定值）
 
-| 源 ＼ 目标 | gz | sgp1 | sgp2 | sgp3 | doris |
-|-----------|-----|------|------|----|-------|
-| **本机** | 62ms | 253ms* | 95ms | 80ms | 292ms* |
-| **gz** | — | 341ms | 87ms | 110ms | 10ms |
-| **sgp1** | 345ms | — | 5ms | 4ms | 200ms |
-| **sgp2** | 87ms | 2ms | — | 2ms | 95ms |
-| **sgp3** | 110ms | 2ms | 0.6ms | — | 96ms |
-| **doris** | 202ms | 196ms | 99ms | 73ms | — |
+| 源 ＼ 目标 | gz | sgp1 | sgp2 | **hk** | doris |
+|-----------|-----|------|------|--------|-------|
+| **本机** | 17ms | 181ms | 82ms | **93ms** | 147ms |
+| **gz** | — | 339ms | 87ms | **77ms** | 10ms |
+| **sgp1** | 338ms | — | 4ms | **33ms** | 78ms |
+| **sgp2** | 87ms | 2ms | — | **60ms** | 69ms |
+| **hk** | **77ms** | **32ms** | **33ms** | — | **81ms** |
+| **doris** | 148ms | 63ms | 52ms | **83ms** | — |
 
-> \* 高抖动（sgp1-ts: 59-352ms, doris-ts: 104-666ms）
+> 注: ICMP ping 可能因 DERP 预热偏高 2-3x，上表为 tailscale ping 直连稳定值
 
 ### 2.2 公网
 
-| 源 ＼ 目标 | gz | sgp1 | sgp2 | sgp3 |
-|-----------|-----|------|------|------|
-| **本机** | 22ms | 391ms | ✘ | ✘ |
-| **gz** | — | 340ms | ✘ | ✘ |
-| **sgp1** | 340ms | — | ✘ | ✘ |
-| **sgp2** | 90ms | 2ms | — | ✘ |
-| **sgp3** | 84ms | 3ms | ✘ | — |
-| **doris** | 10ms | 59ms | ✘ | ✘ |
+| 源 ＼ 目标 | gz | sgp1 | sgp2 | **hk** |
+|-----------|-----|------|------|--------|
+| **本机** | 23ms | 353ms | ✘ | **✘** |
+| **gz** | — | 340ms | ✘ | **✘** |
+| **sgp1** | 340ms | — | ✘ | **✘** |
+| **sgp2** | 90ms | 2ms | — | **✘** |
+| **hk** | **77ms** | **32ms** | ✘ | — |
+| **doris** | 10ms | 59ms | ✘ | **✘** |
 
-> ✘ = Azure 屏蔽 ICMP（sgp2/sgp3 公网 ping 不通，但 TCP 服务正常）
+> ✘ = Azure 屏蔽 ICMP（sgp2/hk 公网 ping 不通，但 TCP 服务正常）
 
 ### 2.3 延迟区域模型
 
 ```
-┌─────────────────────────────────────────────────┐
-│             新加坡集群（<5ms 互联）                │
-│                                                   │
-│   sgp1 (DO, 2GB)  ←2ms→  sgp2 (Azure, 847MB)    │
-│       ↕ 4ms                    ↕ 0.6ms           │
-│              sgp3 (Azure, 847MB)                  │
-└────────────────────┬────────────────────────────┘
-                     │ 87~110ms
-                     ↓
-              gz (阿里云广州, 1.6GB)
-              ↕ 10ms (公网)
-              本机/doris (中国境内)
+                    ┌─────────────────────────────────┐
+                    │     新加坡集群（2~4ms 互联）       │
+                    │                                   │
+                    │   sgp1 (DO, 2GB)  ←2ms→  sgp2    │
+                    │     (Azure, 847MB)                │
+                    └────────────────┬──────────────────┘
+                                     │
+                          ┌──── 33ms ─┼──── 87ms ─────┐
+                          ↓           ↓                 ↓
+                    hk (Azure HK)    (...)         gz (阿里云广州)
+                    ← 77ms → gz      ← 10ms →     本机/doris
+                    (真正香港!)       本机/doris    (中国境内)
 ```
 
-**核心结论**：新加坡三节点形成 **<5ms 低延迟集群**，gz 是地理孤岛。本机/doris 距 gz 10~22ms（境内），距 SGP 集群 60~253ms。
+**核心结论**：
+- SGP集群内 2~4ms
+- HK↔SGP 32~60ms（真实跨境）
+- HK↔GZ 77ms
+- GZ↔SGP 87~339ms（跨境+ISP路由差异）
+- 本机/doris↔GZ 10~17ms（境内低延迟）
 
 ---
 
@@ -101,18 +114,18 @@ $ ssh sgp3 'curl -s -o /dev/null -w "%{http_code} %{time_total}s" https://api.op
 | 节点 | 提供商 | RAM | 磁盘 | 已用内存 | 主要服务 |
 |------|--------|-----|------|----------|---------|
 | gz | 阿里云 | 1.6GB | 40GB | 659MB | metapi(62MB)+CPA(54MB)+nginx+cron |
-| sgp1 | DO | 2GB | 58GB | 1024MB | OpenClaw(447MB)+VectorControl Docker+danted |
+| sgp1 | DO | 2GB | 58GB | 1024MB | VectorControl Docker+danted |
 | sgp2 | Azure | 847MB | — | 469MB | nginx edge(SSL终止) |
-| sgp3/hk | Azure | 847MB | 29GB | ~200MB | **空闲**（正迁移至真HK） |
+| hk | Azure HK | 1GiB | 30GB | ~400MB | **空闲**（已初始化 Tailscale+UFW+fail2ban） |
 
-### 迁移后的将来拓扑
+### 迁移后的目标拓扑
 
 | 节点 | 位置 | RAM | 角色 |
 |------|------|-----|------|
-| sgp1 | DO 新加坡 | 2GB | **API 后端** (metapi+CPA+OpenClaw+VectorControl) |
+| sgp1 | DO 新加坡 | 2GB | **API 后端** (metapi+CPA+VectorControl) |
 | sgp2 | Azure 新加坡 | 847MB | **国际边缘** (nginx SSL → proxy sgp1) |
-| hk | Azure 香港(真) | 847MB | **中国边缘** (nginx SSL → proxy sgp1) + 监控 |
-| gz | 阿里云广州 | 1.6GB | 备份存储 + 监控 cron（减负） |
+| hk | Azure 香港 | 1GiB | **中国边缘** (nginx SSL → proxy sgp1) |
+| gz | 阿里云广州 | 1.6GB | OpenClaw (个人AI助手) + 监控 cron + 备份 |
 
 ---
 
@@ -123,20 +136,20 @@ $ ssh sgp3 'curl -s -o /dev/null -w "%{http_code} %{time_total}s" https://api.op
 ### 方案 A：metapi+CPA → sgp1（推荐 ✅）
 
 ```
-sgp1 (2GB):  metapi Docker(62MB) + CPA Docker(54MB) + OpenClaw(447MB) + VectorControl
-             预计内存: 1024MB + 116MB = ~1140MB (56% of 2GB)
+sgp1 (2GB):  metapi Docker(62MB) + CPA Docker(54MB) + VectorControl
+             OpenClaw 移走后: ~577MB → 加 116MB = ~693MB (35% of 2GB) ← 充裕!
 sgp2 (847MB): nginx edge → proxy sgp1:4001 (2ms)
-hk (真HK):   nginx edge + 中国入口 → proxy sgp1:4001 (~35ms)
-gz (1.6GB):  监控 cron + 备份（释放 metapi+CPA 后 ~400MB）
+hk (真HK):   nginx edge + 中国入口 → proxy sgp1:4001 (33ms)
+gz (1.6GB):  OpenClaw(447MB) + 监控 cron + 备份
 ```
 
 | 指标 | 迁移前 | 迁移后 | 变化 |
 |------|--------|--------|------|
 | 国际 API 延迟 | 350ms (4×跨国+SOCKS) | **2ms** (sgp2→sgp1) | **-99.4%** |
-| 中国 API 延迟 | ~370ms (sgp2→gz→SOCKS回sgp2) | **~55ms** (→HK→sgp1) | **-85%** |
+| 中国 API 延迟 | ~370ms (sgp2→gz→SOCKS回sgp2) | **~53ms** (→HK→sgp1) | **-86%** |
 | CPA→OpenAI | SOCKS5 代理 | 直连 (sgp1在新加坡) | 去除代理 |
-| gz 内存 | 659MB | ~400MB | -40% |
-| sgp1 内存 | 1024MB | ~1140MB (56%) | +116MB |
+| gz 内存 | 659MB | ~847MB (加OpenClaw) | +188MB |
+| sgp1 内存 | 1024MB | ~693MB (移走OpenClaw) | **-331MB 释放!** |
 
 **优势**：
 - 最大内存节点 (2GB)，能容纳全部 API 服务
@@ -288,30 +301,39 @@ ssh gz 'docker stop metapi; systemctl stop cliproxyapi; systemctl disable clipro
 # 保留 gz 上的 hub.db 备份，不立即删除
 ```
 
-### 5.6 后续阶段：真 HK 就绪后
+### 5.6 阶段六：HK 边缘入口配置（HK 已就绪）
 
-当 Azure 资源迁移到真 HK 完成后：
+HK VPS 已初始化 (2026-06-12): Tailscale + UFW + fail2ban + SSH hardening
 
 ```bash
-# 1. 初始化真 HK（Tailscale + UFW + hardening）
-# 2. 安装 nginx + certbot（申请 vectorcontrol.tech 或子域名证书）
-# 3. 配置 nginx → proxy sgp1:4001 via Tailscale
-# 4. 可选：DNS 添加 HK A 记录（或 Cloudflare 地理路由）
+# 1. 安装 nginx + certbot
+ssh hk 'sudo apt-get install -y nginx certbot python3-certbot-nginx'
+
+# 2. 配置 nginx → proxy sgp1:4001 via Tailscale
+# /etc/nginx/sites-available/vectorcontrol.conf:
+#   server_name vectorcontrol.tech www.vectorcontrol.tech;
+#   location /api/ { proxy_pass http://100.117.129.78:4001; }
+
+# 3. 申请 SSL 证书
+ssh hk 'sudo certbot --nginx -d vectorcontrol.tech -d www.vectorcontrol.tech'
+
+# 4. DNS: 添加 HK A 记录（或 Cloudflare 地理路由 CN→HK）
 ```
 
-真 HK 作为中国用户边缘入口：
-- 中国→HK: ~20ms → sgp1: ~35ms → OpenAI 直连
-- 比当前 350ms 提升 **85%+**
+中国用户完整路径: 用户(~20ms)→HK(nginx:443)→Tailscale(33ms)→sgp1(metapi) = **~53ms**
 
-### 5.7 后续：OpenClaw Docker 化（sgp1）
+### 5.7 后续：OpenClaw 部署到 gz
 
-```dockerfile
-# Dockerfile.openclaw
-FROM node:20-slim
-RUN npm install -g openclaw@2026.3.8
-COPY openclaw.json /root/.openclaw/openclaw.json
-EXPOSE 18789 18791 18792
-CMD ["openclaw-gateway"]
+OpenClaw 是**个人 AI 助手**（非 API 网关），主要调用 metapi 间接访问模型。
+放在 gz 优势：
+- gz 迁走 metapi+CPA 后有 ~900MB 空闲（1.6GB - 659MB + 116MB freed）
+- OpenClaw(447MB) 放 gz 后: ~847MB / 1.6GB = 53%
+- OpenClaw → metapi 调用路径: gz → sgp1 (339ms Tailscale / 87ms via sgp2)
+
+```bash
+# gz 上直接用 npm 或 Docker
+ssh gz 'npm install -g openclaw@2026.3.8'
+# 配置 openclaw.json 的 metapi endpoint 指向 sgp1
 ```
 
 ---
@@ -354,17 +376,17 @@ CMD ["openclaw-gateway"]
 
 ### 推荐 Docker 化路径
 
-1. **立即**：CPA Docker 化（配合迁移到 sgp3）
-2. **短期**：OpenClaw Docker 化（sgp1 上）
+1. **立即**：CPA Docker 化（配合迁移到 sgp1）
+2. **短期**：OpenClaw 部署到 gz (npm 或 Docker)
 3. **保持 host**：nginx (edge proxy 最好直接跑 host), Tailscale (系统级网络), danted
 
 ### 每节点 docker-compose 策略
 
 ```
-sgp1/docker-compose.yml:  metapi + cpa + openclaw(后续) + vectorcontrol(已有)
+sgp1/docker-compose.yml:  metapi + cpa + vectorcontrol(已有)
 sgp2: host-level nginx only
-hk:   host-level nginx (中国边缘) — 真HK就绪后
-gz:   host-level cron scripts only
+hk:   host-level nginx (中国边缘)
+gz:   OpenClaw (npm/systemd) + host-level cron scripts
 ```
 
 ---
@@ -409,53 +431,56 @@ scp /backup/sgp1-$(date +%F).tar.gz gz:/backup/
                     │ 2ms (Tailscale)            
                     ↓                            
               sgp1 (2GB)                        
-         metapi Docker + CPA Docker + OpenClaw  
+         metapi Docker + CPA Docker             
            ├── metapi:4001 → CPA:8317 (localhost)
            ├── CPA → api.openai.com (直连!)     
-           ├── OpenClaw 18789/18791/18792       
            └── VectorControl (nginx+backend+pg) 
                                                  
               gz (1.6GB)                        
-         监控 + 备份                             
+         OpenClaw + 监控 + 备份                  
+           ├── OpenClaw (个人AI助手, 调用 metapi)
            ├── cron: measure-snapshot.py (5min) 
            ├── cron: token-stats.py (1min)      
            └── hub.db 异地备份                   
 ```
 
-### 阶段二：真 HK 作为中国边缘（HK 就绪后）
+### 阶段二：HK 中国边缘入口（HK 已就绪，待配 nginx）
 
 ```
 中国用户 → hk (nginx:443, ~20ms)
-         → Tailscale → sgp1:4001 (~35ms)
+         → Tailscale → sgp1:4001 (33ms)
          → metapi → CPA → OpenAI (直连)
+                                            = 总计 ~53ms
 
 国际用户 → sgp2 (nginx:443)
          → Tailscale → sgp1:4001 (2ms)
          → metapi → CPA → OpenAI (直连)
+                                            = 总计 ~2ms
 ```
 
 ### 迁移前后总结
 
-| 指标 | 当前 | 阶段一 | 阶段二 (真HK) |
+| 指标 | 当前 | 阶段一 | 阶段二 (HK边缘) |
 |------|------|--------|---------------|
 | 国际 API 延迟 | ~350ms | **2ms** | 2ms |
-| 中国 API 延迟 | ~370ms | ~90ms | **~55ms** |
+| 中国 API 延迟 | ~370ms | ~90ms | **~53ms** |
 | CPA 出口 | SOCKS5 代理 | 直连 | 直连 |
-| gz 负载 | metapi+CPA | cron+备份 | cron+备份 |
+| gz 负载 | metapi+CPA | OpenClaw+cron | OpenClaw+cron |
+| sgp1 负载 | OpenClaw+VectorControl | metapi+CPA+VectorControl | metapi+CPA+VectorControl |
 | Docker 化 | metapi only | metapi+CPA | metapi+CPA |
 | 中国入口 | 无 | 无 | **HK nginx** |
 
 ---
 
-## 10. SSH 别名建议
+## 10. 已完成事项
 
-真 HK 迁移完成后更新 `.ssh/config`：
-
-```ssh-config
-# 当前 sgp3 (实际在新加坡) 迁移到真 HK 后：
-Host hk
-    HostName <新Tailscale IP>  # 迁移后会变
-    User azureuser
-```
-
-待迁移完成后获取新 Tailscale IP 并更新。
+- [x] HK VPS 创建 (Azure East Asia, 104.214.176.143) — 2026-06-12
+- [x] HK 初始化: Tailscale(100.96.116.54) + UFW + fail2ban + SSH hardening
+- [x] ipinfo 地理确认: `city: Hong Kong, country: HK`
+- [x] OpenAI HK 测试: 403 Forbidden（地区封锁确认）
+- [x] 全量延迟矩阵更新（6 节点）
+- [x] .ssh/config 更新 hk 别名 → 100.96.116.54
+- [ ] 执行 metapi+CPA → sgp1 迁移
+- [ ] HK nginx + certbot 边缘配置
+- [ ] OpenClaw 迁移到 gz
+- [ ] DNS 地理路由（CN→HK, 其他→SGP）
