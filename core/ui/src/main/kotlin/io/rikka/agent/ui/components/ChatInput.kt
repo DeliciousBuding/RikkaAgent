@@ -22,13 +22,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.painterResource
 import io.rikka.agent.ui.R
 
 @Composable
 fun ChatInput(
   modifier: Modifier = Modifier,
+  enabled: Boolean = true,
   onSend: (String) -> Unit,
 ) {
   var text by remember { mutableStateOf("") }
@@ -49,8 +52,20 @@ fun ChatInput(
         value = text,
         onValueChange = { text = it },
         modifier = Modifier.fillMaxWidth(),
-        placeholder = { Text("Ask your server...", style = MaterialTheme.typography.bodyMedium) },
-        textStyle = MaterialTheme.typography.bodyLarge,
+        enabled = enabled,
+        placeholder = {
+          Text(
+            "$ command",
+            style = MaterialTheme.typography.bodyMedium.copy(
+              fontFamily = FontFamily.Monospace,
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+          )
+        },
+        textStyle = MaterialTheme.typography.bodyLarge.copy(
+          fontFamily = FontFamily.Monospace,
+          fontSize = 15.sp,
+        ),
         colors = TextFieldDefaults.colors(
           focusedContainerColor = Color.Transparent,
           unfocusedContainerColor = Color.Transparent,

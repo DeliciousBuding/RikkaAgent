@@ -319,7 +319,10 @@ fun ChatScreen(
 
       // Input bar at bottom
       Box(modifier = Modifier.align(Alignment.BottomCenter)) {
-        ChatInput(onSend = { text -> vm.send(text) })
+        ChatInput(
+          enabled = !isStreaming,
+          onSend = { text -> vm.send(text) },
+        )
       }
     }
   }

@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import io.rikka.agent.BuildConfig
 import io.rikka.agent.vm.SettingsViewModel
 import org.koin.androidx.compose.koinViewModel
 
@@ -98,13 +99,13 @@ fun SettingsScreen(
       SectionHeader("About")
       SettingsItem(
         title = "Version",
-        subtitle = "0.1.0-dev",
+        subtitle = BuildConfig.VERSION_NAME,
         onClick = {},
       )
       SettingsItem(
-        title = "Open source licenses",
-        subtitle = "View third-party licenses",
-        onClick = { /* TODO */ },
+        title = "License",
+        subtitle = "Apache License 2.0",
+        onClick = { /* TODO: show license text */ },
       )
     }
   }
