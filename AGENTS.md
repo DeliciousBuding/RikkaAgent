@@ -8,8 +8,9 @@ Build a production-quality Android (Jetpack Compose) app that provides a chat-st
 
 ## Project Planning (SSOT)
 
-- Roadmap: `ROADMAP.md`
-- Running state / decisions: `ROADMAP_STATE.md`
+- Roadmap & progress: `ROADMAP.md`
+- Static facts & infrastructure: `STATE.md`
+- History & archive: `ARCHIVE.md`
 - Specs: `docs/spec/00-index.md`
 
 ## Non-Negotiables (Security & Privacy)
