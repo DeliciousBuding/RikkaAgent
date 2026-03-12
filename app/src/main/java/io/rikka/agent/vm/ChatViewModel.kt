@@ -220,10 +220,11 @@ class ChatViewModel(
             _connectionState.value = ConnectionState.READY
           }
           is ExecEvent.Error -> {
+            val friendlyMsg = friendlyErrorMessage(event.category, event.message)
             val errorContent = if (stdout.isNotEmpty() || stderr.isNotEmpty()) {
-              formatOutput(stdout, stderr, exitCode = null) + "\nError: ${event.message}"
+              formatOutput(stdout, stderr, exitCode = null) + "\n$friendlyMsg"
             } else {
-              "Error (${event.category}): ${event.message}"
+              friendlyMsg
             }
             updateAssistantMessage(assistantId, errorContent, MessageStatus.Error)
             persistUpdate(assistantId, errorContent, MessageStatus.Error)
@@ -294,6 +295,14 @@ class ChatViewModel(
       if (isNotEmpty()) append("\n")
       append("exit: $exitCode")
     }
+  }
+
+  private fun friendlyErrorMessage(category: String, raw: String): String = when (category) {
+    "connection_refused" -> "Connection refused — is the SSH server running on the target host?"
+    "timeout" -> "Connection timed out — check the host address and network connectivity."
+    "unknown_host" -> "Host not found — verify the hostname or IP address."
+    "auth_failed" -> "Authentication failed — check your credentials or key file."
+    else -> "SSH error: $raw"
   }
 
   private fun updateAssistantContent(id: String, content: String) {
