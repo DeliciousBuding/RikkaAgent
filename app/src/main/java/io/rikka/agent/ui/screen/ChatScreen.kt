@@ -206,30 +206,16 @@ fun ChatScreen(
 
   // Show full output dialog for truncated content
   fullOutputDialog?.let { fullText ->
-    AlertDialog(
-      onDismissRequest = { fullOutputDialog = null },
-      title = { Text(stringResource(R.string.full_output_title)) },
-      text = {
-        Column(modifier = Modifier.height(320.dp).verticalScroll(rememberScrollState())) {
-          Text(text = fullText, fontFamily = FontFamily.Monospace)
+    FullOutputDialog(
+      fullText = fullText,
+      onShare = {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+          type = "text/plain"
+          putExtra(Intent.EXTRA_TEXT, fullText)
         }
+        context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_full_output)))
       },
-      confirmButton = {
-        TextButton(onClick = {
-          val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, fullText)
-          }
-          context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_full_output)))
-        }) {
-          Text(stringResource(R.string.share_full_output))
-        }
-      },
-      dismissButton = {
-        TextButton(onClick = { fullOutputDialog = null }) {
-          Text(stringResource(R.string.close))
-        }
-      },
+      onDismiss = { fullOutputDialog = null },
     )
   }
 
@@ -697,6 +683,33 @@ private fun PasswordDialog(
     },
     dismissButton = {
       TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel)) }
+    },
+  )
+}
+
+@Composable
+internal fun FullOutputDialog(
+  fullText: String,
+  onShare: () -> Unit,
+  onDismiss: () -> Unit,
+) {
+  AlertDialog(
+    onDismissRequest = onDismiss,
+    title = { Text(stringResource(R.string.full_output_title)) },
+    text = {
+      Column(modifier = Modifier.height(320.dp).verticalScroll(rememberScrollState())) {
+        Text(text = fullText, fontFamily = FontFamily.Monospace)
+      }
+    },
+    confirmButton = {
+      TextButton(onClick = onShare) {
+        Text(stringResource(R.string.share_full_output))
+      }
+    },
+    dismissButton = {
+      TextButton(onClick = onDismiss) {
+        Text(stringResource(R.string.close))
+      }
     },
   )
 }
