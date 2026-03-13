@@ -17,23 +17,26 @@ The primary use case is connecting an Android phone to a desktop running [Codex]
 
 ## Features
 
-### Implemented (M1 Skeleton)
+### Implemented
 
 - [x] Jetpack Compose chat-style UI
-- [x] Material 3 theming (light + dark)
+- [x] Material 3 theming (light + dark + AMOLED)
 - [x] Markdown rendering in output bubbles
-- [x] Streaming output simulation (fake data for UI validation)
-- [x] ANSI escape sequence stripping utility
+- [x] Real SSH exec streaming (stdout/stderr/exit)
+- [x] ANSI escape sequence stripping
+- [x] Host key verification (TOFU + mismatch warning)
+- [x] SSH profiles persisted with Room
+- [x] Encrypted private key storage (AndroidX Security Crypto)
+- [x] Private key auth + password auth + `.ppk` support
+- [x] Codex mode (`codex exec --json --full-auto`) with JSONL parsing
+- [x] Session export/share + rerun/copy actions
+- [x] i18n (English/Chinese)
 
 ### Planned
 
-- [ ] SSH profiles (host/port/user/key)
-- [ ] Private key import + encrypted at-rest storage (Android Keystore)
-- [ ] Strict `known_hosts` verification (fingerprint confirmation; change warning/block)
-- [ ] Real SSH exec channel streaming
-- [ ] Code block cards (copy / collapse / syntax highlight)
-- [ ] Navigation: Profiles → Editor → Session → Settings
-- [ ] Codex integration (remote command execution)
+- [ ] Mermaid rendering (optional)
+- [ ] More tests (unit + integration)
+- [ ] Output expand/download for truncated long logs
 
 ## Non-Goals
 
@@ -81,16 +84,16 @@ The APK will be at `app/build/outputs/apk/dev/debug/app-dev-debug.apk`.
 
 ## Project Status
 
-Early development. Currently at **M1** (Android skeleton with mock data). See [ROADMAP.md](ROADMAP.md) for the full milestone plan.
+Core milestones are substantially implemented (M1-M5 mainline complete, polish/test work ongoing). See [ROADMAP.md](ROADMAP.md) for live progress.
 
 | Milestone | Description | Status |
 |-----------|-------------|--------|
-| M0 | Spec Freeze | 🟡 In Progress |
-| M1 | Android Skeleton (UI, no SSH) | 🟡 In Progress |
-| M2 | Markdown/Streaming Rendering | Not Started |
-| M3 | SSH exec (Mode A) | Not Started |
-| M4 | Codex Integration | Not Started |
-| M5 | Open-Source Release Quality | Not Started |
+| M0 | Spec Freeze | ✅ Mostly Complete |
+| M1 | Android App Core UX | ✅ Mostly Complete |
+| M2 | Markdown/Streaming Rendering | ✅ Mostly Complete |
+| M3 | SSH exec (Mode A) | ✅ Mostly Complete |
+| M4 | Codex Integration | ✅ Mostly Complete |
+| M5 | Release Quality | ✅ Mostly Complete |
 
 ## Documentation
 
