@@ -43,10 +43,11 @@ class ChatModelsTest {
 
   @Test
   fun `MessageStatus enum values`() {
-    assertEquals(3, MessageStatus.entries.size)
+    assertEquals(4, MessageStatus.entries.size)
     assertEquals(MessageStatus.Streaming, MessageStatus.valueOf("Streaming"))
     assertEquals(MessageStatus.Final, MessageStatus.valueOf("Final"))
     assertEquals(MessageStatus.Error, MessageStatus.valueOf("Error"))
+    assertEquals(MessageStatus.Canceled, MessageStatus.valueOf("Canceled"))
   }
 
   @Test
