@@ -112,17 +112,18 @@
 3. README 已完成发布导向重构（矩阵/FAQ/Gallery/Quick Demo）。
 4. i18n 键一致性审计已完成（app/core-ui 中英 0 缺失），见 `docs/i18n-key-audit.md`。
 5. Codex `thread/turn/item` 事件已映射为结构化进度摘要，并有 ViewModel/解析层测试兜底。
+6. 截断输出的 CodeCard 展开、完整输出动作行、用户重跑按钮已有 Compose 回归覆盖。
 
 ### 正在进行中的主线
 
 1. SAF URI 生命周期测试。
-2. 输出操作的 UI 级回归（展开 / 分享 / 导出）。
+2. `ChatScreen` 层输出分享/完整输出弹窗回归。
 3. 发布门禁回归验证（模块单测 / lint / assemble）。
 
 ### 下一位 Agent 建议直接执行顺序
 
 1. 先补 SAF URI 生命周期与异常路径测试。
-2. 再补输出操作的 UI 级回归。
+2. 再补 `ChatScreen` 层输出分享/完整输出弹窗回归。
 3. 最后执行全回归与发布门禁（模块单测 -> lint -> assemble）。
 
 ### 本机验证前置（已验证可用）

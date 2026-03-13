@@ -34,6 +34,7 @@ This document maps key spec requirements to current automated coverage.
 - Coverage:
   - `app/src/test/java/io/rikka/agent/vm/ChatViewModelTest.kt`
   - `app/src/test/java/io/rikka/agent/vm/ProfileEditorViewModelTest.kt`
+  - `app/src/test/java/io/rikka/agent/ui/components/ChatBubbleActionsTest.kt`
 - Covered behaviors:
   - initial profile-ready state
   - persisted thread switch loading
@@ -45,15 +46,16 @@ This document maps key spec requirements to current automated coverage.
   - host key replacement confirmation dialogs
   - canceled exec event persistence + cancelRunning semantics
 - Gaps:
-  - End-to-end UI interaction coverage for action-row flows (rerun/share/export)
+  - Screen-level share/export intent verification in `ChatScreen`
 
 ## 3) Output Formatting & Truncation
 
 - Spec: `docs/spec/30-architecture.md` (memory cap), `docs/spec/34-polish.md`
 - Coverage:
   - `app/src/test/java/io/rikka/agent/vm/OutputFormatterTest.kt`
+  - `app/src/test/java/io/rikka/agent/ui/components/ChatBubbleActionsTest.kt` (CodeCard expand + full-output action row)
 - Gaps:
-  - UI-level interaction tests for expand/share full output
+  - `ChatScreen` dialog/share-sheet flow verification for full output
 
 ## 4) CI Enforcement
 
@@ -71,5 +73,5 @@ This document maps key spec requirements to current automated coverage.
 ## 5) Next Additions
 
 1. SAF picker permission persistence / URI lifecycle tests
-2. UI-level interaction tests for truncated-output expand/share flows
+2. `ChatScreen` dialog/share-sheet verification for full output flows
 3. UI-level rendering verification for Codex progress summaries
