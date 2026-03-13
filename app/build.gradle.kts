@@ -95,4 +95,6 @@ dependencies {
 
   // Encrypted storage for SSH keys
   implementation(libs.security.crypto)
+
+  testImplementation(libs.junit4)
 }

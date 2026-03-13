@@ -24,6 +24,20 @@ import java.io.StringReader
 import java.security.PublicKey
 import java.util.concurrent.TimeUnit
 
+internal enum class PrivateKeyFormat {
+  PuTTY,
+  OpenSSH,
+}
+
+internal fun detectPrivateKeyFormat(keyContent: String): PrivateKeyFormat {
+  val trimmed = keyContent.trimStart()
+  return if (trimmed.startsWith("PuTTY-User-Key-File-")) {
+    PrivateKeyFormat.PuTTY
+  } else {
+    PrivateKeyFormat.OpenSSH
+  }
+}
+
 /**
  * Real SSH exec runner backed by sshj.
  *
@@ -267,8 +281,7 @@ class SshjExecRunner(
   }
 
   private fun loadKeyProvider(keyContent: String, pwFinder: PasswordFinder?): KeyProvider {
-    val trimmed = keyContent.trimStart()
-    return if (trimmed.startsWith("PuTTY-User-Key-File-")) {
+    return if (detectPrivateKeyFormat(keyContent) == PrivateKeyFormat.PuTTY) {
       val keyFile = PuTTYKeyFile()
       keyFile.init(StringReader(keyContent), null, pwFinder)
       keyFile

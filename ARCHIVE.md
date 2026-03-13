@@ -117,3 +117,5 @@
 - ✅ SSH 私钥格式扩展：新增 PuTTY `.ppk` 加载支持
 - ✅ `:core:ssh` 单元测试补齐：`JsonlParserTest`（JSON/非JSON/分块/flush）
 - ✅ 截断输出支持“完整查看 + 完整分享”（消息级）
+- ✅ 输出格式化测试：`OutputFormatterTest`（截断标记/完整输出一致性）
+- ✅ 认证链路测试：`SshAuthKeyFormatTest`（PuTTY/OpenSSH 判定）
