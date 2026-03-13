@@ -67,13 +67,42 @@ private val mdParser: Parser = Parser.builder()
 @Composable
 fun MarkdownText(
   markdown: String,
+  enableMermaid: Boolean = false,
   modifier: Modifier = Modifier,
 ) {
+  val segments = remember(markdown, enableMermaid) {
+    if (enableMermaid && MermaidFenceParser.hasMermaidFence(markdown)) {
+      MermaidFenceParser.split(markdown)
+    } else {
+      listOf(MermaidSegment(MermaidSegmentKind.Markdown, markdown))
+    }
+  }
+
+  Column(
+    modifier = modifier.fillMaxWidth(),
+    verticalArrangement = Arrangement.spacedBy(6.dp),
+  ) {
+    segments.forEach { segment ->
+      when (segment.kind) {
+        MermaidSegmentKind.Markdown -> {
+          RenderMarkdownSegment(segment.content)
+        }
+        MermaidSegmentKind.Mermaid -> {
+          MermaidDiagramCard(source = segment.content)
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun RenderMarkdownSegment(markdown: String) {
+  if (markdown.isBlank()) return
   val document = remember(markdown) { mdParser.parse(markdown) }
 
   SelectionContainer {
     Column(
-      modifier = modifier.fillMaxWidth(),
+      modifier = Modifier.fillMaxWidth(),
       verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
       RenderChildren(document)
