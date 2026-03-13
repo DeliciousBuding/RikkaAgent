@@ -66,6 +66,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.rikka.agent.model.MessageStatus
+import io.rikka.agent.storage.AppPreferences
 import io.rikka.agent.vm.ChatViewModel
 import io.rikka.agent.vm.ConnectionState
 import io.rikka.agent.vm.HostKeyEvent
@@ -77,6 +78,7 @@ import io.rikka.agent.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -86,7 +88,9 @@ fun ChatScreen(
   onBack: () -> Unit = {},
 ) {
   val vm: ChatViewModel = koinViewModel { parametersOf(profileId) }
+  val prefs: AppPreferences = koinInject()
   val messages by vm.messages.collectAsState()
+  val enableMermaid by prefs.enableMermaid.collectAsState(initial = false)
   val connectionState by vm.connectionState.collectAsState()
   val threads by vm.threads.collectAsState()
   val profileLabel by vm.profileLabel.collectAsState()
@@ -108,7 +112,7 @@ fun ChatScreen(
   }
 
   // Host key verification dialog state
-  var hostKeyEvent by remember { mutableStateOf<HostKeyEvent?>(null) }
+  var hostKeyDialogState by remember { mutableStateOf(HostKeyDialogState()) }
 
   // Password dialog state
   var passwordTarget by remember { mutableStateOf<String?>(null) }
@@ -119,7 +123,7 @@ fun ChatScreen(
 
   LaunchedEffect(Unit) {
     vm.hostKeyEvent.collect { event ->
-      hostKeyEvent = event
+      hostKeyDialogState = HostKeyDialogStateMachine.receive(event)
     }
   }
 
@@ -136,16 +140,56 @@ fun ChatScreen(
   }
 
   // Show host key dialog
-  hostKeyEvent?.let { event ->
+  hostKeyDialogState.event?.let { event ->
     HostKeyDialog(
       event = event,
       onAccept = {
-        vm.respondToHostKey(true)
-        hostKeyEvent = null
+        val result = HostKeyDialogStateMachine.acceptPrimary(hostKeyDialogState)
+        hostKeyDialogState = result.nextState
+        result.decision?.let(vm::respondToHostKey)
       },
       onReject = {
-        vm.respondToHostKey(false)
-        hostKeyEvent = null
+        val result = HostKeyDialogStateMachine.rejectPrimary()
+        hostKeyDialogState = result.nextState
+        result.decision?.let(vm::respondToHostKey)
+      },
+    )
+  }
+
+  hostKeyDialogState.confirmReplacement?.let { event ->
+    AlertDialog(
+      onDismissRequest = {
+        val result = HostKeyDialogStateMachine.confirmReplacement(accepted = false)
+        hostKeyDialogState = result.nextState
+        result.decision?.let(vm::respondToHostKey)
+      },
+      title = { Text(stringResource(R.string.host_key_replace_confirm_title)) },
+      text = {
+        Text(
+          text = stringResource(
+            R.string.host_key_replace_confirm_msg,
+            event.host,
+            event.port,
+          )
+        )
+      },
+      confirmButton = {
+        TextButton(onClick = {
+          val result = HostKeyDialogStateMachine.confirmReplacement(accepted = true)
+          hostKeyDialogState = result.nextState
+          result.decision?.let(vm::respondToHostKey)
+        }) {
+          Text(stringResource(R.string.host_key_replace_confirm_action))
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = {
+          val result = HostKeyDialogStateMachine.confirmReplacement(accepted = false)
+          hostKeyDialogState = result.nextState
+          result.decision?.let(vm::respondToHostKey)
+        }) {
+          Text(stringResource(R.string.btn_reject))
+        }
       },
     )
   }
@@ -353,6 +397,7 @@ fun ChatScreen(
             items(messages, key = { it.id }) { msg ->
               ChatBubble(
                 message = msg,
+                enableMermaid = enableMermaid,
                 showExpand = vm.hasFullOutput(msg.id),
                 onExpand = {
                   fullOutputDialog = vm.getFullOutput(msg.id)
