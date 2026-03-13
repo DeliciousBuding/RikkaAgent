@@ -2,82 +2,85 @@
 
 ![RikkaAgent Hero](docs/images/rikkaagent-hero.svg)
 
-> 📱 A polished Android SSH command runner with chat-style rendering for command outputs.
+> 📱 Chat-first SSH runner for Android.  
+> Read command output like a conversation, not a terminal wall.
 
-[![Android CI](https://img.shields.io/github/actions/workflow/status/DeliciousBuding/RikkaAgent/ci.yml?branch=master&label=CI)](https://github.com/DeliciousBuding/RikkaAgent/actions/workflows/ci.yml)
+[![Android CI](https://img.shields.io/github/actions/workflow/status/DeliciousBuding/RikkaAgent/ci.yml?branch=master&label=Android%20CI)](https://github.com/DeliciousBuding/RikkaAgent/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.1.0-7F52FF?logo=kotlin)](https://kotlinlang.org/)
-[![Android API](https://img.shields.io/badge/API-24%2B-brightgreen)](app/build.gradle.kts)
+[![Android API](https://img.shields.io/badge/API-24%2B-2ea043)](app/build.gradle.kts)
+[![Mode](https://img.shields.io/badge/Mode-A%20(SSH%20exec)-0a7ea4)](docs/spec/32-ssh.md)
 
-Inspired by the UX feel of [RikkaHub](https://github.com/re-ovo/rikkahub), but implemented clean-room from scratch under Apache-2.0.
+Inspired by the UX feel of [RikkaHub](https://github.com/re-ovo/rikkahub), built clean-room from scratch under Apache-2.0.
 
-## ✨ Why RikkaAgent
+## 🌟 At A Glance
 
-Traditional mobile terminals work, but reading long outputs is painful. RikkaAgent focuses on readability, safety, and speed:
+| Focus | What You Get |
+|---|---|
+| 💬 Readability-first UX | Command + output timeline, Markdown + code cards, streaming-friendly rendering |
+| 🔐 Security-by-default | Known-hosts verification, mismatch warning flow, encrypted key storage |
+| ⚡ Ops velocity | Copy / rerun / export session, profile-level shell and auth options |
+| 🧠 Codex bridge | Remote `codex exec --json --full-auto` with tolerant JSONL parsing |
+| 📈 Diagram rendering | Optional Mermaid detection, card rendering, and fallback path |
+| 🌍 i18n | Chinese + English resources, Chinese-first UX wording |
 
-- 💬 Chat-style command and output timeline
-- 🔐 Secure SSH with host-key verification and encrypted key storage
-- 🧠 Codex mode for remote `codex exec --json --full-auto`
-- 🧩 Markdown/code rendering optimized for streaming output
+## 🚀 Capability Matrix
 
-## 🚀 Feature Matrix
-
-| Area | Status | Details |
+| Domain | Status | Notes |
 |---|---|---|
-| Core UI (Compose) | ✅ | Profiles, Editor, Session, Settings, Known Hosts, About |
-| SSH Exec (Mode A) | ✅ | Real stdout/stderr/exit streaming via sshj |
-| Authentication | ✅ | Password + private key + passphrase + PuTTY `.ppk` |
-| Security | ✅ | TOFU host key verify, mismatch warning, encrypted key files |
-| Codex Integration | ✅ | Profile toggle + workdir + API key + JSONL parse |
-| Rendering | ✅ | Markdown + CodeCard + streaming-friendly behavior |
-| i18n | ✅ | English + Chinese resources |
-| CI | ✅ | test + lint + assemble + artifact uploads |
-| Mermaid rendering | 🟡 | Planned |
-| Expanded output tooling | 🟡 | Planned (`expand/download full output`) |
+| Compose app shell | ✅ | Profiles, editor, chat session, settings, known hosts, about |
+| SSH engine (Mode A) | ✅ | sshj exec, stdout/stderr/exit streaming, connection reuse |
+| Auth chain | ✅ | Password, key, passphrase, PuTTY `.ppk` |
+| Host key safety | ✅ | TOFU + mismatch warning + replacement confirmation |
+| Codex integration | ✅ | Profile toggle, workdir, API key injection, JSONL events |
+| Rendering pipeline | ✅ | Markdown + CodeCard + truncation/full-output affordances |
+| Mermaid rendering | ✅ | Feature flag, segmented rendering, WebView card, retry + source fallback |
+| CI quality gate | ✅ | Unit test + lint + assemble + artifacts + summary |
 
-## 🧭 Product Scope
+## 🎯 Product Boundary
 
-### In Scope
+### Included
 
-- Non-interactive SSH command execution (`exec` channel)
-- Stream stdout/stderr into a chat conversation
-- Copy/rerun/export workflows for daily ops usage
+- Non-interactive SSH command execution (exec channel)
+- Structured streaming into chat bubbles
+- Day-to-day operator workflow (rerun, copy, share, export)
 
-### Out of Scope
+### Not Included (v1)
 
-- PTY-style interactive terminal emulation (vim/top/tmux)
-- Server-side HTTP command relay by default
-- Fully autonomous command execution without explicit user intent
+- PTY terminal emulation (`vim`, `top`, `htop`, cursor control)
+- Default server-side HTTP command relay
+- Fully autonomous remote action without explicit user command
 
-## 🏗️ Architecture
+## 🧱 Architecture
 
 ```text
-:app            -> App shell, Navigation, ViewModels, Screens
+:app            -> Screens, Navigation, ViewModels, DI wiring
 :core:model     -> Domain models (profile, message, status)
-:core:ssh       -> SSH runner, events, JSONL parsing, key helpers
-:core:storage   -> Room/DataStore persistence
-:core:ui        -> Reusable Compose UI components
+:core:ssh       -> SSH runner, JSONL parser, host key store interfaces
+:core:storage   -> Room + DataStore persistence
+:core:ui        -> Reusable Compose components (bubble/code/markdown/input)
 ```
 
-### Mode A Data Flow
+### Mode A Runtime Flow
 
 ```text
-User input -> ChatViewModel -> SshExecRunner.run(profile, command)
-                                -> Flow<ExecEvent>
-                                -> Stdout/Stderr/Exit/Error/Structured
-                                -> Message updates
-                                -> Compose UI render
+User command
+    -> ChatViewModel
+    -> SshExecRunner.run(profile, command)
+    -> Flow<ExecEvent>
+    -> stdout/stderr/structured/exit
+    -> message persistence + UI update
 ```
 
 ## ⚙️ Quick Start
 
-### Prerequisites
+### Requirements
 
 - JDK 17+
-- Android SDK (API 35)
-- Gradle 8.10.2 (wrapper included)
+- Android SDK (target API 35)
+- Gradle wrapper (included)
 
-### Build / Test / Lint
+### Build, Test, Lint
 
 ```bash
 ./gradlew test
@@ -85,46 +88,101 @@ User input -> ChatViewModel -> SshExecRunner.run(profile, command)
 ./gradlew assembleDevDebug
 ```
 
-APK output:
+Debug APK output:
 
 - `app/build/outputs/apk/dev/debug/app-dev-debug.apk`
 
-## 📊 Milestone Status
+## ✅ Verification Shortcuts
 
-See [ROADMAP.md](ROADMAP.md) for the latest execution details.
+For fast local regression on current core paths:
 
-| Milestone | Name | Status |
+```bash
+./gradlew :core:storage:testDebugUnitTest :core:ssh:testDebugUnitTest :app:testDevDebugUnitTest
+```
+
+## 🖼️ UI Gallery
+
+| Chat Session | Profile Editor | Settings |
 |---|---|---|
-| M0 | Spec Freeze | ✅ Mostly complete |
-| M1 | App Core UX | ✅ Mostly complete |
-| M2 | Rendering Pipeline | ✅ Mostly complete |
-| M3 | SSH Engine | ✅ Mostly complete |
-| M4 | Codex Integration | ✅ Mostly complete |
-| M5 | Release Quality | ✅ Mostly complete |
+| ![Chat Session](docs/images/screenshot-chat.svg) | ![Profile Editor](docs/images/screenshot-profile.svg) | ![Settings](docs/images/screenshot-settings.svg) |
 
-## 🔒 Security Notes
+> Notes:
+> - Current gallery uses placeholder SVG assets generated from project visual direction.
+> - Replace with real screenshots before release tag.
 
-- Private keys are stored encrypted at rest (AndroidX Security Crypto)
-- Host key mismatch is explicitly surfaced as a security warning
-- This repo must not contain runtime secrets (keys/tokens/passwords)
+## 🎬 Quick Demo Flow
 
-Server hardening guidance: [docs/server-hardening.md](docs/server-hardening.md)
+1. Create a profile in the editor (host/user/auth).
+2. Test SSH connection and trust host key fingerprint.
+3. Open chat session and run `uname -a`.
+4. Re-run, copy, export, and share output from action row.
+5. (Optional) Enable Codex mode for JSONL streaming tasks.
 
-## 📚 Documentation
+## ❓ FAQ
 
-- [Spec Index](docs/spec/00-index.md)
-- [Architecture](docs/architecture.md)
-- [Threat Model](docs/threat-model.md)
-- [Privacy Audit](docs/privacy-audit.md)
-- [Release Checklist](docs/release-checklist.md)
-- [RikkaHub UI Study (research)](docs/research/rikkahub-android-ui-study.md)
+**Q1: Why no interactive terminal mode?**  
+Mode A intentionally focuses on exec-channel reliability and readable output. PTY is out of v1 scope.
+
+**Q2: Does RikkaAgent store private keys in plaintext?**  
+No. App-managed keys are encrypted at rest via AndroidX Security Crypto.
+
+**Q3: Why does host key mismatch require confirmation?**  
+To reduce MITM risk. Replacing trust should only happen after out-of-band verification.
+
+**Q4: Mermaid toggle is enabled but a diagram still falls back to source. Why?**  
+Fallback is intentional when parsing or local rendering fails. The source block remains visible so the session stays readable and recoverable.
+
+## 🧭 GitHub Ready
+
+- CI validates unit tests, lint, and a dev debug APK on every PR.
+- PR template is included for verification notes and rollback planning.
+- Issue templates guide bug reports and feature requests with security-safe prompts.
+
+## 🗺️ Milestones
+
+Track execution details in [ROADMAP.md](ROADMAP.md).
+
+| Milestone | Theme | Status |
+|---|---|---|
+| M0 | Spec freeze | ✅ Mostly complete |
+| M1 | App core UX | ✅ Mostly complete |
+| M2 | Rendering pipeline | ✅ Mostly complete |
+| M3 | SSH engine | ✅ Mostly complete |
+| M4 | Codex integration | ✅ Mostly complete |
+| M5 | Release quality | ✅ Mostly complete |
+
+## 🛡️ Security Notes
+
+- Private keys are encrypted at rest via AndroidX Security Crypto.
+- Host key mismatch is treated as high-risk and requires explicit confirmation.
+- Never commit secrets (keys, tokens, passphrases, real infrastructure identifiers).
+
+Hardening references:
+
+- [docs/server-hardening.md](docs/server-hardening.md)
+- [docs/threat-model.md](docs/threat-model.md)
+- [docs/privacy-audit.md](docs/privacy-audit.md)
+
+## 📚 Docs Hub
+
+| Category | Entry |
+|---|---|
+| Spec index | [docs/spec/00-index.md](docs/spec/00-index.md) |
+| Test mapping | [docs/spec/71-test-mapping.md](docs/spec/71-test-mapping.md) |
+| Release acceptance | [docs/spec/81-release-acceptance-matrix.md](docs/spec/81-release-acceptance-matrix.md) |
+| Architecture | [docs/architecture.md](docs/architecture.md) |
+| Product plan | [docs/plan.md](docs/plan.md) |
+| i18n key audit | [docs/i18n-key-audit.md](docs/i18n-key-audit.md) |
+| RikkaHub UX study (research) | [docs/research/rikkahub-android-ui-study.md](docs/research/rikkahub-android-ui-study.md) |
 
 ## 🤝 Contributing
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+Before opening PRs, read:
 
-Security reports: [SECURITY.md](SECURITY.md)
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- [SECURITY.md](SECURITY.md)
 
 ## 📄 License
 
-[Apache-2.0](LICENSE)
+Licensed under [Apache-2.0](LICENSE).

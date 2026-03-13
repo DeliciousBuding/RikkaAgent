@@ -3,8 +3,10 @@ package io.rikka.agent.di
 import androidx.room.Room
 import io.rikka.agent.ssh.ContentUriKeyContentProvider
 import io.rikka.agent.ssh.DataStoreKnownHostsStore
+import io.rikka.agent.ssh.DefaultSshExecRunnerFactory
 import io.rikka.agent.ssh.KeyContentProvider
 import io.rikka.agent.ssh.KnownHostsStore
+import io.rikka.agent.ssh.SshExecRunnerFactory
 import io.rikka.agent.storage.AppPreferences
 import io.rikka.agent.storage.ChatRepository
 import io.rikka.agent.storage.ProfileStore
@@ -40,4 +42,5 @@ val appModule = module {
   single<KnownHostsStore> { DataStoreKnownHostsStore(androidContext()) }
   single { ContentUriKeyContentProvider(androidContext()) }
   single<KeyContentProvider> { get<ContentUriKeyContentProvider>() }
+  single<SshExecRunnerFactory> { DefaultSshExecRunnerFactory }
 }

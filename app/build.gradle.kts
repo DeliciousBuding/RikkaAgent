@@ -50,6 +50,9 @@ android {
     buildConfig = true
   }
 
+  testOptions {
+    unitTests.isIncludeAndroidResources = true
+  }
 
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -97,4 +100,7 @@ dependencies {
   implementation(libs.security.crypto)
 
   testImplementation(libs.junit4)
+  testImplementation(libs.kotlinx.coroutines.test)
+  testImplementation(libs.androidx.test.core)
+  testImplementation(libs.robolectric)
 }

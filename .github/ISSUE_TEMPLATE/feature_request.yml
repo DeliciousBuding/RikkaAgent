@@ -1,0 +1,62 @@
+name: Feature request
+description: Propose a scoped enhancement aligned with the product boundary.
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing, please sanity-check the request against the current product boundary:
+        - Mode A SSH exec is in scope
+        - PTY / terminal emulation is intentionally out of early scope
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What operator pain point or workflow gap are you trying to address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the ideal UX or behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds exist today, and why are they insufficient?
+  - type: dropdown
+    id: product_area
+    attributes:
+      label: Product area
+      options:
+        - Chat UX
+        - SSH engine
+        - Security / trust
+        - Codex integration
+        - Settings / preferences
+        - Docs / onboarding
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance signals
+      description: How would we know this is done well?
+      placeholder: |
+        - user can ...
+        - fallback behavior is ...
+        - no secrets are exposed ...
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Scope check
+      options:
+        - label: This request does not require sharing secrets or private infrastructure details.
+          required: true
+        - label: I checked that this is not already covered by the README or roadmap.
+          required: true
