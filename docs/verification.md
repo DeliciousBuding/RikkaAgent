@@ -49,3 +49,5 @@ $env:Path="$env:JAVA_HOME\bin;$env:Path"
 ```
 
 For common setup issues, see `docs/troubleshooting.md`.
+
+For CI artifact locations and step summary details, see `docs/ci-notes.md`.

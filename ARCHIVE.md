@@ -172,3 +172,4 @@
 - ✅ Spec index 补充 supporting docs 入口
 - ✅ SECURITY/STATE/ENV 文档指向 troubleshooting 与 verification
 - ✅ 新增 glossary 术语表并链接到 spec index 与 README
+- ✅ 新增 CI notes 文档并链接到 docs hub 与 spec index

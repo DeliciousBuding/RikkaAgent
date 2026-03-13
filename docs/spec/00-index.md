@@ -41,6 +41,7 @@ Supporting docs (non-spec):
 - `docs/verification.md`
 - `docs/troubleshooting.md`
 - `docs/glossary.md`
+- `docs/ci-notes.md`
 
 ## Research Notes (Non-Normative)
 

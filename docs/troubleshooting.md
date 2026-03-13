@@ -48,3 +48,7 @@ sdk.dir=C:\Path\To\Android\Sdk
 
 - Run `./gradlew assembleDevDebug`
 - APK path: `app/build/outputs/apk/dev/debug/app-dev-debug.apk`
+
+## CI Diagnostics
+
+For workflow steps, artifacts, and summary details, see `docs/ci-notes.md`.
