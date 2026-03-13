@@ -44,4 +44,36 @@ class OutputFormatterTest {
     assertTrue(out.display.contains("ok"))
     assertTrue(out.display.contains("exit: 0"))
   }
+
+  @Test
+  fun `format truncates stderr independently`() {
+    val err = "e".repeat(32)
+    val out = OutputFormatter.format(
+      stdout = "",
+      stderr = err,
+      exitCode = 1,
+      capChars = 10,
+      texts = texts,
+    )
+
+    assertTrue(out.truncated)
+    assertTrue(out.display.contains("stderr:"))
+    assertTrue(out.display.contains("[truncated]"))
+    assertTrue(out.full.contains(err))
+  }
+
+  @Test
+  fun `format emits failed no-output line`() {
+    val out = OutputFormatter.format(
+      stdout = "",
+      stderr = "",
+      exitCode = 2,
+      capChars = 16,
+      texts = texts,
+    )
+
+    assertFalse(out.truncated)
+    assertTrue(out.display.contains("(no output, failed)"))
+    assertTrue(out.display.contains("exit: 2"))
+  }
 }

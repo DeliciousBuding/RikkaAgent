@@ -49,4 +49,21 @@ class JsonlParserTest {
     val chunk = events.first() as ExecEvent.StdoutChunk
     assertEquals("not-json-without-newline\n", String(chunk.bytes, Charsets.UTF_8))
   }
+
+  @Test
+  fun `malformed json falls back to stdout`() {
+    val events = JsonlParser.parseLine("{not-valid-json")
+
+    assertEquals(1, events.size)
+    val chunk = events.first() as ExecEvent.StdoutChunk
+    assertEquals("{not-valid-json\n", String(chunk.bytes, Charsets.UTF_8))
+  }
+
+  @Test
+  fun `extract nested content field`() {
+    val line = """{"content":{"text":"nested"},"type":"item.updated"}"""
+    val events = JsonlParser.parseLine(line)
+
+    assertTrue(events.any { it is ExecEvent.StructuredEvent && it.kind == "markdown_delta" && it.rawJson == "nested" })
+  }
 }

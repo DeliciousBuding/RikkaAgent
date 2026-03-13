@@ -21,9 +21,11 @@
 | Markdown 解析 | commonmark-java 0.22.0 (BSD-2-Clause) + GFM tables/strikethrough |
 | 密钥存储 | EncryptedFile (AES-256-GCM via AndroidX Security Crypto) |
 | Codex 集成 | `codex exec --full-auto` via SSH (exec channel) |
+| 输出策略 | 截断显示 + 消息级完整查看/完整分享 |
 | 国际化 | 中英双语 (values/strings.xml + values-zh/strings.xml)，中文优先 |
 | 持久化 | Room DB v3 (聊天/配置/Codex字段) + DataStore (偏好) |
 | DI | Koin |
+| CI | GitHub Actions: test + lint + assemble + artifacts + step summary |
 | Spec 索引 | `docs/spec/00-index.md` |
 
 ---
@@ -32,8 +34,8 @@
 
 | 模块 | 完成度 | 说明 |
 |------|--------|------|
-| `:app` | 55% M1 | Navigation (7 screens), Koin DI, ViewModels |
-| `:core:model` | 60% | SshProfile, ChatMessage, enums |
-| `:core:ssh` | 已实现 | SshjExecRunner (真实 SSH exec), KnownHostsStore, HostKeyCallback |
-| `:core:storage` | 已实现 | Room DB v3 (ChatThread+Message+SshProfile), DataStore, DataStoreKnownHostsStore |
-| `:core:ui` | MVP | Theme (亮/暗/AMOLED), ChatBubble, CodeCard, ChatInput, AnsiStripper |
+| `:app` | 高完成度 | Navigation、ViewModel、Codex 模式、完整输出展开/分享、i18n |
+| `:core:model` | 稳定 | SshProfile、Chat models、状态枚举 |
+| `:core:ssh` | 稳定 | SSH exec、JSONL parser、HostKey 验证、`.ppk` 支持 |
+| `:core:storage` | 稳定 | Room v3、DataStore、Profile/Chat 持久化 |
+| `:core:ui` | 高完成度 | Theme、ChatBubble、CodeCard、MarkdownText、ChatInput |

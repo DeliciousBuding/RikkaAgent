@@ -28,8 +28,9 @@ This spec is written to enable an open-source, production-quality implementation
 22. `docs/spec/50-data.md`
 23. `docs/spec/60-env.md`
 24. `docs/spec/70-testing.md`
-25. `docs/spec/80-release.md`
-26. `docs/spec/90-oss.md`
+25. `docs/spec/71-test-mapping.md`
+26. `docs/spec/80-release.md`
+27. `docs/spec/90-oss.md`
 
 ## Research Notes (Non-Normative)
 

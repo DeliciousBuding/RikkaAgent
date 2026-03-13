@@ -40,6 +40,33 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDevDebug --no-daemon
 
+      - name: Build CI summary
+        if: always()
+        run: |
+          set +e
+          test_xml_count=$(find . -path "*/build/test-results/*/*.xml" | wc -l | tr -d ' ')
+          failed_count=$(grep -R "<failure" -n . --include="*.xml" | wc -l | tr -d ' ')
+          lint_issue_count=$(grep -R "<issue " -n . --include="lint-results*.xml" | wc -l | tr -d ' ')
+          apk_path="app/build/outputs/apk/dev/debug/app-dev-debug.apk"
+          if [ -f "$apk_path" ]; then
+            apk_size=$(du -h "$apk_path" | awk '{print $1}')
+          else
+            apk_size="N/A"
+          fi
+
+          {
+            echo "## Android CI Summary"
+            echo ""
+            echo "| Metric | Value |"
+            echo "|---|---|"
+            echo "| Test result XML files | ${test_xml_count} |"
+            echo "| Test failure tags | ${failed_count} |"
+            echo "| Lint issue tags | ${lint_issue_count} |"
+            echo "| APK size (devDebug) | ${apk_size} |"
+            echo ""
+            echo "Artifacts: app-dev-debug / unit-test-reports / lint-reports"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload APK
         if: always()
         uses: actions/upload-artifact@v4
