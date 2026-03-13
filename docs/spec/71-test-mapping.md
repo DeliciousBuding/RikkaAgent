@@ -8,8 +8,9 @@ This document maps key spec requirements to current automated coverage.
 - Coverage:
   - `core/ssh/src/test/kotlin/io/rikka/agent/ssh/SshAuthKeyFormatTest.kt`
   - `core/ssh/src/test/kotlin/io/rikka/agent/ssh/JsonlParserTest.kt`
+  - `app/src/test/java/io/rikka/agent/ssh/DataStoreKnownHostsStoreTest.kt`
 - Gaps:
-  - Host-key mismatch callback behavior tests
+  - Host-key replacement double-confirm UI regression tests
   - Passphrase retry/cancel behavior tests
 
 ## 2) Remote Exec / JSONL
