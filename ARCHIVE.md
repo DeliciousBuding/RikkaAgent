@@ -168,3 +168,5 @@
 - ✅ 架构文档对齐当前实现（SshConnectionPool / RunnerFactory）
 - ✅ 架构 spec 补齐 RunnerFactory/ConnectionPool 接口说明
 - ✅ 架构文档补充 SshjExecRunner 复用说明
+- ✅ 新增 troubleshooting 文档（JDK/SDK/Emulator/Lint/APK）
+- ✅ Spec index 补充 supporting docs 入口

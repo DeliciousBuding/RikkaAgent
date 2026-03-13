@@ -47,3 +47,5 @@ Reports:
 $env:JAVA_HOME="C:\Path\To\JDK17"
 $env:Path="$env:JAVA_HOME\bin;$env:Path"
 ```
+
+For common setup issues, see `docs/troubleshooting.md`.

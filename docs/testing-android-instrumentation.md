@@ -42,3 +42,4 @@ so the test asserts the non-persistable permission warning snackbar.
 - If Gradle cannot find Java, export `JAVA_HOME` to JDK 17.
 - If `connectedDevDebugAndroidTest` hangs, ensure the emulator has fully booted
   and is visible under `adb devices`.
+- See `docs/troubleshooting.md` for common environment issues.

@@ -35,6 +35,12 @@ This spec is written to enable an open-source, production-quality implementation
 29. `docs/spec/90-oss.md`
 30. `docs/spec/99-spec-hygiene.md`
 
+Supporting docs (non-spec):
+
+- `docs/testing-android-instrumentation.md`
+- `docs/verification.md`
+- `docs/troubleshooting.md`
+
 ## Research Notes (Non-Normative)
 
 These documents record *observations* from the reference app to help us match the “feel” without copying code.
