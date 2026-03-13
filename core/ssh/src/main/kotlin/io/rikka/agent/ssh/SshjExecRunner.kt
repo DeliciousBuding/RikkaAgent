@@ -15,8 +15,10 @@ import net.schmizz.sshj.common.SecurityUtils
 import net.schmizz.sshj.connection.channel.direct.Session
 import net.schmizz.sshj.transport.verification.HostKeyVerifier
 import net.schmizz.sshj.userauth.keyprovider.OpenSSHKeyFile
+import net.schmizz.sshj.userauth.keyprovider.PuTTYKeyFile
 import net.schmizz.sshj.userauth.password.PasswordFinder
 import net.schmizz.sshj.common.IOUtils
+import net.schmizz.sshj.userauth.keyprovider.KeyProvider
 import java.io.InputStream
 import java.io.StringReader
 import java.security.PublicKey
@@ -244,8 +246,7 @@ class SshjExecRunner(
         val keyContent = keyContentProvider?.getKeyContent(profile)
         if (keyContent != null) {
           val pwFinder = buildPassphraseFinder(profile)
-          val keyFile = OpenSSHKeyFile()
-          keyFile.init(StringReader(keyContent), null, pwFinder)
+          val keyFile = loadKeyProvider(keyContent, pwFinder)
           client.authPublickey(profile.username, listOf(keyFile))
         } else {
           // No key file selected — Android has no ~/.ssh/, so fall back to password
@@ -262,6 +263,19 @@ class SshjExecRunner(
           ?: throw IllegalStateException("Password required but no provider configured")
         client.authPassword(profile.username, password)
       }
+    }
+  }
+
+  private fun loadKeyProvider(keyContent: String, pwFinder: PasswordFinder?): KeyProvider {
+    val trimmed = keyContent.trimStart()
+    return if (trimmed.startsWith("PuTTY-User-Key-File-")) {
+      val keyFile = PuTTYKeyFile()
+      keyFile.init(StringReader(keyContent), null, pwFinder)
+      keyFile
+    } else {
+      val keyFile = OpenSSHKeyFile()
+      keyFile.init(StringReader(keyContent), null, pwFinder)
+      keyFile
     }
   }
 

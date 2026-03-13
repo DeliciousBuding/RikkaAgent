@@ -119,6 +119,7 @@
   <string name="msg_new_session">新会话。配置：%1$s（%2$s@%3$s）</string>
   <string name="msg_not_connected">未连接。未加载配置。</string>
   <string name="label_stderr">[标准错误]</string>
+    <string name="msg_codex_status_prefix">Codex 状态：%1$s</string>
   <string name="msg_no_output">（无输出）</string>
   <string name="msg_no_output_failed">（无输出，执行失败）</string>
   <string name="msg_exit_code">退出码：%d</string>
