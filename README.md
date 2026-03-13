@@ -197,6 +197,7 @@ Hardening references:
 | Verification checklist | [docs/verification.md](docs/verification.md) |
 | Test mapping | [docs/spec/71-test-mapping.md](docs/spec/71-test-mapping.md) |
 | Release acceptance | [docs/spec/81-release-acceptance-matrix.md](docs/spec/81-release-acceptance-matrix.md) |
+| Release checklist | [docs/release-checklist.md](docs/release-checklist.md) |
 | Architecture | [docs/architecture.md](docs/architecture.md) |
 | Product plan | [docs/plan.md](docs/plan.md) |
 | i18n key audit | [docs/i18n-key-audit.md](docs/i18n-key-audit.md) |

@@ -145,6 +145,8 @@
 - [x] 输出截断提示文案与 microcopy 对齐
 - [x] spec hygiene 增补 complete output 标题/动作规范
 - [x] testing spec 增补 verification 文档指引
+- [x] PR 模板与贡献指南对齐 verification 清单
+- [x] 发布/验收文档补充 verification 与 instrumentation 指引
 
 ## Agent 交接快照（2026-03-13）
 

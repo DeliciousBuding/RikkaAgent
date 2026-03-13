@@ -8,6 +8,7 @@ This matrix defines practical release gates for `rikka-agent`.
 | Tests | Unit tests pass | `./gradlew test` |
 | Tests (modules) | Key modules pass focused suite | `./gradlew :core:model:testDebugUnitTest :core:storage:testDebugUnitTest :core:ssh:testDebugUnitTest :core:ui:testDebugUnitTest :app:testDevDebugUnitTest` |
 | Lint | No blocking lint failures | `./gradlew :app:lintDevDebug` |
+| Verification | Local checklist followed | `docs/verification.md` |
 | Security | No secrets committed | Manual review + CI checklists |
 | SSH Core | Password + key auth paths compile and pass tests | core/app tests |
 | Output Safety | Truncation path covered | `OutputFormatterTest` |
@@ -18,6 +19,7 @@ This matrix defines practical release gates for `rikka-agent`.
 
 1. Re-run full CI locally.
 2. Re-run focused module suite for quick regression confidence.
-3. Review changelog impact in `ARCHIVE.md`.
-4. Ensure release notes mention security-relevant changes.
-5. Confirm artifacts are generated and downloadable in Actions.
+3. Run instrumentation tests if UI/platform flows changed.
+4. Review changelog impact in `ARCHIVE.md`.
+5. Ensure release notes mention security-relevant changes.
+6. Confirm artifacts are generated and downloadable in Actions.

@@ -10,9 +10,8 @@
 - [ ] Security-sensitive changes reviewed (SSH/auth/storage)
 - [ ] Related docs updated (`ROADMAP.md` / `STATE.md` / `ARCHIVE.md` when needed)
 - [ ] Tests added/updated for changed behavior
-- [ ] `./gradlew test` passed
-- [ ] `./gradlew :app:lintDevDebug` passed
-- [ ] `./gradlew assembleDevDebug` passed
+- [ ] Followed `docs/verification.md` for local checks
+- [ ] Instrumentation tests run when UI/platform flows changed
 
 ## Screenshots / Demo
 
