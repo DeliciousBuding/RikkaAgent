@@ -157,39 +157,17 @@ fun ChatScreen(
   }
 
   hostKeyDialogState.confirmReplacement?.let { event ->
-    AlertDialog(
-      onDismissRequest = {
-        val result = HostKeyDialogStateMachine.confirmReplacement(accepted = false)
+    HostKeyReplacementConfirmDialog(
+      event = event,
+      onConfirm = {
+        val result = HostKeyDialogStateMachine.confirmReplacement(accepted = true)
         hostKeyDialogState = result.nextState
         result.decision?.let(vm::respondToHostKey)
       },
-      title = { Text(stringResource(R.string.host_key_replace_confirm_title)) },
-      text = {
-        Text(
-          text = stringResource(
-            R.string.host_key_replace_confirm_msg,
-            event.host,
-            event.port,
-          )
-        )
-      },
-      confirmButton = {
-        TextButton(onClick = {
-          val result = HostKeyDialogStateMachine.confirmReplacement(accepted = true)
-          hostKeyDialogState = result.nextState
-          result.decision?.let(vm::respondToHostKey)
-        }) {
-          Text(stringResource(R.string.host_key_replace_confirm_action))
-        }
-      },
-      dismissButton = {
-        TextButton(onClick = {
-          val result = HostKeyDialogStateMachine.confirmReplacement(accepted = false)
-          hostKeyDialogState = result.nextState
-          result.decision?.let(vm::respondToHostKey)
-        }) {
-          Text(stringResource(R.string.btn_reject))
-        }
+      onReject = {
+        val result = HostKeyDialogStateMachine.confirmReplacement(accepted = false)
+        hostKeyDialogState = result.nextState
+        result.decision?.let(vm::respondToHostKey)
       },
     )
   }
@@ -563,7 +541,7 @@ private fun SessionDrawerContent(
 }
 
 @Composable
-private fun HostKeyDialog(
+internal fun HostKeyDialog(
   event: HostKeyEvent,
   onAccept: () -> Unit,
   onReject: () -> Unit,
@@ -597,6 +575,37 @@ private fun HostKeyDialog(
     confirmButton = {
       TextButton(onClick = onAccept) {
         Text(if (event is HostKeyEvent.Mismatch) stringResource(R.string.btn_replace_trust) else stringResource(R.string.btn_trust))
+      }
+    },
+    dismissButton = {
+      TextButton(onClick = onReject) {
+        Text(stringResource(R.string.btn_reject))
+      }
+    },
+  )
+}
+
+@Composable
+internal fun HostKeyReplacementConfirmDialog(
+  event: HostKeyEvent.Mismatch,
+  onConfirm: () -> Unit,
+  onReject: () -> Unit,
+) {
+  AlertDialog(
+    onDismissRequest = onReject,
+    title = { Text(stringResource(R.string.host_key_replace_confirm_title)) },
+    text = {
+      Text(
+        text = stringResource(
+          R.string.host_key_replace_confirm_msg,
+          event.host,
+          event.port,
+        )
+      )
+    },
+    confirmButton = {
+      TextButton(onClick = onConfirm) {
+        Text(stringResource(R.string.host_key_replace_confirm_action))
       }
     },
     dismissButton = {
