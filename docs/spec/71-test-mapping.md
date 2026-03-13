@@ -8,25 +8,30 @@ This document maps key spec requirements to current automated coverage.
 - Coverage:
   - `core/ssh/src/test/kotlin/io/rikka/agent/ssh/SshAuthKeyFormatTest.kt`
   - `core/ssh/src/test/kotlin/io/rikka/agent/ssh/JsonlParserTest.kt`
+  - `core/ssh/src/test/kotlin/io/rikka/agent/ssh/InMemoryKnownHostsStoreTest.kt`
   - `app/src/test/java/io/rikka/agent/ssh/DataStoreKnownHostsStoreTest.kt`
+  - `app/src/test/java/io/rikka/agent/ssh/KnownHostsEntryCodecTest.kt`
   - `app/src/test/java/io/rikka/agent/ui/screen/HostKeyDialogStateMachineTest.kt`
+  - `app/src/test/java/io/rikka/agent/ui/screen/HostKeyDialogsTest.kt`
+  - `app/src/test/java/io/rikka/agent/vm/ChatViewModelTest.kt`
 - Gaps:
-  - Host-key replacement full Compose/UI regression tests
-  - Passphrase retry/cancel behavior tests
+  - Key import / `ContentUriKeyContentProvider` integration coverage
 
 ## 2) Remote Exec / JSONL
 
 - Spec: `docs/spec/33-remote-exec.md`
 - Coverage:
   - `JsonlParserTest` (normal JSONL / split chunks / malformed fallback / nested field)
+  - `app/src/test/java/io/rikka/agent/vm/ChatViewModelTest.kt` (password / passphrase / host-key request-response mapping, canceled exec state)
 - Gaps:
-  - End-to-end ViewModel event stream mapping tests
+  - Richer UI surfacing for Codex `thread/turn/item` progress events
 
 ## 2.5) Chat Session State
 
 - Spec: `docs/spec/29-interaction.md`, `docs/spec/30-architecture.md`
 - Coverage:
   - `app/src/test/java/io/rikka/agent/vm/ChatViewModelTest.kt`
+  - `app/src/test/java/io/rikka/agent/vm/ProfileEditorViewModelTest.kt`
 - Covered behaviors:
   - initial profile-ready state
   - persisted thread switch loading
@@ -35,8 +40,10 @@ This document maps key spec requirements to current automated coverage.
   - password request response flow
   - passphrase request response flow
   - host key unknown / mismatch event response flow
+  - host key replacement confirmation dialogs
+  - canceled exec event persistence + cancelRunning semantics
 - Gaps:
-  - UI-level double-confirm replacement flow tests for host-key mismatch
+  - End-to-end UI interaction coverage for action-row flows (rerun/share/export)
 
 ## 3) Output Formatting & Truncation
 
@@ -61,6 +68,6 @@ This document maps key spec requirements to current automated coverage.
 
 ## 5) Next Additions
 
-1. Full Compose/UI host-key replacement double-confirm tests
-2. KnownHosts persistence tests (store/get/remove semantics)
-3. ProfileEditor validation and save mapping tests
+1. Key import / `ContentUriKeyContentProvider` integration tests
+2. UI-level interaction tests for truncated-output expand/share flows
+3. Codex `thread/turn/item` progress visualization tests
