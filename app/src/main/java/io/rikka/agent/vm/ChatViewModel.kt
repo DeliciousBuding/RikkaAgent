@@ -217,6 +217,18 @@ class ChatViewModel(
       // For Codex mode: parse JSONL, accumulate markdown deltas
       val jsonlBuffer = if (isCodex) JsonlLineBuffer() else null
       val markdownAccum = if (isCodex) StringBuilder() else null
+      var codexStatus: String? = null
+
+      fun renderCodexStreamingContent(): String {
+        val statusPrefix = codexStatus?.takeIf { it.isNotBlank() }?.let {
+          "_${app.getString(R.string.msg_codex_status_prefix, it)}_\n\n"
+        }.orEmpty()
+        return if (markdownAccum != null && markdownAccum.isNotEmpty()) {
+          statusPrefix + markdownAccum.toString()
+        } else {
+          statusPrefix + formatOutput(stdout, stderr, exitCode = null)
+        }
+      }
 
       execRunner.run(profile, shellCommand).collect { event ->
         when (event) {
@@ -228,9 +240,12 @@ class ChatViewModel(
                   is ExecEvent.StructuredEvent -> {
                     if (e.kind == "markdown_delta") {
                       markdownAccum.append(e.rawJson)
-                      updateAssistantContent(assistantId, markdownAccum.toString())
+                      updateAssistantContent(assistantId, renderCodexStreamingContent())
                     }
-                    // status events could update a progress indicator (future)
+                    if (e.kind == "status") {
+                      codexStatus = e.rawJson
+                      updateAssistantContent(assistantId, renderCodexStreamingContent())
+                    }
                   }
                   is ExecEvent.StdoutChunk -> {
                     // Non-JSON line from Codex — append to raw stdout
@@ -240,8 +255,8 @@ class ChatViewModel(
                 }
               }
               // If no markdown deltas yet, show raw output as fallback
-              if (markdownAccum.isEmpty() && stdout.isNotEmpty()) {
-                updateAssistantContent(assistantId, formatOutput(stdout, stderr, exitCode = null))
+              if (markdownAccum.isEmpty()) {
+                updateAssistantContent(assistantId, renderCodexStreamingContent())
               }
             } else {
               stdout.append(String(event.bytes, Charsets.UTF_8))

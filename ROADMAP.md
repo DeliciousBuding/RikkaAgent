@@ -11,6 +11,10 @@
 - 安全/威胁模型：`docs/threat-model.md`, `docs/server-hardening.md`
 - Repo 代理约束：`AGENTS.md`
 
+## 仓库边界说明
+
+- 与 rikka-agent 无关的 VectorControl 文档已于 2026-03-13 外部归档到 `C:\Users\Ding\docs\vectorcontrol-archive`，索引见 `C:\Users\Ding\VECTORCONTROL_ARCHIVE_INDEX.md`。
+
 ---
 
 ## 里程碑进度总览
@@ -31,7 +35,7 @@
 
 - [x] ProfilesVM / ProfileEditorVM 连接 Room 存储（真实 CRUD）
 - [x] ChatViewModel 连接 Room（消息持久化 + 会话管理）
-- [ ] 更多密钥格式支持（PuTTY .ppk）
+- [x] 更多密钥格式支持（PuTTY .ppk）
 - [ ] 规范冻结检查：spec 用词统一 + TODO 集中
 
 ## M2 待完成
@@ -61,37 +65,9 @@
 
 ---
 
-## VectorControl 基础设施活跃工作
-
-### 服务重编排计划（进行中）
-
-> 详细方案: `docs/network.md` (v5)
-
-**目标：** metapi+CPA → sgp1 (Docker) + HK 中国边缘入口 + OpenClaw → gz
-
-| 步骤 | 内容 | 状态 |
-|------|------|------|
-| 1 | CPA Docker 化 (Dockerfile + 去 SOCKS proxy) | ⬜ |
-| 2 | 数据备份 (hub.db + CPA config 从 gz 导出) | ✅ (2026-06-10 本地备份) |
-| 3 | metapi + CPA Docker 部署到 sgp1 | ⬜ |
-| 4 | sgp2 nginx upstream 从 gz → sgp1 切流 | ⬜ |
-| 5 | 端到端验证 + gz 旧服务停止 | ⬜ |
-| 6 | HK 边缘: nginx + certbot + 中国入口 | ⬜ (HK VPS 已就绪✅) |
-| 7 | OpenClaw 迁移到 gz | ⬜ |
-
-**预期收益：** 国际 API 延迟 350ms → 2ms (-99.4%)，中国 ~370ms → ~55ms (-85%)
-
-### 关注项
-
-- ⚠️ sgp1 内存压力 (1.0G/1.9G + 297M swap)
-- ⚠️ sgp2 内存 469M/847M + 69M swap
-- ⚠️ SSL 证书到期 2026-06-10（certbot.timer 自动续期中）
-
----
-
 ## 下一步最优动作
 
-1. **执行服务重编排** — 按 service-reshuffle-plan.md 逐步实施
-2. **M1 收尾** — ProfilesVM/EditorVM 连接 Room（真实 CRUD）
-3. **M2 启动** — 流式渲染策略落地
+1. **Mermaid 可选渲染** — 在 Markdown 渲染层增加可开关的图表渲染能力
+2. **加强 Codex JSONL 事件可视化** — 将 `thread/turn/item` 事件映射为结构化 UI 进度
+3. **规范冻结检查收口** — 统一 spec 用词并清理分散 TODO
 
