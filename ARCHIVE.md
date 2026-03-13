@@ -158,3 +158,5 @@
 - ✅ JSONL parser 增补分块 + trailing 文本用例
 - ✅ 完整输出文案统一：complete output
 - ✅ 新增统一验证清单：`docs/verification.md`
+- ✅ Microcopy 补充 complete output 对话框标题与动作
+- ✅ UI 组件清单补充 CompleteOutputDialog
