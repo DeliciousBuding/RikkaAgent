@@ -109,7 +109,9 @@
 - ✅ 仓库边界清理：移除与 rikka-agent 无关的 VectorControl 内容并外部归档
 - ✅ `README.md` 重构为发布导向版（徽章、能力矩阵、快速上手、状态表）
 - ✅ CI 增强：增加 `:app:lintDevDebug` 与 test/lint/apk 报告产物上传
+- ✅ CI 摘要增强：新增 `GITHUB_STEP_SUMMARY` 指标摘要（测试/静态检查/APK）
 - ✅ Spec 纠偏：`docs/spec/05-open-questions.md` 与当前 sshj/commonmark 实现一致
+- ✅ 新增规范文档：`docs/spec/71-test-mapping.md`、`docs/spec/81-release-acceptance-matrix.md`
 
 ### 体验增强（2026-03-13）
 

@@ -26,3 +26,19 @@ This project is implemented from scratch. Please do not copy code from projects 
 - For PRs, keep changes small and focused.
 - Include a short testing note in the PR description (what you verified).
 
+## Local Verification Checklist
+
+Before opening a PR, run:
+
+```bash
+./gradlew test
+./gradlew :app:lintDevDebug
+./gradlew assembleDevDebug
+```
+
+And verify:
+
+- changed behavior is covered by tests when practical
+- `ROADMAP.md` / `STATE.md` / `ARCHIVE.md` are updated when milestones or facts change
+- no secrets are present in code, docs, logs, or screenshots
+

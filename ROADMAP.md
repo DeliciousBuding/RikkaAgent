@@ -69,6 +69,8 @@
 - [x] 核心解析单测补齐（`JsonlParser` / `JsonlLineBuffer`）
 - [x] 输出截断格式化单测（`OutputFormatterTest`）
 - [x] SSH 密钥格式判定单测（`SshAuthKeyFormatTest`）
+- [x] CI 执行摘要（step summary）
+- [x] Spec 测试映射与发布验收矩阵文档
 
 ---
 
