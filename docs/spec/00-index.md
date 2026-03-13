@@ -40,6 +40,7 @@ Supporting docs (non-spec):
 - `docs/testing-android-instrumentation.md`
 - `docs/verification.md`
 - `docs/troubleshooting.md`
+- `docs/glossary.md`
 
 ## Research Notes (Non-Normative)
 

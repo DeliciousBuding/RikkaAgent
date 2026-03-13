@@ -171,3 +171,4 @@
 - ✅ 新增 troubleshooting 文档（JDK/SDK/Emulator/Lint/APK）
 - ✅ Spec index 补充 supporting docs 入口
 - ✅ SECURITY/STATE/ENV 文档指向 troubleshooting 与 verification
+- ✅ 新增 glossary 术语表并链接到 spec index 与 README
