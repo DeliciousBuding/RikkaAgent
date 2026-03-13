@@ -415,6 +415,38 @@ class ChatViewModelTest {
   }
 
   @Test
+  fun `codex json progress events render structured thread turn item summary`() = runTest(dispatcher) {
+    profile = profile.copy(codexMode = true)
+    profileStore = FakeProfileStore(profile)
+    runnerFactory = RecordingExecRunnerFactory { _, _ ->
+      listOf(
+        ExecEvent.StdoutChunk(
+          (
+            """{"type":"thread.started","thread_id":"thread-1","status":"running"}""" + "\n" +
+              """{"type":"turn.completed","turn":{"id":"turn-2"}}""" + "\n" +
+              """{"type":"item.started","item":{"id":"item-9","type":"tool_call"}}""" + "\n" +
+              """{"delta":"Hello from Codex"}""" + "\n"
+            ).toByteArray()
+        ),
+        ExecEvent.Exit(0),
+      )
+    }
+    val viewModel = createViewModel()
+    advanceUntilIdle()
+
+    viewModel.send("summarize the repo")
+    advanceUntilIdle()
+
+    val last = viewModel.messages.value.last()
+    assertEquals(MessageStatus.Final, last.status)
+    assertTrue(last.content.contains(app.getString(R.string.msg_codex_status_prefix, "running")))
+    assertTrue(last.content.contains("${app.getString(R.string.msg_codex_progress_thread)}: Started • #thread-1"))
+    assertTrue(last.content.contains("${app.getString(R.string.msg_codex_progress_turn)}: Completed • #turn-2"))
+    assertTrue(last.content.contains("${app.getString(R.string.msg_codex_progress_item)}: Started • tool_call • #item-9"))
+    assertTrue(last.content.contains("Hello from Codex"))
+  }
+
+  @Test
   fun `exportSession returns plain text transcript for current thread`() = runTest(dispatcher) {
     val targetThreadId = chatRepository.createThread(profile.id, "ls -la")
     chatRepository.insertMessage(

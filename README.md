@@ -20,7 +20,7 @@ Inspired by the UX feel of [RikkaHub](https://github.com/re-ovo/rikkahub), built
 | 💬 Readability-first UX | Command + output timeline, Markdown + code cards, streaming-friendly rendering |
 | 🔐 Security-by-default | Known-hosts verification, mismatch warning flow, encrypted key storage |
 | ⚡ Ops velocity | Copy / rerun / export session, profile-level shell and auth options |
-| 🧠 Codex bridge | Remote `codex exec --json --full-auto` with tolerant JSONL parsing |
+| 🧠 Codex bridge | Remote `codex exec --json --full-auto` with tolerant JSONL parsing and progress summaries |
 | 📈 Diagram rendering | Optional Mermaid detection, card rendering, and fallback path |
 | 🌍 i18n | Chinese + English resources, Chinese-first UX wording |
 
@@ -32,7 +32,7 @@ Inspired by the UX feel of [RikkaHub](https://github.com/re-ovo/rikkahub), built
 | SSH engine (Mode A) | ✅ | sshj exec, stdout/stderr/exit streaming, connection reuse |
 | Auth chain | ✅ | Password, key, passphrase, PuTTY `.ppk` |
 | Host key safety | ✅ | TOFU + mismatch warning + replacement confirmation |
-| Codex integration | ✅ | Profile toggle, workdir, API key injection, JSONL events |
+| Codex integration | ✅ | Profile toggle, workdir, API key injection, JSONL events, thread/turn/item progress summary |
 | Rendering pipeline | ✅ | Markdown + CodeCard + truncation/full-output affordances |
 | Mermaid rendering | ✅ | Feature flag, segmented rendering, WebView card, retry + source fallback |
 | CI quality gate | ✅ | Unit test + lint + assemble + artifacts + summary |

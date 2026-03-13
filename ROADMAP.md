@@ -91,14 +91,15 @@
 - [x] i18n 键一致性审计（app/core-ui 中英资源零缺失）
 - [x] 取消态规则单测（`CancelMessageHelperTest`）
 - [x] JsonlParser 复杂嵌套测试增强（nested content / 字段优先级）
+- [x] Codex `thread/turn/item` 进度摘要（ChatViewModel 结构化展示 + 回归测试）
 
 ---
 
 ## 下一步最优动作
 
-1. **补 ProfileEditor 测试闭环** — 覆盖保存映射、字段校验、认证切换边界
-2. **加强 Codex JSONL 事件可视化** — 将 `thread/turn/item` 事件映射为结构化 UI 进度
-3. **补 Key import 集成测试** — 校验 `ContentUriKeyContentProvider` 与导入链路
+1. **补 SAF URI 生命周期测试** — 覆盖持久权限、失效 URI、导入失败回退
+2. **补输出操作的 UI 级回归** — 展开 / 分享 / 导出完整内容
+3. **执行发布门禁回归** — 模块单测 + lint + assemble 持续收口
 
 ---
 
@@ -110,17 +111,18 @@
 2. Mermaid 已具备“开关 + 分段 + 卡片 + 本地离线渲染路径（无外网依赖）”。
 3. README 已完成发布导向重构（矩阵/FAQ/Gallery/Quick Demo）。
 4. i18n 键一致性审计已完成（app/core-ui 中英 0 缺失），见 `docs/i18n-key-audit.md`。
+5. Codex `thread/turn/item` 事件已映射为结构化进度摘要，并有 ViewModel/解析层测试兜底。
 
 ### 正在进行中的主线
 
-1. Key import / KeyContentProvider 集成测试。
-2. Codex JSONL 进度事件可视化。
+1. SAF URI 生命周期测试。
+2. 输出操作的 UI 级回归（展开 / 分享 / 导出）。
 3. 发布门禁回归验证（模块单测 / lint / assemble）。
 
 ### 下一位 Agent 建议直接执行顺序
 
-1. 先补 Key import 与存储/集成测试（KnownHosts/DataStore/KeyContentProvider）。
-2. 再补 Codex 进度事件的展示与测试。
+1. 先补 SAF URI 生命周期与异常路径测试。
+2. 再补输出操作的 UI 级回归。
 3. 最后执行全回归与发布门禁（模块单测 -> lint -> assemble）。
 
 ### 本机验证前置（已验证可用）

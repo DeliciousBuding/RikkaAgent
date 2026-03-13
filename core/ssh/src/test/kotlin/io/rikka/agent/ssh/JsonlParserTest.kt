@@ -104,4 +104,14 @@ class JsonlParserTest {
 
     assertTrue(events.any { it is ExecEvent.StructuredEvent && it.kind == "markdown_delta" && it.rawJson == "preferred" })
   }
+
+  @Test
+  fun `type-only json does not emit status event`() {
+    val line = """{"type":"item.started","item":{"id":"item-1","type":"tool_call"}}"""
+
+    val events = JsonlParser.parseLine(line)
+
+    assertTrue(events.any { it is ExecEvent.StructuredEvent && it.kind == "json" })
+    assertTrue(events.none { it is ExecEvent.StructuredEvent && it.kind == "status" })
+  }
 }

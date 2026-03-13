@@ -239,16 +239,43 @@ class ChatViewModel(
       val jsonlBuffer = if (isCodex) JsonlLineBuffer() else null
       val markdownAccum = if (isCodex) StringBuilder() else null
       var codexStatus: String? = null
+      var codexProgress = CodexProgressState()
 
-      fun renderCodexStreamingContent(): String {
-        val statusPrefix = codexStatus?.takeIf { it.isNotBlank() }?.let {
-          "_${app.getString(R.string.msg_codex_status_prefix, it)}_\n\n"
-        }.orEmpty()
-        return if (markdownAccum != null && markdownAccum.isNotEmpty()) {
-          statusPrefix + markdownAccum.toString()
+      fun renderCodexContent(exitCode: Int?): String {
+        val progressLines = buildList {
+          codexStatus?.takeIf { it.isNotBlank() }?.let {
+            add("_${app.getString(R.string.msg_codex_status_prefix, it)}_")
+          }
+          codexProgress.thread?.let {
+            add("- ${app.getString(R.string.msg_codex_progress_thread)}: $it")
+          }
+          codexProgress.turn?.let {
+            add("- ${app.getString(R.string.msg_codex_progress_turn)}: $it")
+          }
+          codexProgress.item?.let {
+            add("- ${app.getString(R.string.msg_codex_progress_item)}: $it")
+          }
+        }.joinToString("\n")
+
+        val body = if (markdownAccum != null && markdownAccum.isNotEmpty()) {
+          buildString {
+            append(markdownAccum)
+            if (stderr.isNotEmpty()) {
+              append("\n\n")
+              append(app.getString(R.string.label_stderr))
+              append("\n")
+              append(stderr)
+            }
+            if (exitCode != null && exitCode != 0) {
+              append("\n")
+              append(app.getString(R.string.msg_exit_code, exitCode))
+            }
+          }
         } else {
-          statusPrefix + formatOutput(stdout, stderr, exitCode = null)
+          formatOutput(stdout, stderr, exitCode = exitCode)
         }
+
+        return if (progressLines.isBlank()) body else "$progressLines\n\n$body"
       }
 
       execRunner.run(profile, shellCommand).collect { event ->
@@ -259,13 +286,17 @@ class ChatViewModel(
               for (e in parsed) {
                 when (e) {
                   is ExecEvent.StructuredEvent -> {
+                    if (e.kind == "json") {
+                      codexProgress = CodexProgressFormatter.update(codexProgress, e.rawJson)
+                      updateAssistantContent(assistantId, renderCodexContent(exitCode = null))
+                    }
                     if (e.kind == "markdown_delta") {
                       markdownAccum.append(e.rawJson)
-                      updateAssistantContent(assistantId, renderCodexStreamingContent())
+                      updateAssistantContent(assistantId, renderCodexContent(exitCode = null))
                     }
                     if (e.kind == "status") {
                       codexStatus = e.rawJson
-                      updateAssistantContent(assistantId, renderCodexStreamingContent())
+                      updateAssistantContent(assistantId, renderCodexContent(exitCode = null))
                     }
                   }
                   is ExecEvent.StdoutChunk -> {
@@ -277,7 +308,7 @@ class ChatViewModel(
               }
               // If no markdown deltas yet, show raw output as fallback
               if (markdownAccum.isEmpty()) {
-                updateAssistantContent(assistantId, renderCodexStreamingContent())
+                updateAssistantContent(assistantId, renderCodexContent(exitCode = null))
               }
             } else {
               stdout.append(String(event.bytes, Charsets.UTF_8))
@@ -297,35 +328,33 @@ class ChatViewModel(
             // Flush remaining JSONL buffer
             if (isCodex && jsonlBuffer != null && markdownAccum != null) {
               for (e in jsonlBuffer.flush()) {
-                if (e is ExecEvent.StructuredEvent && e.kind == "markdown_delta") {
-                  markdownAccum.append(e.rawJson)
-                } else if (e is ExecEvent.StdoutChunk) {
-                  stdout.append(String(e.bytes, Charsets.UTF_8))
+                when (e) {
+                  is ExecEvent.StructuredEvent -> {
+                    if (e.kind == "json") {
+                      codexProgress = CodexProgressFormatter.update(codexProgress, e.rawJson)
+                    } else if (e.kind == "markdown_delta") {
+                      markdownAccum.append(e.rawJson)
+                    } else if (e.kind == "status") {
+                      codexStatus = e.rawJson
+                    }
+                  }
+                  is ExecEvent.StdoutChunk -> {
+                    stdout.append(String(e.bytes, Charsets.UTF_8))
+                  }
+                  else -> Unit
                 }
               }
             }
 
             val finalContent = if (isCodex && markdownAccum != null && markdownAccum.isNotEmpty()) {
-              val extra = buildString {
-                if (stderr.isNotEmpty()) {
-                  append("\n\n")
-                  append(app.getString(R.string.label_stderr))
-                  append("\n")
-                  append(stderr)
-                }
-                if (event.code != null && event.code != 0) {
-                  append("\n")
-                  append(app.getString(R.string.msg_exit_code, event.code))
-                }
-              }
-              markdownAccum.toString() + extra
+              renderCodexContent(event.code)
             } else {
-              formatOutputPair(stdout, stderr, event.code).display
+              if (isCodex) renderCodexContent(event.code) else formatOutputPair(stdout, stderr, event.code).display
             }
             val finalFull = if (isCodex && markdownAccum != null && markdownAccum.isNotEmpty()) {
               finalContent
             } else {
-              formatOutputPair(stdout, stderr, event.code).full
+              if (isCodex) finalContent else formatOutputPair(stdout, stderr, event.code).full
             }
             if (finalFull != finalContent) {
               fullOutputByMessageId[assistantId] = finalFull
