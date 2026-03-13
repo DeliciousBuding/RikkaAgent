@@ -5,9 +5,6 @@
       android:authorities="io.rikka.agent.test.documents"
       android:exported="true"
       android:grantUriPermissions="true">
-      <intent-filter>
-        <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
-      </intent-filter>
     </provider>
   </application>
 </manifest>

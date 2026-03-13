@@ -102,6 +102,38 @@
 
 ---
 
+## 2026-03-14 冲刺 TODO（已完成）
+
+- [x] 复跑 `:app:connectedDevDebugAndroidTest` 并确认本地通过
+- [x] 移除 androidTest 中的旧 Kotlin provider 文件
+- [x] 使用 Java ContentProvider 实现测试 Documents provider
+- [x] 在 androidTest Manifest 注册测试 provider
+- [x] SAF 选择器回归测试固定到稳定 UI 控件
+- [x] SAF 选择器回归测试断言非持久化权限提示
+- [x] ChatScreen 分享/导出分发回归测试补齐
+- [x] Codex 进度 UI 渲染回归测试补齐
+- [x] androidTest 依赖补齐（core/runner/espresso intents）
+- [x] 新增 instrumentation 测试操作文档
+- [x] 文档写明 SAF provider authority 与类名
+- [x] 文档补充 connected 测试报告路径
+- [x] 文档补充模拟器启动与 boot 校验步骤
+- [x] 文档补充 `JAVA_HOME` 诊断提示
+- [x] README 增加 instrumentation 文档入口
+- [x] README 增加 Windows `JAVA_HOME` 示例
+- [x] Testing spec 增加 instrumentation 测试范围说明
+- [x] Test mapping 增加 TestDocumentsProvider 覆盖项
+- [x] CI 强制 Node24 JS actions 兼容开关
+- [x] CI Summary 统计测试/失败/跳过计数
+- [x] CI 持续上传 APK 与 lint/test 报告
+- [x] SAF 选择器 Intent 注入 ClipData + read flags
+- [x] 测试 provider 以稳定 authority 暴露 content URI
+- [x] 测试 provider 返回可读取的临时密钥内容
+- [x] connected 测试锁定 devDebug 变体
+- [x] Docs Hub 增加 instrumentation 测试入口
+- [x] ARCHIVE 记录 2026-03-14 测试/文档加固
+- [x] SSH/Auth 覆盖清单包含 SAF instrumentation 测试
+- [x] README 保留 connected 测试命令入口
+
 ## Agent 交接快照（2026-03-13）
 
 ### 当前已完成到哪里
