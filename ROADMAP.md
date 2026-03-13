@@ -98,8 +98,8 @@
 
 ## 下一步最优动作
 
-1. **补 SAF URI 生命周期测试** — 覆盖持久权限、失效 URI、导入失败回退
-2. **补分享链路端到端验证** — `ChatScreen` 到平台分发的最后一跳
+1. **补分享链路端到端验证** — `ChatScreen` 到平台分发的最后一跳
+2. **补 SAF 端到端选择器验证** — ActivityResult + 持久权限真实路径
 3. **执行发布门禁回归** — 模块单测 + lint + assemble 持续收口
 
 ---
@@ -119,14 +119,14 @@
 
 ### 正在进行中的主线
 
-1. SAF URI 生命周期测试。
-2. `ChatScreen` 与平台分发的端到端验证。
+1. `ChatScreen` 与平台分发的端到端验证。
+2. SAF 端到端选择器验证（ActivityResult / persistable permission）。
 3. 发布门禁回归验证（模块单测 / lint / assemble）。
 
 ### 下一位 Agent 建议直接执行顺序
 
-1. 先补 SAF URI 生命周期与异常路径测试。
-2. 再补 `ChatScreen` 与平台分发的端到端验证。
+1. 先补 `ChatScreen` 与平台分发的端到端验证。
+2. 再补 SAF 端到端选择器验证（ActivityResult / persistable permission）。
 3. 最后执行全回归与发布门禁（模块单测 -> lint -> assemble）。
 
 ### 本机验证前置（已验证可用）

@@ -81,6 +81,44 @@ class ContentUriKeyContentProviderTest {
     assertNull(provider.getKeyContent(profile))
   }
 
+  @Test
+  fun `getKeyContent returns null when content uri cannot be opened`() = runBlocking {
+    val profile = SshProfile(
+      id = "profile-3",
+      name = "Test",
+      host = "example.test",
+      username = "root",
+      keyRef = "content://missing/key",
+    )
+
+    val loaded = provider.getKeyContent(profile)
+
+    assertNull(loaded)
+  }
+
+  @Test
+  fun `getKeyContent returns null when internal store throws`() = runBlocking {
+    val throwingProvider = ContentUriKeyContentProvider(
+      context = app,
+      internalKeyStore = object : ContentUriKeyContentProvider.InternalKeyStore {
+        override fun read(keyId: String): String? = error("boom")
+        override fun write(keyId: String, content: String) = Unit
+        override fun delete(keyId: String) = Unit
+      },
+    )
+    val profile = SshProfile(
+      id = "profile-4",
+      name = "Test",
+      host = "example.test",
+      username = "root",
+      keyRef = "${ContentUriKeyContentProvider.INTERNAL_KEY_SCHEME}crash",
+    )
+
+    val loaded = throwingProvider.getKeyContent(profile)
+
+    assertNull(loaded)
+  }
+
   private class PlaintextInternalKeyStore(
     private val dir: File,
   ) : ContentUriKeyContentProvider.InternalKeyStore {

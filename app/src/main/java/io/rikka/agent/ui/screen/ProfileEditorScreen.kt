@@ -1,6 +1,5 @@
 package io.rikka.agent.ui.screen
 
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -94,13 +93,15 @@ fun ProfileEditorScreen(
   // SAF file picker for private key
   val keyPickerLauncher = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.OpenDocument(),
-  ) { uri: Uri? ->
+  ) { uri: android.net.Uri? ->
     if (uri != null) {
-      // Take persistable permission so the URI survives app restarts
-      context.contentResolver.takePersistableUriPermission(
-        uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
-      )
-      vm.updateForm(form.copy(keyRef = uri.toString()))
+      val selection = importPickedPrivateKeyUri(context.contentResolver, uri)
+      if (selection.keyRef != null) {
+        vm.updateForm(form.copy(keyRef = selection.keyRef))
+      }
+      if (selection.messageResId != null) {
+        scope.launch { snackbarHostState.showSnackbar(context.getString(selection.messageResId)) }
+      }
     }
   }
 
@@ -272,9 +273,17 @@ fun ProfileEditorScreen(
                   onClick = {
                     val clip = clipboardManager.getText()?.text ?: ""
                     if (clip.contains("PRIVATE KEY") || clip.startsWith("-----BEGIN")) {
-                      val ref = keyProvider.savePastedKey(clip)
-                      vm.updateForm(form.copy(keyRef = ref))
-                      scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.snackbar_key_saved)) }
+                      try {
+                        val ref = keyProvider.savePastedKey(clip)
+                        vm.updateForm(form.copy(keyRef = ref))
+                        scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.snackbar_key_saved)) }
+                      } catch (e: Exception) {
+                        scope.launch {
+                          snackbarHostState.showSnackbar(
+                            context.getString(R.string.snackbar_key_save_failed, e.message ?: "")
+                          )
+                        }
+                      }
                     } else {
                       scope.launch {
                         snackbarHostState.showSnackbar(
@@ -497,13 +506,3 @@ private fun AuthTypeDropdown(
   }
 }
 
-/** Extract a readable display name from a key URI string (content:// or internal-key://). */
-private fun extractKeyDisplayName(uriString: String): String {
-  if (uriString.startsWith("internal-key://")) return "App key"
-  val uri = Uri.parse(uriString)
-  val lastSegment = uri.lastPathSegment ?: return uriString
-  // SAF URIs often have "primary:path/to/file" format
-  return lastSegment.substringAfterLast('/')
-    .substringAfterLast(':')
-    .ifBlank { lastSegment }
-}

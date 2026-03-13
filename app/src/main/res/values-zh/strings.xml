@@ -44,6 +44,9 @@
   <string name="snackbar_not_private_key">剪贴板内容不是私钥</string>
   <string name="snackbar_key_generated">Ed25519 密钥对已生成</string>
   <string name="snackbar_key_gen_failed">密钥生成失败：%s</string>
+  <string name="snackbar_key_save_failed">密钥保存失败：%s</string>
+  <string name="snackbar_key_permission_not_persisted">密钥权限未持久化，访问失败请重新选择</string>
+  <string name="snackbar_key_selection_failed">密钥选择失败</string>
   <string name="snackbar_pubkey_copied">公钥已复制</string>
   <string name="btn_copy_pubkey">复制公钥</string>
   <string name="pubkey_hint">公钥（添加到服务器的 ~/.ssh/authorized_keys）：</string>

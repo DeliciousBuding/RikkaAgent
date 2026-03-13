@@ -12,11 +12,12 @@ This document maps key spec requirements to current automated coverage.
   - `app/src/test/java/io/rikka/agent/ssh/DataStoreKnownHostsStoreTest.kt`
   - `app/src/test/java/io/rikka/agent/ssh/ContentUriKeyContentProviderTest.kt`
   - `app/src/test/java/io/rikka/agent/ssh/KnownHostsEntryCodecTest.kt`
+  - `app/src/test/java/io/rikka/agent/ui/screen/KeyImportSupportTest.kt`
   - `app/src/test/java/io/rikka/agent/ui/screen/HostKeyDialogStateMachineTest.kt`
   - `app/src/test/java/io/rikka/agent/ui/screen/HostKeyDialogsTest.kt`
   - `app/src/test/java/io/rikka/agent/vm/ChatViewModelTest.kt`
 - Gaps:
-  - SAF picker permission persistence / URI lifecycle regression coverage
+  - End-to-end SAF picker instrumentation coverage (ActivityResult + permission persistence)
 
 ## 2) Remote Exec / JSONL
 
@@ -76,6 +77,6 @@ This document maps key spec requirements to current automated coverage.
 
 ## 5) Next Additions
 
-1. SAF picker permission persistence / URI lifecycle tests
+1. End-to-end SAF picker instrumentation coverage
 2. End-to-end `ChatScreen` + platform dispatch verification
 3. UI-level rendering verification for Codex progress summaries
