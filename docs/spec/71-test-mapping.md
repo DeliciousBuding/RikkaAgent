@@ -10,12 +10,13 @@ This document maps key spec requirements to current automated coverage.
   - `core/ssh/src/test/kotlin/io/rikka/agent/ssh/JsonlParserTest.kt`
   - `core/ssh/src/test/kotlin/io/rikka/agent/ssh/InMemoryKnownHostsStoreTest.kt`
   - `app/src/test/java/io/rikka/agent/ssh/DataStoreKnownHostsStoreTest.kt`
+  - `app/src/test/java/io/rikka/agent/ssh/ContentUriKeyContentProviderTest.kt`
   - `app/src/test/java/io/rikka/agent/ssh/KnownHostsEntryCodecTest.kt`
   - `app/src/test/java/io/rikka/agent/ui/screen/HostKeyDialogStateMachineTest.kt`
   - `app/src/test/java/io/rikka/agent/ui/screen/HostKeyDialogsTest.kt`
   - `app/src/test/java/io/rikka/agent/vm/ChatViewModelTest.kt`
 - Gaps:
-  - Key import / `ContentUriKeyContentProvider` integration coverage
+  - SAF picker permission persistence / URI lifecycle regression coverage
 
 ## 2) Remote Exec / JSONL
 
@@ -68,6 +69,6 @@ This document maps key spec requirements to current automated coverage.
 
 ## 5) Next Additions
 
-1. Key import / `ContentUriKeyContentProvider` integration tests
+1. SAF picker permission persistence / URI lifecycle tests
 2. UI-level interaction tests for truncated-output expand/share flows
 3. Codex `thread/turn/item` progress visualization tests
