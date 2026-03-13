@@ -9,6 +9,7 @@ Purpose: keep v1 spec wording and unresolved items centralized so implementation
 - Use "known hosts" for host key trust records keyed by host+port.
 - Use "complete output" for message-level output when display text is truncated.
 - Use "Complete output" for the dialog title and "Share complete output" for the share action.
+- Reference `docs/glossary.md` for canonical term definitions.
 
 ## Centralized Open Questions
 
