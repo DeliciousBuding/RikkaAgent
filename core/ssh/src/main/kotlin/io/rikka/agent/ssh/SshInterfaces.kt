@@ -28,5 +28,8 @@ sealed class ExecEvent {
   data class Exit(val code: Int?) : ExecEvent()
 
   @Serializable
+  data object Canceled : ExecEvent()
+
+  @Serializable
   data class Error(val category: String, val message: String) : ExecEvent()
 }

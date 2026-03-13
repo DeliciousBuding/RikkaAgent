@@ -5,6 +5,7 @@ import io.rikka.agent.model.HostKeyPolicy
 import io.rikka.agent.model.SshProfile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.isActive
@@ -121,6 +122,9 @@ class SshjExecRunner(
         }
       }
 
+      channel.close()
+    } catch (e: CancellationException) {
+      trySend(ExecEvent.Canceled)
       channel.close()
     } catch (e: SshHostKeyRejectedException) {
       trySend(ExecEvent.Error("host_key_rejected", e.message ?: "Host key rejected"))

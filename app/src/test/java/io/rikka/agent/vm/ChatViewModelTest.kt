@@ -394,6 +394,27 @@ class ChatViewModelTest {
   }
 
   @Test
+  fun `canceled exec event maps to canceled message state`() = runTest(dispatcher) {
+    runnerFactory = RecordingExecRunnerFactory { _, _ ->
+      listOf(
+        ExecEvent.StdoutChunk("partial output".toByteArray()),
+        ExecEvent.Canceled,
+      )
+    }
+    val viewModel = createViewModel()
+    advanceUntilIdle()
+
+    viewModel.send("sleep 10")
+    advanceUntilIdle()
+
+    val last = viewModel.messages.value.last()
+    assertEquals(MessageStatus.Canceled, last.status)
+    assertTrue(last.content.contains("partial output"))
+    assertTrue(last.content.contains(app.getString(R.string.msg_command_canceled)))
+    assertEquals(ConnectionState.READY, viewModel.connectionState.value)
+  }
+
+  @Test
   fun `exportSession returns plain text transcript for current thread`() = runTest(dispatcher) {
     val targetThreadId = chatRepository.createThread(profile.id, "ls -la")
     chatRepository.insertMessage(
