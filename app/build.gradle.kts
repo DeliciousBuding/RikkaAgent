@@ -102,6 +102,7 @@ dependencies {
   testImplementation(libs.junit4)
   testImplementation(platform(libs.compose.bom))
   testImplementation("androidx.compose.ui:ui-test-junit4")
+  testImplementation("androidx.compose.ui:ui-test-manifest")
   testImplementation(libs.kotlinx.coroutines.test)
   testImplementation(libs.androidx.test.core)
   testImplementation(libs.robolectric)
