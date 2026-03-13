@@ -10,25 +10,26 @@ This spec is written to enable an open-source, production-quality implementation
 4. `docs/spec/21-visual.md`
 5. `docs/spec/22-motion.md`
 6. `docs/spec/23-rendering.md`
-7. `docs/spec/24-components.md`
-8. `docs/spec/25-design-tokens.md`
-9. `docs/spec/26-settings.md`
-10. `docs/spec/27-microcopy.md`
-11. `docs/spec/28-layout.md`
-12. `docs/spec/29-interaction.md`
-13. `docs/spec/30-architecture.md`
-14. `docs/spec/31-wireframes.md`
-15. `docs/spec/32-ssh.md`
-16. `docs/spec/33-remote-exec.md`
-17. `docs/spec/34-polish.md`
-18. `docs/spec/35-theme-presets.md`
-19. `docs/spec/36-acp.md`
-20. `docs/spec/40-security.md`
-21. `docs/spec/50-data.md`
-22. `docs/spec/60-env.md`
-23. `docs/spec/70-testing.md`
-24. `docs/spec/80-release.md`
-25. `docs/spec/90-oss.md`
+7. `docs/spec/23-mermaid.md`
+8. `docs/spec/24-components.md`
+9. `docs/spec/25-design-tokens.md`
+10. `docs/spec/26-settings.md`
+11. `docs/spec/27-microcopy.md`
+12. `docs/spec/28-layout.md`
+13. `docs/spec/29-interaction.md`
+14. `docs/spec/30-architecture.md`
+15. `docs/spec/31-wireframes.md`
+16. `docs/spec/32-ssh.md`
+17. `docs/spec/33-remote-exec.md`
+18. `docs/spec/34-polish.md`
+19. `docs/spec/35-theme-presets.md`
+20. `docs/spec/36-acp.md`
+21. `docs/spec/40-security.md`
+22. `docs/spec/50-data.md`
+23. `docs/spec/60-env.md`
+24. `docs/spec/70-testing.md`
+25. `docs/spec/80-release.md`
+26. `docs/spec/90-oss.md`
 
 ## Research Notes (Non-Normative)
 

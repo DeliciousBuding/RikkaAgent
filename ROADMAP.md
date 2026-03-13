@@ -43,6 +43,7 @@
 - [x] Markdown 渲染 v1（段落/标题/列表/引用/链接/行内代码/代码块/表格/删除线）
 - [x] CodeCard 基础组件（折叠/展开/复制/语言标签）
 - [x] 流式渲染策略（流式阶段用 CodeCard，终态切 MarkdownText 单次解析 + remember 缓存）
+- [x] Mermaid 渲染设计草案（`docs/spec/23-mermaid.md`）
 - [ ] 可选：Mermaid 渲染（WebView/JS bridge）
 
 ## M4 待完成
