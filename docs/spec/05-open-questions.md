@@ -4,10 +4,10 @@ This document is the single place where we track unresolved decisions so they do
 
 ## Must Decide Before Implementing SSH (M3)
 
-- ~~SSH library choice~~ **DECIDED (2026-03-12): JSch (mwiede fork)**
-  - Maven: `com.github.mwiede:jsch:0.2.21`
-  - Rationale: most actively maintained, BSD license, modern defaults (rsa-sha2, ed25519), pure Java 8 (Android-safe), blocking API acceptable for Mode A exec
-  - Runner-up: SSHJ (Apache-2.0, also good); rejected: Apache MINA SSHD (overkill), Trilead (dead)
+- ~~SSH library choice~~ **DECIDED (2026-03-12): SSHJ**
+  - Maven: `com.hierynomus:sshj:0.39.0`
+  - Rationale: pure Java, Android 可用、exec channel 能力完整、密钥与 host-key 验证链路清晰
+  - 现状：已在 `:core:ssh` 落地，支持 Password / OpenSSH / PuTTY `.ppk` 私钥认证
 - Private key handling
   - where passphrases live (memory-only vs optionally cached)
   - which Android crypto storage to use for key material (`keyRef` semantics)
@@ -17,10 +17,10 @@ This document is the single place where we track unresolved decisions so they do
 
 ## Should Decide Before Implementing Rendering (M2)
 
-- ~~Markdown library choice~~ **DECIDED: richtext-commonmark (current) + IntelliJ Markdown (future)**
-  - Current: `com.halilibo.compose-richtext:richtext-commonmark:1.0.0-alpha03` (alpha risk noted)
-  - Future: If alpha proves unstable, switch to `org.jetbrains:markdown` (same as rikkahub, GFM-flavored) with custom Compose renderer
-  - Key pattern from rikkahub: parse on `Dispatchers.Default`, cache AST, use `snapshotFlow` for streaming
+- ~~Markdown library choice~~ **DECIDED: commonmark-java + 自定义 Compose 渲染**
+  - Current: `org.commonmark:commonmark` + GFM 扩展（tables / strikethrough）
+  - Rationale: 依赖稳定、可控、便于按消息增量渲染与样式定制
+  - 现状：`MarkdownText` 已落地，流式阶段走 CodeCard，终态切 Markdown 渲染
 - Code highlighting approach
   - lightweight syntax highlight vs full TextMate grammar
   - line numbers default (on/off)

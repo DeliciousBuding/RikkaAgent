@@ -62,6 +62,8 @@
 - [x] 隐私审计清单 — `docs/privacy-audit.md`
 - [x] Release checklist — `docs/release-checklist.md`
 - [x] 输出截断保护（256KB 上限 + 截断提示）
+- [x] 仓库文档边界清理（移除非 rikka-agent 内容并外部归档）
+- [x] README 可发布化重构（徽章/矩阵/快速上手/安全说明）
 
 ---
 

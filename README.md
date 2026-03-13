@@ -1,72 +1,75 @@
 # RikkaAgent
 
-**A beautiful Android SSH command runner** — execute commands over SSH, stream stdout/stderr, and render outputs as Markdown / code blocks.
+![RikkaAgent Hero](docs/images/rikkaagent-hero.svg)
 
-Inspired by the UX of [RikkaHub](https://github.com/re-ovo/rikkahub). Not a fork — clean-room implementation under Apache-2.0.
+> 📱 A polished Android SSH command runner with chat-style rendering for command outputs.
 
-## What is this?
+[![Android CI](https://img.shields.io/github/actions/workflow/status/DeliciousBuding/RikkaAgent/ci.yml?branch=master&label=CI)](https://github.com/DeliciousBuding/RikkaAgent/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.1.0-7F52FF?logo=kotlin)](https://kotlinlang.org/)
+[![Android API](https://img.shields.io/badge/API-24%2B-brightgreen)](app/build.gradle.kts)
 
-Mobile terminals work, but they're not always pleasant for reading command outputs. RikkaAgent provides a polished, chat-style UI for:
+Inspired by the UX feel of [RikkaHub](https://github.com/re-ovo/rikkahub), but implemented clean-room from scratch under Apache-2.0.
 
-- **Run a command** → see streaming output → copy / rerun / export
-- **SSH profiles** with encrypted key storage
-- **Markdown & code block rendering** of command outputs
-- **Host key verification** with first-use confirmation
+## ✨ Why RikkaAgent
 
-The primary use case is connecting an Android phone to a desktop running [Codex](https://github.com/openai/codex) or similar tools via SSH, giving you a beautiful mobile interface for remote command execution.
+Traditional mobile terminals work, but reading long outputs is painful. RikkaAgent focuses on readability, safety, and speed:
 
-## Features
+- 💬 Chat-style command and output timeline
+- 🔐 Secure SSH with host-key verification and encrypted key storage
+- 🧠 Codex mode for remote `codex exec --json --full-auto`
+- 🧩 Markdown/code rendering optimized for streaming output
 
-### Implemented
+## 🚀 Feature Matrix
 
-- [x] Jetpack Compose chat-style UI
-- [x] Material 3 theming (light + dark + AMOLED)
-- [x] Markdown rendering in output bubbles
-- [x] Real SSH exec streaming (stdout/stderr/exit)
-- [x] ANSI escape sequence stripping
-- [x] Host key verification (TOFU + mismatch warning)
-- [x] SSH profiles persisted with Room
-- [x] Encrypted private key storage (AndroidX Security Crypto)
-- [x] Private key auth + password auth + `.ppk` support
-- [x] Codex mode (`codex exec --json --full-auto`) with JSONL parsing
-- [x] Session export/share + rerun/copy actions
-- [x] i18n (English/Chinese)
+| Area | Status | Details |
+|---|---|---|
+| Core UI (Compose) | ✅ | Profiles, Editor, Session, Settings, Known Hosts, About |
+| SSH Exec (Mode A) | ✅ | Real stdout/stderr/exit streaming via sshj |
+| Authentication | ✅ | Password + private key + passphrase + PuTTY `.ppk` |
+| Security | ✅ | TOFU host key verify, mismatch warning, encrypted key files |
+| Codex Integration | ✅ | Profile toggle + workdir + API key + JSONL parse |
+| Rendering | ✅ | Markdown + CodeCard + streaming-friendly behavior |
+| i18n | ✅ | English + Chinese resources |
+| CI | ✅ | test + lint + assemble + artifact uploads |
+| Mermaid rendering | 🟡 | Planned |
+| Expanded output tooling | 🟡 | Planned (`expand/download full output`) |
 
-### Planned
+## 🧭 Product Scope
 
-- [ ] Mermaid rendering (optional)
-- [ ] More tests (unit + integration)
-- [ ] Output expand/download for truncated long logs
+### In Scope
 
-## Non-Goals
+- Non-interactive SSH command execution (`exec` channel)
+- Stream stdout/stderr into a chat conversation
+- Copy/rerun/export workflows for daily ops usage
 
-- Interactive terminal emulation (PTY/ANSI cursor control)
-- Server-side HTTP relays (avoids expanding attack surface)
-- Fully autonomous AI agents executing commands without user intent
+### Out of Scope
 
-## Architecture
+- PTY-style interactive terminal emulation (vim/top/tmux)
+- Server-side HTTP command relay by default
+- Fully autonomous command execution without explicit user intent
 
-```
-:app                  → Main app (Activity, ViewModel, Screens)
-:core:model           → Data models (SshProfile, ChatMessage, etc.)
-:core:ssh             → SSH exec interface + event model
-:core:storage         → Profile persistence interface
-:core:ui              → Reusable Compose components (Theme, ChatBubble, ChatInput)
-```
+## 🏗️ Architecture
 
-Mode A data flow:
-
-```
-User types command → ViewModel → SshExecRunner.run(profile, cmd)
-                                       ↓
-                                 Flow<ExecEvent>
-                                       ↓
-                          StdoutChunk / StderrChunk / Exit / Error
-                                       ↓
-                          ChatMessage updated incrementally → UI recomposes
+```text
+:app            -> App shell, Navigation, ViewModels, Screens
+:core:model     -> Domain models (profile, message, status)
+:core:ssh       -> SSH runner, events, JSONL parsing, key helpers
+:core:storage   -> Room/DataStore persistence
+:core:ui        -> Reusable Compose UI components
 ```
 
-## Building
+### Mode A Data Flow
+
+```text
+User input -> ChatViewModel -> SshExecRunner.run(profile, command)
+                                -> Flow<ExecEvent>
+                                -> Stdout/Stderr/Exit/Error/Structured
+                                -> Message updates
+                                -> Compose UI render
+```
+
+## ⚙️ Quick Start
 
 ### Prerequisites
 
@@ -74,43 +77,54 @@ User types command → ViewModel → SshExecRunner.run(profile, cmd)
 - Android SDK (API 35)
 - Gradle 8.10.2 (wrapper included)
 
-### Build
+### Build / Test / Lint
 
 ```bash
+./gradlew test
+./gradlew :app:lintDevDebug
 ./gradlew assembleDevDebug
 ```
 
-The APK will be at `app/build/outputs/apk/dev/debug/app-dev-debug.apk`.
+APK output:
 
-## Project Status
+- `app/build/outputs/apk/dev/debug/app-dev-debug.apk`
 
-Core milestones are substantially implemented (M1-M5 mainline complete, polish/test work ongoing). See [ROADMAP.md](ROADMAP.md) for live progress.
+## 📊 Milestone Status
 
-| Milestone | Description | Status |
-|-----------|-------------|--------|
-| M0 | Spec Freeze | ✅ Mostly Complete |
-| M1 | Android App Core UX | ✅ Mostly Complete |
-| M2 | Markdown/Streaming Rendering | ✅ Mostly Complete |
-| M3 | SSH exec (Mode A) | ✅ Mostly Complete |
-| M4 | Codex Integration | ✅ Mostly Complete |
-| M5 | Release Quality | ✅ Mostly Complete |
+See [ROADMAP.md](ROADMAP.md) for the latest execution details.
 
-## Documentation
+| Milestone | Name | Status |
+|---|---|---|
+| M0 | Spec Freeze | ✅ Mostly complete |
+| M1 | App Core UX | ✅ Mostly complete |
+| M2 | Rendering Pipeline | ✅ Mostly complete |
+| M3 | SSH Engine | ✅ Mostly complete |
+| M4 | Codex Integration | ✅ Mostly complete |
+| M5 | Release Quality | ✅ Mostly complete |
 
-- [Spec Index](docs/spec/00-index.md) — Product, UX, architecture, security specs
-- [Architecture](docs/architecture.md) — Module design and data flow
-- [Threat Model](docs/threat-model.md) — Security analysis
-- [Server Hardening](docs/server-hardening.md) — SSH server configuration guide
-- [RikkaHub UI Study](docs/research/rikkahub-android-ui-study.md) — Reference UI analysis (read-only observations)
+## 🔒 Security Notes
 
-## Clean-Room Note
+- Private keys are stored encrypted at rest (AndroidX Security Crypto)
+- Host key mismatch is explicitly surfaced as a security warning
+- This repo must not contain runtime secrets (keys/tokens/passwords)
 
-This project is inspired by the UX ideas of [RikkaHub](https://github.com/re-ovo/rikkahub) and other chat UIs, but is implemented entirely from scratch. No code has been copied from copyleft-licensed repositories.
+Server hardening guidance: [docs/server-hardening.md](docs/server-hardening.md)
 
-## Contributing
+## 📚 Documentation
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Security issues: see [SECURITY.md](SECURITY.md).
+- [Spec Index](docs/spec/00-index.md)
+- [Architecture](docs/architecture.md)
+- [Threat Model](docs/threat-model.md)
+- [Privacy Audit](docs/privacy-audit.md)
+- [Release Checklist](docs/release-checklist.md)
+- [RikkaHub UI Study (research)](docs/research/rikkahub-android-ui-study.md)
 
-## License
+## 🤝 Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+Security reports: [SECURITY.md](SECURITY.md)
+
+## 📄 License
 
 [Apache-2.0](LICENSE)
