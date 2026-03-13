@@ -71,6 +71,7 @@
 - [x] SSH 密钥格式判定单测（`SshAuthKeyFormatTest`）
 - [x] CI 执行摘要（step summary）
 - [x] Spec 测试映射与发布验收矩阵文档
+- [x] 命令包装测试（`CommandComposerTest`：shell/codex/workdir/env）
 
 ---
 
