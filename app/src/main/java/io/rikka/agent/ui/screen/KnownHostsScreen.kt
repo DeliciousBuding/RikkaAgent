@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import io.rikka.agent.R
+import io.rikka.agent.ssh.KnownHostEndpointParser
 import io.rikka.agent.ssh.KnownHostsStore
 import io.rikka.agent.ssh.StoredHostKey
 import androidx.compose.ui.res.stringResource
@@ -52,7 +53,7 @@ fun KnownHostsScreen(
   var confirmDelete by remember { mutableStateOf<String?>(null) }
 
   LaunchedEffect(Unit) {
-    entries = store.getAll()
+    entries = store.getAll().sortedBy { it.first }
   }
 
   // Delete confirmation dialog
@@ -64,11 +65,10 @@ fun KnownHostsScreen(
       confirmButton = {
         TextButton(onClick = {
           scope.launch {
-            val parts = hostKey.split(":")
-            if (parts.size == 2) {
-              store.remove(parts[0], parts[1].toIntOrNull() ?: 22)
+            KnownHostEndpointParser.parse(hostKey)?.let { endpoint ->
+              store.remove(endpoint.host, endpoint.port)
             }
-            entries = store.getAll()
+            entries = store.getAll().sortedBy { it.first }
             confirmDelete = null
           }
         }) {
