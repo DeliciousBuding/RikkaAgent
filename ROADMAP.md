@@ -150,6 +150,8 @@
 - [x] 架构文档对齐实际实现（SshConnectionPool / RunnerFactory）
 - [x] 架构 spec 补齐 RunnerFactory/ConnectionPool 接口说明
 - [x] 架构文档补充 SshjExecRunner 复用说明
+- [x] 新增 troubleshooting 文档（JDK/SDK/Emulator/Lint/APK）
+- [x] Spec index 补充 supporting docs 入口
 
 ## Agent 交接快照（2026-03-13）
 
