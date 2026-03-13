@@ -28,4 +28,8 @@ dependencies {
   implementation(libs.sshj)
   implementation(libs.bcprov)
   implementation(libs.slf4j.nop)
+
+  testImplementation(libs.junit4)
+  testImplementation(libs.kotlinx.coroutines.test)
+  testImplementation(libs.turbine)
 }
