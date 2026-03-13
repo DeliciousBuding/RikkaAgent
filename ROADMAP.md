@@ -64,6 +64,7 @@
 - [x] 输出截断保护（256KB 上限 + 截断提示）
 - [x] 仓库文档边界清理（移除非 rikka-agent 内容并外部归档）
 - [x] README 可发布化重构（徽章/矩阵/快速上手/安全说明）
+- [x] 核心解析单测补齐（`JsonlParser` / `JsonlLineBuffer`）
 
 ---
 
