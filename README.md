@@ -80,6 +80,13 @@ User command
 - Android SDK (target API 35)
 - Gradle wrapper (included)
 
+Windows note (if `JAVA_HOME` is missing):
+
+```powershell
+$env:JAVA_HOME="C:\Path\To\JDK17"
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+```
+
 ### Build, Test, Lint
 
 ```bash
@@ -93,6 +100,10 @@ Instrumentation (requires device/emulator):
 ```bash
 ./gradlew :app:connectedDevDebugAndroidTest
 ```
+
+Instrumentation tips and emulator setup:
+
+- `docs/testing-android-instrumentation.md`
 
 Debug APK output:
 
@@ -182,6 +193,7 @@ Hardening references:
 | Category | Entry |
 |---|---|
 | Spec index | [docs/spec/00-index.md](docs/spec/00-index.md) |
+| Instrumentation testing | [docs/testing-android-instrumentation.md](docs/testing-android-instrumentation.md) |
 | Test mapping | [docs/spec/71-test-mapping.md](docs/spec/71-test-mapping.md) |
 | Release acceptance | [docs/spec/81-release-acceptance-matrix.md](docs/spec/81-release-acceptance-matrix.md) |
 | Architecture | [docs/architecture.md](docs/architecture.md) |

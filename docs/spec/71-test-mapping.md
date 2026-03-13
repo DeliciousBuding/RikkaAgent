@@ -14,6 +14,7 @@ This document maps key spec requirements to current automated coverage.
   - `app/src/test/java/io/rikka/agent/ssh/KnownHostsEntryCodecTest.kt`
   - `app/src/test/java/io/rikka/agent/ui/screen/KeyImportSupportTest.kt`
   - `app/src/androidTest/java/io/rikka/agent/ui/screen/ProfileEditorSafPickerTest.kt`
+  - `app/src/androidTest/java/io/rikka/agent/test/TestDocumentsProvider.java`
   - `app/src/test/java/io/rikka/agent/ui/screen/HostKeyDialogStateMachineTest.kt`
   - `app/src/test/java/io/rikka/agent/ui/screen/HostKeyDialogsTest.kt`
   - `app/src/test/java/io/rikka/agent/vm/ChatViewModelTest.kt`

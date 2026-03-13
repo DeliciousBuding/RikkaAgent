@@ -151,3 +151,5 @@
 - ✅ Codex 进度 Markdown UI 渲染回归：`CodexProgressUiTest`
 - ✅ CI Node24 兼容开关（Actions 去 Node20 警告）
 - ✅ androidTest 依赖补齐与 assemble 通过
+- ✅ instrumentation 测试文档补齐：`docs/testing-android-instrumentation.md`
+- ✅ Testing spec 增补 instrumentation 范围说明
