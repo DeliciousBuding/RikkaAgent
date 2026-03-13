@@ -83,6 +83,9 @@
   <string name="trust_host_msg">First connection to %1$s:%2$d\n\nKey type: %3$s\nFingerprint:\n%4$s\n\nDo you want to trust this host?</string>
   <string name="host_key_changed_title">⚠️ Host key changed!</string>
   <string name="host_key_changed_msg">WARNING: The host key for %1$s:%2$d has changed!\n\nExpected fingerprint:\n%3$s\n\nActual fingerprint:\n%4$s\n\nThis could indicate a man-in-the-middle attack. Only continue if you know the key was changed.</string>
+  <string name="host_key_replace_confirm_title">Confirm host key replacement</string>
+  <string name="host_key_replace_confirm_msg">You are about to replace the trusted host key for %1$s:%2$d. Continue only if you have verified this key out of band.</string>
+  <string name="host_key_replace_confirm_action">Yes, replace and trust</string>
   <string name="btn_trust">Trust</string>
   <string name="btn_replace_trust">Replace &amp; Trust</string>
   <string name="btn_reject">Reject</string>
@@ -127,6 +130,7 @@
   <string name="msg_no_output_failed">(no output, failed)</string>
   <string name="msg_exit_code">exit: %d</string>
   <string name="msg_output_truncated">⚠ Output truncated (showing last 256KB)</string>
+  <string name="msg_command_canceled">[canceled by user]</string>
   <string name="err_connection_refused">Connection refused — is the SSH server running on the target host?</string>
   <string name="err_timeout">Connection timed out — check the host address and network connectivity.</string>
   <string name="err_unknown_host">Host not found — verify the hostname or IP address.</string>
@@ -149,6 +153,8 @@
   <string name="theme">Theme</string>
   <string name="default_shell">Default shell</string>
   <string name="default_shell_title">Default Shell</string>
+  <string name="enable_mermaid_rendering">Enable Mermaid rendering</string>
+  <string name="enable_mermaid_rendering_subtitle">Render mermaid code blocks in finalized assistant messages</string>
   <string name="known_hosts">Known hosts</string>
   <string name="known_hosts_subtitle">Manage trusted server fingerprints</string>
   <string name="version">Version</string>

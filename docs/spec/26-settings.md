@@ -77,7 +77,7 @@ Recommended top-level sections:
 ### Mermaid
 
 - Toggle: `Render Mermaid diagrams`
-  - Default: `On`
+- Default: `Off` during initial rollout
 - Notes:
   - When off, show Mermaid as raw code.
 
@@ -169,4 +169,3 @@ Recommended top-level sections:
   - clear effect on UI
 - Enabling Markdown output does not degrade streaming performance (render-as-code-while-streaming rule holds).
 - Enabling blur does not break readability on light/dark themes.
-

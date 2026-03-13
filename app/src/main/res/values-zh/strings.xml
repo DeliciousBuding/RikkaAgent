@@ -83,6 +83,9 @@
   <string name="trust_host_msg">首次连接 %1$s:%2$d\n\n密钥类型：%3$s\n指纹：\n%4$s\n\n是否信任此主机？</string>
   <string name="host_key_changed_title">⚠️ 主机密钥已变更！</string>
   <string name="host_key_changed_msg">警告：%1$s:%2$d 的主机密钥已变更！\n\n预期指纹：\n%3$s\n\n实际指纹：\n%4$s\n\n这可能是中间人攻击。仅在确认密钥确实被更换时才继续。</string>
+  <string name="host_key_replace_confirm_title">确认替换主机密钥</string>
+  <string name="host_key_replace_confirm_msg">你将替换 %1$s:%2$d 已信任的主机密钥。仅在你已通过其他渠道确认新密钥可信时继续。</string>
+  <string name="host_key_replace_confirm_action">确认替换并信任</string>
   <string name="btn_trust">信任</string>
   <string name="btn_replace_trust">替换并信任</string>
   <string name="btn_reject">拒绝</string>
@@ -127,6 +130,7 @@
   <string name="msg_no_output_failed">（无输出，执行失败）</string>
   <string name="msg_exit_code">退出码：%d</string>
   <string name="msg_output_truncated">⚠ 输出已截断（仅显示末尾 256KB）</string>
+  <string name="msg_command_canceled">[用户已取消]</string>
   <string name="err_connection_refused">连接被拒绝 — SSH 服务是否在目标主机上运行？</string>
   <string name="err_timeout">连接超时 — 请检查主机地址和网络连通性。</string>
   <string name="err_unknown_host">找不到主机 — 请确认主机名或 IP 地址。</string>
@@ -149,6 +153,8 @@
   <string name="theme">主题</string>
   <string name="default_shell">默认 Shell</string>
   <string name="default_shell_title">默认 Shell</string>
+  <string name="enable_mermaid_rendering">启用 Mermaid 渲染</string>
+  <string name="enable_mermaid_rendering_subtitle">在助手最终消息中渲染 mermaid 代码块</string>
   <string name="known_hosts">已知主机</string>
   <string name="known_hosts_subtitle">管理信任的服务器指纹</string>
   <string name="version">版本</string>

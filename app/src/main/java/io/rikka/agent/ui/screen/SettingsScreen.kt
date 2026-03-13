@@ -17,6 +17,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -44,6 +45,7 @@ fun SettingsScreen(
   val vm: SettingsViewModel = koinViewModel()
   val theme by vm.theme.collectAsState()
   val defaultShell by vm.defaultShell.collectAsState()
+  val enableMermaid by vm.enableMermaid.collectAsState()
   var showThemePicker by remember { mutableStateOf(false) }
   var showShellPicker by remember { mutableStateOf(false) }
 
@@ -91,6 +93,12 @@ fun SettingsScreen(
         title = stringResource(R.string.default_shell),
         subtitle = defaultShell,
         onClick = { showShellPicker = true },
+      )
+      SettingsSwitchItem(
+        title = stringResource(R.string.enable_mermaid_rendering),
+        subtitle = stringResource(R.string.enable_mermaid_rendering_subtitle),
+        checked = enableMermaid,
+        onCheckedChange = vm::setEnableMermaid,
       )
 
       SectionHeader(stringResource(R.string.section_security))
@@ -201,5 +209,25 @@ private fun SettingsItem(
     headlineContent = { Text(title) },
     supportingContent = { Text(subtitle) },
     modifier = Modifier.clickable(onClick = onClick),
+  )
+}
+
+@Composable
+private fun SettingsSwitchItem(
+  title: String,
+  subtitle: String,
+  checked: Boolean,
+  onCheckedChange: (Boolean) -> Unit,
+) {
+  ListItem(
+    headlineContent = { Text(title) },
+    supportingContent = { Text(subtitle) },
+    trailingContent = {
+      Switch(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+      )
+    },
+    modifier = Modifier.clickable { onCheckedChange(!checked) },
   )
 }
