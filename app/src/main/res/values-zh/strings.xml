@@ -99,6 +99,9 @@
 
   <!-- Share -->
   <string name="share_output">分享输出</string>
+  <string name="share_full_output">分享完整输出</string>
+  <string name="full_output_title">完整输出</string>
+  <string name="close">关闭</string>
   <string name="ssh_session_subject">SSH 会话 — %s</string>
 
   <!-- ChatBubble -->

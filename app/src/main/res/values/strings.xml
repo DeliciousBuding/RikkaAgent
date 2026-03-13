@@ -99,6 +99,9 @@
 
   <!-- Share -->
   <string name="share_output">Share output</string>
+  <string name="share_full_output">Share full output</string>
+  <string name="full_output_title">Full output</string>
+  <string name="close">Close</string>
   <string name="ssh_session_subject">SSH Session — %s</string>
 
   <!-- ChatBubble -->

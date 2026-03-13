@@ -8,6 +8,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,6 +61,9 @@ fun ChatBubble(
   contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
   onRerun: ((String) -> Unit)? = null,
   onShare: ((String) -> Unit)? = null,
+  showExpand: Boolean = false,
+  onExpand: (() -> Unit)? = null,
+  onShareFull: (() -> Unit)? = null,
 ) {
   val isUser = message.role == ChatRole.User
   val isError = message.status == MessageStatus.Error
@@ -168,8 +172,14 @@ fun ChatBubble(
       }
       if (message.status == MessageStatus.Final && message.content.isNotBlank()) {
         CopyButton(content = message.content)
+        if (!isUser && showExpand && onExpand != null) {
+          ExpandButton(onExpand = onExpand)
+        }
         if (!isUser && onShare != null) {
           ShareButton(content = message.content, onShare = onShare)
+        }
+        if (!isUser && showExpand && onShareFull != null) {
+          ShareFullButton(onShareFull = onShareFull)
         }
       }
     }
@@ -260,6 +270,35 @@ private fun ShareButton(content: String, onShare: (String) -> Unit) {
       painter = painterResource(id = R.drawable.ic_share),
       contentDescription = stringResource(R.string.cd_share),
       tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+      modifier = Modifier.size(14.dp),
+    )
+  }
+}
+
+@Composable
+private fun ExpandButton(onExpand: () -> Unit) {
+  Text(
+    text = stringResource(R.string.expand_output),
+    style = MaterialTheme.typography.labelSmall,
+    color = MaterialTheme.colorScheme.primary,
+    modifier = Modifier
+      .clip(RoundedCornerShape(6.dp))
+      .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
+      .padding(horizontal = 6.dp, vertical = 2.dp)
+      .clickable { onExpand() },
+  )
+}
+
+@Composable
+private fun ShareFullButton(onShareFull: () -> Unit) {
+  IconButton(
+    onClick = { onShareFull() },
+    modifier = Modifier.size(24.dp),
+  ) {
+    Icon(
+      painter = painterResource(id = R.drawable.ic_share),
+      contentDescription = stringResource(R.string.cd_share_full),
+      tint = MaterialTheme.colorScheme.primary,
       modifier = Modifier.size(14.dp),
     )
   }
