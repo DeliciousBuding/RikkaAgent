@@ -30,8 +30,10 @@ This spec is written to enable an open-source, production-quality implementation
 24. `docs/spec/60-env.md`
 25. `docs/spec/70-testing.md`
 26. `docs/spec/71-test-mapping.md`
-27. `docs/spec/80-release.md`
-28. `docs/spec/90-oss.md`
+27. `docs/spec/72-implementation-gap-matrix.md`
+28. `docs/spec/80-release.md`
+29. `docs/spec/90-oss.md`
+30. `docs/spec/99-spec-hygiene.md`
 
 ## Research Notes (Non-Normative)
 
