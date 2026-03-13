@@ -147,6 +147,9 @@
 - [x] testing spec 增补 verification 文档指引
 - [x] PR 模板与贡献指南对齐 verification 清单
 - [x] 发布/验收文档补充 verification 与 instrumentation 指引
+- [x] 架构文档对齐实际实现（SshConnectionPool / RunnerFactory）
+- [x] 架构 spec 补齐 RunnerFactory/ConnectionPool 接口说明
+- [x] 架构文档补充 SshjExecRunner 复用说明
 
 ## Agent 交接快照（2026-03-13）
 
