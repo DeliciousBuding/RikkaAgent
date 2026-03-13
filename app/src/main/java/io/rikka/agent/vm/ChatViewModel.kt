@@ -56,6 +56,7 @@ class ChatViewModel(
 
   private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
   val messages: StateFlow<List<ChatMessage>> = _messages
+  private val fullOutputByMessageId = mutableMapOf<String, String>()
 
   /** Observable list of past threads for this profile. */
   val threads: StateFlow<List<ChatThread>> = chatRepository.observeThreads(profileId)
@@ -143,6 +144,7 @@ class ChatViewModel(
   fun newSession() {
     runningJob?.cancel()
     threadId = null
+    fullOutputByMessageId.clear()
     _messages.value = emptyList()
     _connectionState.value = if (currentProfile != null) ConnectionState.READY else ConnectionState.ERROR
     val profile = currentProfile ?: return
@@ -165,10 +167,15 @@ class ChatViewModel(
     viewModelScope.launch {
       chatRepository.deleteThread(targetThreadId)
       if (threadId == targetThreadId) {
+        fullOutputByMessageId.clear()
         newSession()
       }
     }
   }
+
+  fun hasFullOutput(messageId: String): Boolean = fullOutputByMessageId.containsKey(messageId)
+
+  fun getFullOutput(messageId: String): String? = fullOutputByMessageId[messageId]
 
   fun send(text: String) {
     val command = text.trim()
@@ -260,12 +267,18 @@ class ChatViewModel(
               }
             } else {
               stdout.append(String(event.bytes, Charsets.UTF_8))
-              updateAssistantContent(assistantId, formatOutput(stdout, stderr, exitCode = null))
+              val display = formatOutput(stdout, stderr, exitCode = null)
+              val full = formatOutput(stdout, stderr, exitCode = null, capChars = null)
+              if (display != full) fullOutputByMessageId[assistantId] = full
+              updateAssistantContent(assistantId, display)
             }
           }
           is ExecEvent.StderrChunk -> {
             stderr.append(String(event.bytes, Charsets.UTF_8))
-            updateAssistantContent(assistantId, formatOutput(stdout, stderr, exitCode = null))
+            val display = formatOutput(stdout, stderr, exitCode = null)
+            val full = formatOutput(stdout, stderr, exitCode = null, capChars = null)
+            if (display != full) fullOutputByMessageId[assistantId] = full
+            updateAssistantContent(assistantId, display)
           }
           is ExecEvent.StructuredEvent -> { /* handled via jsonlBuffer above */ }
           is ExecEvent.Exit -> {
@@ -296,6 +309,14 @@ class ChatViewModel(
               markdownAccum.toString() + extra
             } else {
               formatOutput(stdout, stderr, event.code)
+            }
+            val finalFull = if (isCodex && markdownAccum != null && markdownAccum.isNotEmpty()) {
+              finalContent
+            } else {
+              formatOutput(stdout, stderr, event.code, capChars = null)
+            }
+            if (finalFull != finalContent) {
+              fullOutputByMessageId[assistantId] = finalFull
             }
             updateAssistantMessage(assistantId, finalContent, MessageStatus.Final)
             persistUpdate(assistantId, finalContent, MessageStatus.Final)
@@ -373,12 +394,13 @@ class ChatViewModel(
     stdout: StringBuilder,
     stderr: StringBuilder,
     exitCode: Int?,
+    capChars: Int? = maxOutputChars,
   ): String = buildString {
-    val stdoutTruncated = stdout.length > maxOutputChars
-    val stderrTruncated = stderr.length > maxOutputChars
+    val stdoutTruncated = capChars != null && stdout.length > capChars
+    val stderrTruncated = capChars != null && stderr.length > capChars
     if (stdout.isNotEmpty()) {
       if (stdoutTruncated) {
-        append(stdout, stdout.length - maxOutputChars, stdout.length)
+        append(stdout, stdout.length - capChars!!, stdout.length)
         append("\n")
         append(app.getString(R.string.msg_output_truncated))
         append("\n")
@@ -392,7 +414,7 @@ class ChatViewModel(
       append(app.getString(R.string.label_stderr))
       append("\n")
       if (stderrTruncated) {
-        append(stderr, stderr.length - maxOutputChars, stderr.length)
+        append(stderr, stderr.length - capChars!!, stderr.length)
         append("\n")
         append(app.getString(R.string.msg_output_truncated))
         append("\n")

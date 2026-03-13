@@ -22,7 +22,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -113,6 +115,7 @@ fun ChatScreen(
 
   // Passphrase dialog state
   var passphraseTarget by remember { mutableStateOf<String?>(null) }
+  var fullOutputDialog by remember { mutableStateOf<String?>(null) }
 
   LaunchedEffect(Unit) {
     vm.hostKeyEvent.collect { event ->
@@ -175,6 +178,35 @@ fun ChatScreen(
       onCancel = {
         vm.respondToPassphrase(null)
         passphraseTarget = null
+      },
+    )
+  }
+
+  // Show full output dialog for truncated content
+  fullOutputDialog?.let { fullText ->
+    AlertDialog(
+      onDismissRequest = { fullOutputDialog = null },
+      title = { Text(stringResource(R.string.full_output_title)) },
+      text = {
+        Column(modifier = Modifier.height(320.dp).verticalScroll(rememberScrollState())) {
+          Text(text = fullText, fontFamily = FontFamily.Monospace)
+        }
+      },
+      confirmButton = {
+        TextButton(onClick = {
+          val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, fullText)
+          }
+          context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_full_output)))
+        }) {
+          Text(stringResource(R.string.share_full_output))
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = { fullOutputDialog = null }) {
+          Text(stringResource(R.string.close))
+        }
       },
     )
   }
@@ -321,6 +353,10 @@ fun ChatScreen(
             items(messages, key = { it.id }) { msg ->
               ChatBubble(
                 message = msg,
+                showExpand = vm.hasFullOutput(msg.id),
+                onExpand = {
+                  fullOutputDialog = vm.getFullOutput(msg.id)
+                },
                 onRerun = { cmd ->
                   if (connectionState != ConnectionState.EXECUTING) vm.send(cmd)
                 },
@@ -332,6 +368,17 @@ fun ChatScreen(
                   context.startActivity(
                     Intent.createChooser(intent, context.getString(R.string.share_output))
                   )
+                },
+                onShareFull = {
+                  vm.getFullOutput(msg.id)?.let { fullText ->
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                      type = "text/plain"
+                      putExtra(Intent.EXTRA_TEXT, fullText)
+                    }
+                    context.startActivity(
+                      Intent.createChooser(intent, context.getString(R.string.share_full_output))
+                    )
+                  }
                 },
               )
             }
