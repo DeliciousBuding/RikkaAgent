@@ -139,6 +139,8 @@
 - [x] 统一 spec 中 `known hosts` / `complete output` / `Mode A` 术语
 - [x] 更新 gap matrix：M1 冻结与 README 发布质量标记完成
 - [x] JSONL parser 增补分块 + trailing 文本用例
+- [x] 完整输出相关 UI 文案对齐为 "complete output"
+- [x] 新增统一验证清单文档
 
 ## Agent 交接快照（2026-03-13）
 

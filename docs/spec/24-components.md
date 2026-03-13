@@ -49,7 +49,7 @@ Naming is **suggested**. The key requirement is that we design components so the
      - copy stderr
      - copy all
      - expand/collapse
-     - export (with warning)
+     - export/share complete output (with warning)
    - states:
      - streaming (receiving chunks; show subtle indicator)
      - complete (exit code shown)

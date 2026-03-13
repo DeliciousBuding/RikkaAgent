@@ -33,7 +33,7 @@ class FullOutputDialogTest {
   }
 
   @Test
-  fun `dialog shows full output and routes share plus dismiss callbacks`() {
+  fun `dialog shows complete output and routes share plus dismiss callbacks`() {
     val context = ApplicationProvider.getApplicationContext<android.app.Application>()
     var shared = 0
     var dismissed = 0
