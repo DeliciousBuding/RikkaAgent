@@ -100,6 +100,13 @@ For fast local regression on current core paths:
 ./gradlew :core:storage:testDebugUnitTest :core:ssh:testDebugUnitTest :app:testDevDebugUnitTest
 ```
 
+For UI-heavy regression before a release candidate:
+
+```bash
+./gradlew :app:testDevDebugUnitTest --tests "io.rikka.agent.ui.screen.HostKeyDialogsTest"
+./gradlew :app:lintDevDebug :app:assembleDevDebug
+```
+
 ## 🖼️ UI Gallery
 
 | Chat Session | Profile Editor | Settings |
@@ -135,6 +142,7 @@ Fallback is intentional when parsing or local rendering fails. The source block 
 ## 🧭 GitHub Ready
 
 - CI validates unit tests, lint, and a dev debug APK on every PR.
+- Dependabot monitors Gradle and GitHub Actions dependencies weekly.
 - PR template is included for verification notes and rollback planning.
 - Issue templates guide bug reports and feature requests with security-safe prompts.
 

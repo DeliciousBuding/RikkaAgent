@@ -47,7 +47,7 @@
 - [x] 流式渲染策略（流式阶段用 CodeCard，终态切 MarkdownText 单次解析 + remember 缓存）
 - [x] Mermaid 渲染设计草案（`docs/spec/23-mermaid.md`）
 - [x] Mermaid 技术选型对比（`docs/spec/24-mermaid-options.md`）
-- [ ] 可选：Mermaid 渲染（WebView/JS bridge）
+- [x] 可选：Mermaid 渲染（WebView/JS bridge）
 
 ## M4 待完成
 
@@ -96,9 +96,9 @@
 
 ## 下一步最优动作
 
-1. **Mermaid 可选渲染** — 在 Markdown 渲染层增加可开关的图表渲染能力
+1. **补 ProfileEditor 测试闭环** — 覆盖保存映射、字段校验、认证切换边界
 2. **加强 Codex JSONL 事件可视化** — 将 `thread/turn/item` 事件映射为结构化 UI 进度
-3. **规范冻结检查收口** — 统一 spec 用词并清理分散 TODO
+3. **补 Key import 集成测试** — 校验 `ContentUriKeyContentProvider` 与导入链路
 
 ---
 
@@ -113,14 +113,14 @@
 
 ### 正在进行中的主线
 
-1. HostKey 双确认 Compose/UI 级测试。
-2. 存储与集成测试补齐（KnownHosts/DataStore/KeyContentProvider）。
-3. 发布门禁持续回归验证（模块单测 / lint / assemble）。
+1. Key import / KeyContentProvider 集成测试。
+2. Codex JSONL 进度事件可视化。
+3. 发布门禁回归验证（模块单测 / lint / assemble）。
 
 ### 下一位 Agent 建议直接执行顺序
 
-1. 先补 HostKey 双确认的 Compose/UI 级测试与回归。
-2. 再补存储与集成测试（KnownHosts/DataStore/KeyContentProvider）。
+1. 先补 Key import 与存储/集成测试（KnownHosts/DataStore/KeyContentProvider）。
+2. 再补 Codex 进度事件的展示与测试。
 3. 最后执行全回归与发布门禁（模块单测 -> lint -> assemble）。
 
 ### 本机验证前置（已验证可用）

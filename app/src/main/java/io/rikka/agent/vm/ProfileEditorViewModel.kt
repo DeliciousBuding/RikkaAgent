@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import io.rikka.agent.R
 import io.rikka.agent.model.AuthType
 import io.rikka.agent.model.SshProfile
-import io.rikka.agent.storage.RoomProfileStore
+import io.rikka.agent.storage.ProfileStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,7 +32,7 @@ data class ProfileForm(
 
 class ProfileEditorViewModel(
   private val profileId: String?,
-  private val store: RoomProfileStore,
+  private val store: ProfileStore,
   private val app: Application,
 ) : ViewModel() {
 
