@@ -39,3 +39,12 @@
 | `:core:ssh` | 稳定 | SSH exec、JSONL parser、HostKey 验证、`.ppk` 支持 |
 | `:core:storage` | 稳定 | Room v3、DataStore、Profile/Chat 持久化 |
 | `:core:ui` | 高完成度 | Theme、ChatBubble、CodeCard、MarkdownText、ChatInput |
+
+---
+
+## 3. 本地构建前置（Windows）
+
+- 若终端未预置 JDK，请先设置：
+	- `JAVA_HOME=d:\Code\Projects\rikka-agent\tmp\jdk17\jdk-17.0.18+8`
+	- 将 `%JAVA_HOME%\\bin` 加入 `Path`
+- 上述路径已在本仓库当前环境中验证可用于 Gradle 测试、lint 与打包。
