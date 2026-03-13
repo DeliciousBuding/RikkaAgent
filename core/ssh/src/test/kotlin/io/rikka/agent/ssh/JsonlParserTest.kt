@@ -83,6 +83,24 @@ class JsonlParserTest {
   }
 
   @Test
+  fun `line buffer handles split json across multiple feeds with trailing plain text`() {
+    val buffer = JsonlLineBuffer()
+    val first = "{\"delta\":\"hello".toByteArray()
+    val second = "\"}\nplain-text".toByteArray()
+
+    val events1 = buffer.feed(first)
+    assertTrue(events1.isEmpty())
+
+    val events2 = buffer.feed(second)
+    assertTrue(events2.any { it is ExecEvent.StructuredEvent && it.kind == "markdown_delta" && it.rawJson == "hello" })
+
+    val flushed = buffer.flush()
+    assertEquals(1, flushed.size)
+    val chunk = flushed.first() as ExecEvent.StdoutChunk
+    assertEquals("plain-text\n", String(chunk.bytes, Charsets.UTF_8))
+  }
+
+  @Test
   fun `parseLine handles CRLF input`() {
     val events = JsonlParser.parseLine("{\"status\":\"ok\"}\r")
     assertTrue(events.any { it is ExecEvent.StructuredEvent && it.kind == "status" && it.rawJson == "ok" })

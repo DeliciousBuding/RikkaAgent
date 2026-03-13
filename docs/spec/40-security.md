@@ -29,7 +29,7 @@ Rules:
 
 - show SHA256 fingerprint
 - require explicit confirmation
-- persist to known_hosts
+- persist to known hosts store
 
 ### 3.2 Mismatch
 
@@ -59,4 +59,3 @@ We provide `docs/server-hardening.md` to encourage:
 - disabling root login
 - restricting authorized_keys options
 - limiting SSH exposure via VPN/firewall
-

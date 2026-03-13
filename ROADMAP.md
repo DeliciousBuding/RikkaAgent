@@ -38,7 +38,7 @@
 - [x] 更多密钥格式支持（PuTTY .ppk）
 - [x] spec TODO 集中索引（`docs/spec/99-spec-hygiene.md`）
 - [x] 实现-规范偏差矩阵（`docs/spec/72-implementation-gap-matrix.md`）
-- [ ] 规范冻结检查：spec 用词统一 + TODO 集中
+- [x] 规范冻结检查：spec 用词统一 + TODO 集中
 
 ## M2 待完成
 
@@ -133,6 +133,12 @@
 - [x] ARCHIVE 记录 2026-03-14 测试/文档加固
 - [x] SSH/Auth 覆盖清单包含 SAF instrumentation 测试
 - [x] README 保留 connected 测试命令入口
+
+## 2026-03-14 术语与测试加固（已完成）
+
+- [x] 统一 spec 中 `known hosts` / `complete output` / `Mode A` 术语
+- [x] 更新 gap matrix：M1 冻结与 README 发布质量标记完成
+- [x] JSONL parser 增补分块 + trailing 文本用例
 
 ## Agent 交接快照（2026-03-13）
 

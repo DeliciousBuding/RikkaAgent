@@ -2,7 +2,7 @@
 
 This spec defines the SSH behavior required to support a “chat-style command runner” on Android.
 
-Scope: **non-interactive exec** (no PTY, no ANSI terminal emulation).
+Scope: **Mode A (non-interactive exec)** (no PTY, no ANSI terminal emulation).
 
 ## 1) Supported Authentication Methods (v1)
 
@@ -11,7 +11,7 @@ Must support:
 - Public key authentication
   - OpenSSH private keys (including encrypted keys)
   - `ed25519` keys are recommended as the default
-- Host key verification (known-hosts)
+- Host key verification (known hosts)
 
 Should support:
 
@@ -124,11 +124,10 @@ To avoid memory blow-ups:
 
 Must have automated tests for:
 
-- known-hosts: accept first key, reject mismatch, replace flow generates correct store update
+- known hosts: accept first key, reject mismatch, replace flow generates correct store update
 - exec runner: stdout/stderr separation, exit code capture, cancellation, timeout
 
 May use:
 
 - local Docker container running `sshd` (for integration tests)
 - a mock SSH server or fake transport (for unit tests)
-

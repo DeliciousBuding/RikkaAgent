@@ -11,7 +11,7 @@ This document is the single place where we track unresolved decisions so they do
 - Private key handling
   - where passphrases live (memory-only vs optionally cached)
   - which Android crypto storage to use for key material (`keyRef` semantics)
-- Known-hosts storage format
+- Known hosts storage format
   - file-like OpenSSH `known_hosts` vs Room table only
   - canonical host+port formatting rules
 
@@ -46,7 +46,7 @@ This document is the single place where we track unresolved decisions so they do
 ## Privacy Defaults
 
 - Should session history persist by default?
-  - option A: persist only profiles + known_hosts; keep chat history ephemeral
+  - option A: persist only profiles + known hosts; keep chat history ephemeral
   - option B: persist last N sessions with a clear retention policy
 - Export redaction behavior
   - best-effort rules vs “manual only” (no automatic claims)

@@ -2,7 +2,7 @@
 
 ## 1) Test Levels
 
-- Unit tests: known_hosts parsing/matching, output truncation logic, event stream throttling (pure Kotlin).
+- Unit tests: known hosts parsing/matching, output truncation logic, event stream throttling (pure Kotlin).
 - Integration tests: SSH connection/auth with local mock or in-memory substitute, host key mismatch behavior (simulated).
 - UI tests: command card rerun/copy, output collapse/expand.
 - Instrumentation tests: SAF picker flow, platform share/intent dispatch, Compose UI regression.

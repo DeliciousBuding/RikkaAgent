@@ -149,7 +149,7 @@ Truncation:
 - In-memory output per run MUST be capped.
 - When truncation happens, the message MUST show a clear “Output truncated” affordance and still allow:
   - copy tail
-  - export full output if available (future)
+  - export complete output if available (future)
 
 ## Timeouts & Cancellation
 
@@ -187,4 +187,3 @@ Outputs may contain secrets; deletion controls MUST exist (see `docs/spec/40-sec
 - `docs/spec/23-rendering.md`
 - `docs/spec/40-security.md`
 - `docs/spec/36-acp.md` (v2 direction)
-

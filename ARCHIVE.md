@@ -153,3 +153,6 @@
 - ✅ androidTest 依赖补齐与 assemble 通过
 - ✅ instrumentation 测试文档补齐：`docs/testing-android-instrumentation.md`
 - ✅ Testing spec 增补 instrumentation 范围说明
+- ✅ 术语统一：known hosts / complete output / Mode A across core specs
+- ✅ Gap matrix 收口：M1 freeze 与 README publish quality 标记完成
+- ✅ JSONL parser 增补分块 + trailing 文本用例
