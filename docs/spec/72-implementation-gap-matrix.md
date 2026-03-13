@@ -22,6 +22,5 @@ Purpose: convert spec requirements into executable backlog with severity and evi
 
 ## Immediate Execution Order
 
-1. P0: keep host-key replacement double-confirm flow and add regression checks.
-2. P1: add UI regression coverage for host-key replacement double confirmation.
-3. P2: complete terminology unification + README / GitHub information architecture refresh.
+1. P1: keep regression coverage expanding for host-key dialogs and JSONL streaming.
+2. P2: refresh docs and UI strings when copy changes.

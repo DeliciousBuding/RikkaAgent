@@ -135,7 +135,7 @@
   <string name="msg_no_output">（无输出）</string>
   <string name="msg_no_output_failed">（无输出，执行失败）</string>
   <string name="msg_exit_code">退出码：%d</string>
-  <string name="msg_output_truncated">⚠ 输出已截断（仅显示末尾 256KB）</string>
+  <string name="msg_output_truncated">⚠ 输出过大已截断，为保证性能仅显示部分内容。请使用导出保存完整输出。</string>
   <string name="msg_command_canceled">[用户已取消]</string>
   <string name="err_connection_refused">连接被拒绝 — SSH 服务是否在目标主机上运行？</string>
   <string name="err_timeout">连接超时 — 请检查主机地址和网络连通性。</string>

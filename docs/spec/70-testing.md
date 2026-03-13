@@ -24,3 +24,4 @@ Streaming output tests should:
 
 - Instrumentation runs are intentionally minimal and documented in
   `docs/testing-android-instrumentation.md`.
+- Local verification shortcuts live in `docs/verification.md`.
