@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-label="RikkaAgent hero banner">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#052e16" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22d3ee" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="420" fill="url(#bg)" rx="20" ry="20" />
+  <circle cx="1080" cy="80" r="120" fill="#10b981" opacity="0.12" />
+  <circle cx="160" cy="340" r="140" fill="#22d3ee" opacity="0.1" />
+
+  <rect x="70" y="78" width="560" height="250" rx="18" fill="#0b1220" opacity="0.9" stroke="#334155" />
+  <rect x="95" y="105" width="220" height="24" rx="8" fill="#1e293b" />
+  <rect x="95" y="145" width="480" height="16" rx="6" fill="#111827" />
+  <rect x="95" y="173" width="440" height="16" rx="6" fill="#111827" />
+  <rect x="95" y="201" width="460" height="16" rx="6" fill="#111827" />
+  <rect x="95" y="235" width="210" height="34" rx="10" fill="url(#accent)" opacity="0.85" />
+
+  <text x="680" y="165" fill="#e2e8f0" font-family="Segoe UI, Arial, sans-serif" font-size="58" font-weight="700">RikkaAgent</text>
+  <text x="680" y="214" fill="#cbd5e1" font-family="Segoe UI, Arial, sans-serif" font-size="24">Android SSH Command Runner</text>
+  <text x="680" y="254" fill="#94a3b8" font-family="Segoe UI, Arial, sans-serif" font-size="20">Chat-style UX • Secure by default • Codex-ready</text>
+
+  <rect x="680" y="286" width="370" height="42" rx="12" fill="#0b1220" stroke="#334155" />
+  <text x="698" y="313" fill="#67e8f9" font-family="Consolas, Menlo, monospace" font-size="18">$ codex exec --json --full-auto ...</text>
+</svg>

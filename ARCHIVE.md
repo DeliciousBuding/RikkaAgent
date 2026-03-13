@@ -103,3 +103,15 @@
 
 - ✅ SSH 密钥加密存储 (EncryptedFile, AES-256-GCM via AndroidX Security Crypto)
 - ✅ 旧明文密钥兼容读取 (graceful fallback)
+
+### 工程治理与文档收敛（2026-03-13）
+
+- ✅ 仓库边界清理：移除与 rikka-agent 无关的 VectorControl 内容并外部归档
+- ✅ `README.md` 重构为发布导向版（徽章、能力矩阵、快速上手、状态表）
+- ✅ CI 增强：增加 `:app:lintDevDebug` 与 test/lint/apk 报告产物上传
+- ✅ Spec 纠偏：`docs/spec/05-open-questions.md` 与当前 sshj/commonmark 实现一致
+
+### 体验增强（2026-03-13）
+
+- ✅ Codex JSONL 状态流式展示（会话内可见执行状态）
+- ✅ SSH 私钥格式扩展：新增 PuTTY `.ppk` 加载支持
