@@ -36,6 +36,7 @@ This document maps key spec requirements to current automated coverage.
   - `app/src/test/java/io/rikka/agent/vm/ProfileEditorViewModelTest.kt`
   - `app/src/test/java/io/rikka/agent/ui/components/ChatBubbleActionsTest.kt`
   - `app/src/test/java/io/rikka/agent/ui/screen/FullOutputDialogTest.kt`
+  - `app/src/test/java/io/rikka/agent/ui/screen/ShareIntentsTest.kt`
 - Covered behaviors:
   - initial profile-ready state
   - persisted thread switch loading
@@ -47,7 +48,7 @@ This document maps key spec requirements to current automated coverage.
   - host key replacement confirmation dialogs
   - canceled exec event persistence + cancelRunning semantics
 - Gaps:
-  - Screen-level Android share-sheet intent verification in `ChatScreen`
+  - Full `ChatScreen` integration coverage with platform `startActivity` dispatch observation
 
 ## 3) Output Formatting & Truncation
 
@@ -56,8 +57,9 @@ This document maps key spec requirements to current automated coverage.
   - `app/src/test/java/io/rikka/agent/vm/OutputFormatterTest.kt`
   - `app/src/test/java/io/rikka/agent/ui/components/ChatBubbleActionsTest.kt` (CodeCard expand + full-output action row)
   - `app/src/test/java/io/rikka/agent/ui/screen/FullOutputDialogTest.kt` (full-output dialog render + share/dismiss callbacks)
+  - `app/src/test/java/io/rikka/agent/ui/screen/ShareIntentsTest.kt` (chooser title + text/subject payloads)
 - Gaps:
-  - Android intent dispatch verification for `ChatScreen` full-output sharing
+  - End-to-end `ChatScreen` + platform dispatch verification
 
 ## 4) CI Enforcement
 
@@ -75,5 +77,5 @@ This document maps key spec requirements to current automated coverage.
 ## 5) Next Additions
 
 1. SAF picker permission persistence / URI lifecycle tests
-2. Android intent dispatch verification for `ChatScreen` full-output sharing
+2. End-to-end `ChatScreen` + platform dispatch verification
 3. UI-level rendering verification for Codex progress summaries

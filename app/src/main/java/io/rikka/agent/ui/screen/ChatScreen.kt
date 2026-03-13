@@ -209,11 +209,12 @@ fun ChatScreen(
     FullOutputDialog(
       fullText = fullText,
       onShare = {
-        val intent = Intent(Intent.ACTION_SEND).apply {
-          type = "text/plain"
-          putExtra(Intent.EXTRA_TEXT, fullText)
-        }
-        context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_full_output)))
+        context.startActivity(
+          ShareIntents.plainText(
+            text = fullText,
+            chooserTitle = context.getString(R.string.share_full_output),
+          )
+        )
       },
       onDismiss = { fullOutputDialog = null },
     )
@@ -291,12 +292,13 @@ fun ChatScreen(
           if (messages.isNotEmpty() && connectionState != ConnectionState.EXECUTING) {
             IconButton(onClick = {
               val text = vm.exportSession()
-              val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, text)
-                putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.ssh_session_subject, profileLabel))
-              }
-              context.startActivity(Intent.createChooser(intent, context.getString(R.string.export_session)))
+              context.startActivity(
+                ShareIntents.sessionExport(
+                  text = text,
+                  subject = context.getString(R.string.ssh_session_subject, profileLabel),
+                  chooserTitle = context.getString(R.string.export_session),
+                )
+              )
             }) {
               Icon(
                 painter = androidx.compose.ui.res.painterResource(
@@ -370,22 +372,20 @@ fun ChatScreen(
                   if (connectionState != ConnectionState.EXECUTING) vm.send(cmd)
                 },
                 onShare = { content ->
-                  val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, content)
-                  }
                   context.startActivity(
-                    Intent.createChooser(intent, context.getString(R.string.share_output))
+                    ShareIntents.plainText(
+                      text = content,
+                      chooserTitle = context.getString(R.string.share_output),
+                    )
                   )
                 },
                 onShareFull = {
                   vm.getFullOutput(msg.id)?.let { fullText ->
-                    val intent = Intent(Intent.ACTION_SEND).apply {
-                      type = "text/plain"
-                      putExtra(Intent.EXTRA_TEXT, fullText)
-                    }
                     context.startActivity(
-                      Intent.createChooser(intent, context.getString(R.string.share_full_output))
+                      ShareIntents.plainText(
+                        text = fullText,
+                        chooserTitle = context.getString(R.string.share_full_output),
+                      )
                     )
                   }
                 },
