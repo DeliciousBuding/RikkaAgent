@@ -13,7 +13,7 @@ Purpose: convert spec requirements into executable backlog with severity and evi
 |---|---|---|---|---|---|
 | Mermaid | Optional Mermaid rendering with feature flag | Done | P1 | settings toggle + renderer + fallback path landed in app/core-ui | Keep regression coverage expanding |
 | Host key mismatch | Replace host key must require double confirmation | Partial | P0 | confirmation flow exists, ViewModel coverage exists, and UI state-machine regression now covers the two-step decision path; full Compose/UI coverage is still missing | Add full Compose/UI regression coverage for replacement flow |
-| Cancellation semantics | Distinct canceled terminal state in normalized events | Partial | P1 | `docs/spec/33-remote-exec.md` defines RunCancelled; current `ExecEvent` lacks dedicated canceled event | Add canceled event or map cancel action to explicit status in UI/persistence |
+| Cancellation semantics | Distinct canceled terminal state in normalized events | Done | P1 | `ExecEvent.Canceled` exists and `ChatViewModel` maps canceled frames to persisted `MessageStatus.Canceled` | Keep regression coverage expanding |
 | SSH output policy | stdout/stderr separation + truncation affordance | Done | P1 | `OutputFormatter` + Chat UI complete output actions | Keep regression tests expanding |
 | JSONL tolerance | malformed line must not crash, raw lines preserved | Done | P1 | `JsonlParserTest` exists | Add more chunk-fragment cases |
 | Testing spec | unit tests for known-hosts/truncation/stream | Partial | P1 | truncation/parser tests exist, ChatViewModel behavior suite covers init/thread switch/new session/delete thread/auth prompts, DataStoreKnownHostsStore persistence is covered, and host-key dialog state machine is covered | Add full Compose/UI and deeper integration coverage |
@@ -24,5 +24,4 @@ Purpose: convert spec requirements into executable backlog with severity and evi
 
 1. P0: keep host-key replacement double-confirm flow and add regression checks.
 2. P1: add UI regression coverage for host-key replacement double confirmation.
-3. P1: keep cancellation semantics aligned between structured events and persisted UI state.
-4. P2: complete terminology unification + README / GitHub information architecture refresh.
+3. P2: complete terminology unification + README / GitHub information architecture refresh.

@@ -335,6 +335,15 @@ class ChatViewModel(
             runningAssistantId = null
             _connectionState.value = ConnectionState.READY
           }
+          is ExecEvent.Canceled -> {
+            val canceledText = app.getString(R.string.msg_command_canceled)
+            val current = _messages.value.firstOrNull { it.id == assistantId }
+            val canceledContent = CancelMessageHelper.mergeCanceledContent(current?.content, canceledText)
+            updateAssistantMessage(assistantId, canceledContent, MessageStatus.Canceled)
+            persistUpdate(assistantId, canceledContent, MessageStatus.Canceled)
+            runningAssistantId = null
+            _connectionState.value = ConnectionState.READY
+          }
           is ExecEvent.Error -> {
             val friendlyMsg = ErrorMessageMapper.friendlyErrorMessage(
               category = event.category,
