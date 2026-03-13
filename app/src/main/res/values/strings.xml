@@ -44,6 +44,9 @@
   <string name="snackbar_not_private_key">Clipboard does not contain a private key</string>
   <string name="snackbar_key_generated">Ed25519 key pair generated</string>
   <string name="snackbar_key_gen_failed">Key generation failed: %s</string>
+  <string name="snackbar_key_save_failed">Key save failed: %s</string>
+  <string name="snackbar_key_permission_not_persisted">Key permission not persisted; reselect if access fails</string>
+  <string name="snackbar_key_selection_failed">Key selection failed</string>
   <string name="snackbar_pubkey_copied">Public key copied</string>
   <string name="btn_copy_pubkey">Copy Public Key</string>
   <string name="pubkey_hint">Public key (add to server\'s ~/.ssh/authorized_keys):</string>
