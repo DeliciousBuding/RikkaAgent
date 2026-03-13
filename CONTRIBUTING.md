@@ -28,7 +28,9 @@ This project is implemented from scratch. Please do not copy code from projects 
 
 ## Local Verification Checklist
 
-Before opening a PR, run:
+Before opening a PR, follow the canonical checklist in `docs/verification.md`.
+
+Baseline commands:
 
 ```bash
 ./gradlew test
@@ -36,9 +38,14 @@ Before opening a PR, run:
 ./gradlew assembleDevDebug
 ```
 
+If you changed UI flows or platform integration, also run:
+
+```bash
+./gradlew :app:connectedDevDebugAndroidTest
+```
+
 And verify:
 
 - changed behavior is covered by tests when practical
 - `ROADMAP.md` / `STATE.md` / `ARCHIVE.md` are updated when milestones or facts change
 - no secrets are present in code, docs, logs, or screenshots
-

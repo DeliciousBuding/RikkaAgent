@@ -131,3 +131,5 @@ Before any release, verify:
   - warnings are readable and not “panic red”
   - mismatch flow is double-confirmed and blocks by default
 
+Reference the shared verification checklist in `docs/verification.md` for baseline build
+and test coverage.

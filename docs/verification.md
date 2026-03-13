@@ -8,6 +8,10 @@ This checklist keeps local regression runs consistent before release or CI triag
 ./gradlew :core:storage:testDebugUnitTest :core:ssh:testDebugUnitTest :app:testDevDebugUnitTest
 ```
 
+Notes:
+
+- Use this when only docs or UI copy changed and no core logic moved.
+
 ## Full Unit Test Sweep
 
 ```bash

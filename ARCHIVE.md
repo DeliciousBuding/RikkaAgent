@@ -163,3 +163,5 @@
 - ✅ 输出截断提示文案与 microcopy 对齐
 - ✅ Spec hygiene 补充 complete output 标题/动作规范
 - ✅ Testing spec 增补 verification 文档指引
+- ✅ PR 模板与贡献指南对齐 verification 清单
+- ✅ Release spec/checklist/acceptance matrix 补充 verification 与 instrumentation 指引

@@ -20,3 +20,7 @@ Recommended:
 - Verify `.gitignore` prevents keys/secrets from being committed
 - Update CHANGELOG (later)
 
+For detailed steps, follow:
+
+- `docs/release-checklist.md`
+- `docs/verification.md`
