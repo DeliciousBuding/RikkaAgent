@@ -92,13 +92,14 @@
 - [x] 取消态规则单测（`CancelMessageHelperTest`）
 - [x] JsonlParser 复杂嵌套测试增强（nested content / 字段优先级）
 - [x] Codex `thread/turn/item` 进度摘要（ChatViewModel 结构化展示 + 回归测试）
+- [x] `ChatScreen` 分享/导出 chooser payload 测试（普通输出 / 完整输出 / 会话导出）
 
 ---
 
 ## 下一步最优动作
 
 1. **补 SAF URI 生命周期测试** — 覆盖持久权限、失效 URI、导入失败回退
-2. **补输出操作的 UI 级回归** — 展开 / 分享 / 导出完整内容
+2. **补分享链路端到端验证** — `ChatScreen` 到平台分发的最后一跳
 3. **执行发布门禁回归** — 模块单测 + lint + assemble 持续收口
 
 ---
@@ -114,17 +115,18 @@
 5. Codex `thread/turn/item` 事件已映射为结构化进度摘要，并有 ViewModel/解析层测试兜底。
 6. 截断输出的 CodeCard 展开、完整输出动作行、用户重跑按钮已有 Compose 回归覆盖。
 7. 完整输出弹窗的展示、分享回调、关闭动作已有 screen 级 Compose 回归覆盖。
+8. `ChatScreen` 分享/导出 chooser payload 已有单测覆盖（普通输出 / 完整输出 / 会话导出）。
 
 ### 正在进行中的主线
 
 1. SAF URI 生命周期测试。
-2. `ChatScreen` 层 Android 分享 Intent 分发验证。
+2. `ChatScreen` 与平台分发的端到端验证。
 3. 发布门禁回归验证（模块单测 / lint / assemble）。
 
 ### 下一位 Agent 建议直接执行顺序
 
 1. 先补 SAF URI 生命周期与异常路径测试。
-2. 再补 `ChatScreen` 层 Android 分享 Intent 分发验证。
+2. 再补 `ChatScreen` 与平台分发的端到端验证。
 3. 最后执行全回归与发布门禁（模块单测 -> lint -> assemble）。
 
 ### 本机验证前置（已验证可用）
