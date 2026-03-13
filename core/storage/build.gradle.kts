@@ -32,4 +32,6 @@ dependencies {
 
   // DataStore
   implementation(libs.datastore.preferences)
+
+  testImplementation(libs.junit4)
 }
