@@ -112,6 +112,8 @@
 - ✅ CI 摘要增强：新增 `GITHUB_STEP_SUMMARY` 指标摘要（测试/静态检查/APK）
 - ✅ Spec 纠偏：`docs/spec/05-open-questions.md` 与当前 sshj/commonmark 实现一致
 - ✅ 新增规范文档：`docs/spec/71-test-mapping.md`、`docs/spec/81-release-acceptance-matrix.md`
+- ✅ 新增 spec 治理文档：`docs/spec/99-spec-hygiene.md`（开放问题集中索引）
+- ✅ 新增实现偏差矩阵：`docs/spec/72-implementation-gap-matrix.md`（规范→执行闭环）
 
 ### 体验增强（2026-03-13）
 
@@ -123,3 +125,21 @@
 - ✅ 认证链路测试：`SshAuthKeyFormatTest`（PuTTY/OpenSSH 判定）
 - ✅ 命令组合器抽取：`CommandComposer`（shell/codex 包装逻辑可测化）
 - ✅ 命令包装测试：`CommandComposerTest`
+- ✅ 会话导出逻辑抽取：`SessionExporter`（`ChatViewModel.exportSession()` 纯函数化）
+- ✅ SSH 错误映射抽取：`ErrorMessageMapper`（`ChatViewModel` 错误文案逻辑可测化）
+- ✅ 测试补齐：`SessionExporterTest`、`ErrorMessageMapperTest`
+- ✅ KnownHosts 测试增强：`InMemoryKnownHostsStoreTest`、`KnownHostsEntryCodecTest`
+- ✅ `:core:storage` 映射测试补齐：`MappersTest`（entity/model 映射与异常输入）
+- ✅ HostKey mismatch 安全加固：替换信任前新增二次确认对话流程
+- ✅ 边界测试增强：`CommandComposerTest`、`OutputFormatterTest`、`JsonlParserTest` 补齐转义/截断/分块极端场景
+- ✅ Mermaid 开关基础能力：`AppPreferences` + `SettingsViewModel` + `SettingsScreen` 开关链路打通（默认关闭）
+- ✅ Mermaid 渲染基础能力：`MermaidFenceParser`、`MermaidDiagramCard`、`MarkdownText` 分段渲染与失败降级重试
+- ✅ Mermaid 单测起步：`MermaidFenceParserTest`
+- ✅ Mermaid 支撑能力补齐：`MermaidRenderSupport`（主题映射、HTML 模板、安全转义）+ `MermaidRenderSupportTest`
+- ✅ CI 增强：新增 focused module tests（model/storage/ssh/ui/app）与 step summary 失败分诊信息
+- ✅ README 视觉与可维护性增强：新增 Gallery 占位图、Quick Demo 流程、FAQ 常见问题
+- ✅ 取消态闭环：新增 `MessageStatus.Canceled`，`cancelRunning()` 更新消息与持久化状态，UI 与错误态解耦
+- ✅ i18n 键一致性审计：app/core-ui 中英 strings 键 0 缺失，新增 `docs/i18n-key-audit.md`
+- ✅ 取消态规则可测化：新增 `CancelMessageHelper` 与 `CancelMessageHelperTest`
+- ✅ JSONL 兼容性补强：`JsonlParserTest` 新增 nested content 与字段优先级场景
+- ✅ 交接加固：`ROADMAP.md` 新增 Agent 交接快照（进行中主线/执行顺序/已验证命令），`STATE.md` 新增 Windows 本地构建前置
