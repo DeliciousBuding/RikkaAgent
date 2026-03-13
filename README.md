@@ -56,7 +56,7 @@ Inspired by the UX feel of [RikkaHub](https://github.com/re-ovo/rikkahub), built
 ```text
 :app            -> Screens, Navigation, ViewModels, DI wiring
 :core:model     -> Domain models (profile, message, status)
-:core:ssh       -> SSH runner, JSONL parser, host key store interfaces
+:core:ssh       -> SSH runner, JSONL parser, host key store interfaces, connection pool
 :core:storage   -> Room + DataStore persistence
 :core:ui        -> Reusable Compose components (bubble/code/markdown/input)
 ```

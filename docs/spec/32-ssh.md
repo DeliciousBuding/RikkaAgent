@@ -53,6 +53,8 @@ Note:
 
 - The app should reuse a single SSH session per profile while the chat screen is active.
 - A command exec opens a new exec channel on the reused session.
+  - Implementation uses `SshConnectionPool` to manage cached SSH clients.
+  - `SshjExecRunner` also supports per-runner connection reuse for UI flows that do not use the pool.
 
 ### Reconnect Strategy
 

@@ -54,6 +54,9 @@ API (conceptual):
 - `disconnect(profileId)`
 - `getSession(profileId)`
 
+Note: current implementation uses `SshConnectionPool` to provide the reuse
+behavior without a separate public session manager interface.
+
 ### 3.2 `SshExecRunner`
 
 Responsibilities:
@@ -74,6 +77,30 @@ Responsibilities:
 - read and write trusted host keys
 - compare fingerprints
 - provide "host key mismatch" metadata for UX
+
+### 3.4 `SshExecRunnerFactory`
+
+Responsibilities:
+
+- create `SshExecRunner` instances bound to a profile
+- allow swapping SSH backends without touching UI
+
+API (conceptual):
+
+- `create(profile): SshExecRunner`
+
+### 3.5 `SshConnectionPool`
+
+Responsibilities:
+
+- cache authenticated SSH clients per profile
+- evict stale connections and recreate as needed
+
+API (conceptual):
+
+- `acquire(profile): SSHClient`
+- `release(profile)`
+- `closeAll()`
 
 ## 4) Data Flow (Mode A)
 
@@ -130,8 +157,9 @@ These are “guard rails” so the UI stays smooth:
   - truncate with explicit UI affordance to export/copy-all
 - Prefer immutable snapshots for UI state, but keep streaming buffers mutable internally until emitting a tick update.
 
-## 5) Implementation Notes (Non-binding)
+## 8) Implementation Notes (Non-binding)
 
 - Prefer a library that supports host key verification hooks.
 - Avoid holding decrypted private key strings longer than necessary.
 - Throttle UI updates to reduce Compose recomposition pressure.
+- Current implementation uses `SshConnectionPool` to reuse authenticated sessions.
