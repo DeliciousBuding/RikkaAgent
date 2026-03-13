@@ -109,4 +109,11 @@ dependencies {
 
   debugImplementation(platform(libs.compose.bom))
   debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+  androidTestImplementation(platform(libs.compose.bom))
+  androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+  androidTestImplementation(libs.androidx.test.core)
+  androidTestImplementation(libs.androidx.test.ext.junit)
+  androidTestImplementation(libs.androidx.test.rules)
+  androidTestImplementation(libs.espresso.intents)
 }
