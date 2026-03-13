@@ -200,6 +200,7 @@ Hardening references:
 | Release checklist | [docs/release-checklist.md](docs/release-checklist.md) |
 | Troubleshooting | [docs/troubleshooting.md](docs/troubleshooting.md) |
 | Glossary | [docs/glossary.md](docs/glossary.md) |
+| CI notes | [docs/ci-notes.md](docs/ci-notes.md) |
 | Architecture | [docs/architecture.md](docs/architecture.md) |
 | Product plan | [docs/plan.md](docs/plan.md) |
 | i18n key audit | [docs/i18n-key-audit.md](docs/i18n-key-audit.md) |

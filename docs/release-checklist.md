@@ -52,3 +52,4 @@
 - [ ] Git tag 已创建
 - [ ] GitHub Release 已创建（附 APK + changelog）
 - [ ] F-Droid metadata（如适用）
+- [ ] CI artifacts 与 step summary 已验证（见 `docs/ci-notes.md`）

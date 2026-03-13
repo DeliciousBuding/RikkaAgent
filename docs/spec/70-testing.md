@@ -26,3 +26,4 @@ Streaming output tests should:
   `docs/testing-android-instrumentation.md`.
 - Local verification shortcuts live in `docs/verification.md`.
 - Troubleshooting tips live in `docs/troubleshooting.md`.
+- CI workflow notes live in `docs/ci-notes.md`.
