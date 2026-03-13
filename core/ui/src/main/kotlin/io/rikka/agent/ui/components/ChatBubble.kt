@@ -57,6 +57,7 @@ import java.util.concurrent.TimeUnit
 @Composable
 fun ChatBubble(
   message: ChatMessage,
+  enableMermaid: Boolean = false,
   modifier: Modifier = Modifier,
   contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
   onRerun: ((String) -> Unit)? = null,
@@ -67,6 +68,7 @@ fun ChatBubble(
 ) {
   val isUser = message.role == ChatRole.User
   val isError = message.status == MessageStatus.Error
+  val isCanceled = message.status == MessageStatus.Canceled
   val isStreaming = message.status == MessageStatus.Streaming
   val bubbleShape = RoundedCornerShape(
     topStart = 18.dp,
@@ -78,12 +80,14 @@ fun ChatBubble(
   val bubbleColor = when {
     isUser -> MaterialTheme.colorScheme.primary
     isError -> MaterialTheme.colorScheme.errorContainer
+    isCanceled -> MaterialTheme.colorScheme.surfaceVariant
     else -> MaterialTheme.colorScheme.surface
   }
 
   val contentColor = when {
     isUser -> MaterialTheme.colorScheme.onPrimary
     isError -> MaterialTheme.colorScheme.onErrorContainer
+    isCanceled -> MaterialTheme.colorScheme.onSurfaceVariant
     else -> MaterialTheme.colorScheme.onSurface
   }
 
@@ -137,15 +141,20 @@ fun ChatBubble(
       Column(
         modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
       ) {
-        if (isError || isStreaming || !looksLikeMarkdown(message.content)) {
+        if (isError || isCanceled || isStreaming || !looksLikeMarkdown(message.content)) {
           CodeCard(
             code = message.content,
-            language = if (isError) "error" else null,
+            language = when {
+              isError -> "error"
+              isCanceled -> "canceled"
+              else -> null
+            },
             modifier = Modifier.fillMaxWidth(),
           )
         } else {
           MarkdownText(
             markdown = message.content,
+            enableMermaid = enableMermaid,
             modifier = Modifier.fillMaxWidth(),
           )
         }
@@ -170,7 +179,7 @@ fun ChatBubble(
       if (isUser && onRerun != null && message.content.isNotBlank()) {
         RerunButton(command = message.content, onRerun = onRerun)
       }
-      if (message.status == MessageStatus.Final && message.content.isNotBlank()) {
+      if (message.status != MessageStatus.Streaming && message.content.isNotBlank()) {
         CopyButton(content = message.content)
         if (!isUser && showExpand && onExpand != null) {
           ExpandButton(onExpand = onExpand)

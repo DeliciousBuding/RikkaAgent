@@ -15,6 +15,11 @@
   <string name="collapse_lines">收起（%d 行）</string>
   <string name="show_all_lines">显示全部 %d 行</string>
 
+  <!-- Mermaid -->
+  <string name="mermaid_diagram">Mermaid 图表</string>
+  <string name="mermaid_render_failed">渲染失败，已显示源码降级视图。</string>
+  <string name="mermaid_retry">重试渲染</string>
+
   <!-- ChatInput -->
   <string name="input_placeholder">$ 命令</string>
   <string name="cd_send">发送</string>

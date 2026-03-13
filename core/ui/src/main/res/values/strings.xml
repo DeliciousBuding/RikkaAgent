@@ -15,6 +15,11 @@
   <string name="collapse_lines">Collapse (%d lines)</string>
   <string name="show_all_lines">Show all %d lines</string>
 
+  <!-- Mermaid -->
+  <string name="mermaid_diagram">Mermaid Diagram</string>
+  <string name="mermaid_render_failed">Render failed. Showing source fallback.</string>
+  <string name="mermaid_retry">Retry render</string>
+
   <!-- ChatInput -->
   <string name="input_placeholder">$ command</string>
   <string name="cd_send">Send</string>
