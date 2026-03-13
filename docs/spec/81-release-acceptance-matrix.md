@@ -6,6 +6,7 @@ This matrix defines practical release gates for `rikka-agent`.
 |---|---|---|
 | Build | Dev debug APK builds successfully | `./gradlew assembleDevDebug` |
 | Tests | Unit tests pass | `./gradlew test` |
+| Tests (modules) | Key modules pass focused suite | `./gradlew :core:model:testDebugUnitTest :core:storage:testDebugUnitTest :core:ssh:testDebugUnitTest :core:ui:testDebugUnitTest :app:testDevDebugUnitTest` |
 | Lint | No blocking lint failures | `./gradlew :app:lintDevDebug` |
 | Security | No secrets committed | Manual review + CI checklists |
 | SSH Core | Password + key auth paths compile and pass tests | core/app tests |
@@ -16,6 +17,7 @@ This matrix defines practical release gates for `rikka-agent`.
 ## Pre-Tag Checklist
 
 1. Re-run full CI locally.
-2. Review changelog impact in `ARCHIVE.md`.
-3. Ensure release notes mention security-relevant changes.
-4. Confirm artifacts are generated and downloadable in Actions.
+2. Re-run focused module suite for quick regression confidence.
+3. Review changelog impact in `ARCHIVE.md`.
+4. Ensure release notes mention security-relevant changes.
+5. Confirm artifacts are generated and downloadable in Actions.
