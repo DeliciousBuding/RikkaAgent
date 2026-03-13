@@ -113,13 +113,13 @@
 
 ### 正在进行中的主线
 
-1. HostKey 双确认 UI 级测试。
-2. 发布门禁回归验证（模块单测 / lint / assemble）。
-3. 存储与集成测试补齐（KnownHosts/DataStore/KeyContentProvider）。
+1. HostKey 双确认 Compose/UI 级测试。
+2. 存储与集成测试补齐（KnownHosts/DataStore/KeyContentProvider）。
+3. 发布门禁持续回归验证（模块单测 / lint / assemble）。
 
 ### 下一位 Agent 建议直接执行顺序
 
-1. 先补 HostKey 双确认的 UI 级测试与回归。
+1. 先补 HostKey 双确认的 Compose/UI 级测试与回归。
 2. 再补存储与集成测试（KnownHosts/DataStore/KeyContentProvider）。
 3. 最后执行全回归与发布门禁（模块单测 -> lint -> assemble）。
 
