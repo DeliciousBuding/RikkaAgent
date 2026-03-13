@@ -121,3 +121,5 @@
 - ✅ 截断输出支持“完整查看 + 完整分享”（消息级）
 - ✅ 输出格式化测试：`OutputFormatterTest`（截断标记/完整输出一致性）
 - ✅ 认证链路测试：`SshAuthKeyFormatTest`（PuTTY/OpenSSH 判定）
+- ✅ 命令组合器抽取：`CommandComposer`（shell/codex 包装逻辑可测化）
+- ✅ 命令包装测试：`CommandComposerTest`

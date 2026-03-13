@@ -472,26 +472,18 @@ class ChatViewModel(
    */
   /** Wrap a natural-language task as a `codex exec --json` command. */
   private fun wrapForCodex(task: String, workDir: String?, apiKey: String? = null): String {
-    val escaped = task.replace("\"", "\\\"")
-    val cdPart = if (!workDir.isNullOrBlank()) "cd ${shellQuote(workDir)} && " else ""
-    val envPart = if (!apiKey.isNullOrBlank()) "OPENAI_API_KEY=${shellQuote(apiKey)} " else ""
-    return "${cdPart}${envPart}codex exec --json --full-auto \"$escaped\""
+    return CommandComposer.wrapForCodex(task, workDir, apiKey)
   }
 
   private fun shellQuote(s: String): String {
-    val escaped = s.replace("'", "'\\''")
-    return "'$escaped'"
+    return CommandComposer.shellQuote(s)
   }
 
   private fun wrapWithShell(command: String): String {
     val shell = kotlinx.coroutines.runBlocking {
       appPreferences.defaultShell.first()
     }
-    // If shell is the standard /bin/sh, let SSH exec handle it natively
-    if (shell == "/bin/sh" || shell.isBlank()) return command
-    // Escape single quotes in the command for safe shell wrapping
-    val escaped = command.replace("'", "'\\''")
-    return "$shell -c '$escaped'"
+    return CommandComposer.wrapWithShell(command, shell)
   }
 }
 
