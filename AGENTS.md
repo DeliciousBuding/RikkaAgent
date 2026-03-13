@@ -38,3 +38,7 @@ Build a production-quality Android (Jetpack Compose) app that provides a chat-st
 - Prefer small, reversible changes.
 - Add docs before large refactors.
 - Include a brief verification note with changes (what was run / what was checked).
+
+## Cross-Agent Notes
+
+- Copilot-only dialogue rules (for example, mandatory `AskQuestion` before ending a round) are not shared repository constraints; if referenced in shared docs, mark them explicitly as Copilot-only.

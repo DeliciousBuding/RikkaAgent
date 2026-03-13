@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" fill="none">
+  <defs>
+    <linearGradient id="bg3" x1="0" y1="0" x2="1280" y2="720" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#102A43"/>
+      <stop offset="1" stop-color="#334E68"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg3)"/>
+  <rect x="260" y="80" width="760" height="560" rx="24" fill="#F8FAFC" fill-opacity="0.96"/>
+  <rect x="300" y="140" width="220" height="30" rx="8" fill="#D7E3EC"/>
+  <rect x="300" y="195" width="680" height="64" rx="14" fill="#E9EFF4"/>
+  <rect x="300" y="275" width="680" height="64" rx="14" fill="#E9EFF4"/>
+  <rect x="300" y="355" width="680" height="64" rx="14" fill="#E9EFF4"/>
+  <rect x="300" y="435" width="680" height="64" rx="14" fill="#E9EFF4"/>
+  <text x="300" y="120" fill="#EAF1F6" font-size="22" font-family="monospace">RikkaAgent - Settings Preview</text>
+  <text x="300" y="600" fill="#5B6B79" font-size="16" font-family="monospace">Placeholder screenshot asset (replace with real UI capture)</text>
+</svg>
