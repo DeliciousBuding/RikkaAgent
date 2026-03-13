@@ -194,6 +194,7 @@ Hardening references:
 |---|---|
 | Spec index | [docs/spec/00-index.md](docs/spec/00-index.md) |
 | Instrumentation testing | [docs/testing-android-instrumentation.md](docs/testing-android-instrumentation.md) |
+| Verification checklist | [docs/verification.md](docs/verification.md) |
 | Test mapping | [docs/spec/71-test-mapping.md](docs/spec/71-test-mapping.md) |
 | Release acceptance | [docs/spec/81-release-acceptance-matrix.md](docs/spec/81-release-acceptance-matrix.md) |
 | Architecture | [docs/architecture.md](docs/architecture.md) |

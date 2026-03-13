@@ -24,7 +24,7 @@
 1. SSH Profile 管理（多主机或至少单主机）：
    - `host` / `port` / `username`
    - 私钥导入（PEM/OpenSSH），可选 passphrase
-   - `known_hosts`：首次指纹确认、变更告警/阻断
+   - known hosts：首次指纹确认、变更告警/阻断
 2. 命令执行（非交互）：
    - `exec` 单条命令
    - 流式读取 stdout/stderr（合并节流）
@@ -50,7 +50,7 @@
    - 使用 Android Keystore 保护的加密存储（EncryptedFile/EncryptedSharedPreferences）。
    - passphrase 支持输入；是否保存由用户决定，保存必须加密。
 2. Host key 校验：
-   - 首次连接：展示指纹（SHA256）让用户确认并写入 `known_hosts`。
+   - 首次连接：展示指纹（SHA256）让用户确认并写入 known hosts。
    - 指纹变更：默认阻断并明确提示风险，允许手动更新（需二次确认）。
 3. 日志与持久化：
    - 禁止在日志/崩溃信息中写入私钥、passphrase。
@@ -104,7 +104,7 @@
 
 后续实现时，我们会新增：
 1. `ssh/` 模块（或 package）：
-   - Profile、known_hosts、key storage、connection manager、exec runner
+   - Profile、known hosts、key storage、connection manager、exec runner
 2. `ui/pages/ssh/`：
    - Profile 管理页、命令面板页（复用 chat-style 布局）
 
@@ -118,8 +118,8 @@ Phase 0（只读勘探，不写业务代码）：
 
 验收：落点文档可指导后续实现，不靠猜。
 
-Phase 1（Profile + known_hosts，不执行命令）：
-1. Profile CRUD、私钥导入、known_hosts 写入（首次确认占位 UI）。
+Phase 1（Profile + known hosts，不执行命令）：
+1. Profile CRUD、私钥导入、known hosts 写入（首次确认占位 UI）。
 
 验收：能保存 profile，能显示指纹确认流程（无需连真实服务器也可走到 UI 完整）。
 
@@ -160,4 +160,3 @@ Phase 4（体验打磨）：
 完整 spec（分版块）位于：
 
 - `D:\Code\Projects\rikka-agent\docs\spec\00-index.md`
-

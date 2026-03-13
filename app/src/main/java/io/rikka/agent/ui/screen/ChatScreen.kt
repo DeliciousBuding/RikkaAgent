@@ -208,7 +208,7 @@ fun ChatScreen(
     )
   }
 
-  // Show full output dialog for truncated content
+  // Show complete output dialog for truncated content
   fullOutputDialog?.let { fullText ->
     FullOutputDialog(
       fullText = fullText,

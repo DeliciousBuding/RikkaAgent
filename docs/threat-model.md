@@ -5,7 +5,7 @@ This document captures major threats and mitigations for `rikka-agent`.
 ## Assets
 
 - SSH private keys (and optional passphrases)
-- `known_hosts` host key fingerprints
+- known hosts host key fingerprints
 - Command history (may contain sensitive hostnames/paths)
 - Command outputs (may contain secrets)
 
@@ -31,7 +31,7 @@ Risk:
 
 Mitigations:
 - Display host fingerprint and require explicit user confirmation.
-- Store fingerprint in `known_hosts`.
+- Store fingerprint in known hosts.
 
 ### 3) Host Key Change (Server Reinstall / MITM)
 
@@ -59,4 +59,3 @@ Mitigations:
 - Do not auto-upload outputs.
 - Warn on export/share.
 - Optional heuristic redaction warnings.
-

@@ -3,8 +3,8 @@
   <string name="cd_copy">Copy</string>
   <string name="cd_rerun">Re-run</string>
   <string name="cd_share">Share</string>
-  <string name="cd_share_full">Share full output</string>
-  <string name="expand_output">Full</string>
+  <string name="cd_share_full">Share complete output</string>
+  <string name="expand_output">Complete</string>
   <string name="time_just_now">just now</string>
   <string name="time_minutes_ago">%dm ago</string>
   <string name="time_hours_ago">%dh ago</string>

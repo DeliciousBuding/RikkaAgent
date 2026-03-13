@@ -16,7 +16,7 @@ class OutputFormatterTest {
   )
 
   @Test
-  fun `format marks truncation and preserves full output`() {
+  fun `format marks truncation and preserves complete output`() {
     val long = "a".repeat(20)
     val out = OutputFormatter.format(
       stdout = long,

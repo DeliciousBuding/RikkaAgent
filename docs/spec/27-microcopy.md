@@ -171,6 +171,12 @@ Actions:
 - Primary: `Export`
 - Secondary: `Cancel`
 
+Complete output dialog:
+
+- Title: `Complete output`
+- Primary action: `Share complete output`
+- Secondary action: `Close`
+
 Copy confirmation (toast/snackbar):
 
 - `Copied`

@@ -156,3 +156,5 @@
 - ✅ 术语统一：known hosts / complete output / Mode A across core specs
 - ✅ Gap matrix 收口：M1 freeze 与 README publish quality 标记完成
 - ✅ JSONL parser 增补分块 + trailing 文本用例
+- ✅ 完整输出文案统一：complete output
+- ✅ 新增统一验证清单：`docs/verification.md`
