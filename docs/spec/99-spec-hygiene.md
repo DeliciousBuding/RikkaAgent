@@ -8,6 +8,7 @@ Purpose: keep v1 spec wording and unresolved items centralized so implementation
 - Use "Codex mode" to mean running remote `codex exec --json --full-auto` through SSH exec.
 - Use "known hosts" for host key trust records keyed by host+port.
 - Use "complete output" for message-level output when display text is truncated.
+- Use "Complete output" for the dialog title and "Share complete output" for the share action.
 
 ## Centralized Open Questions
 

@@ -160,3 +160,6 @@
 - ✅ 新增统一验证清单：`docs/verification.md`
 - ✅ Microcopy 补充 complete output 对话框标题与动作
 - ✅ UI 组件清单补充 CompleteOutputDialog
+- ✅ 输出截断提示文案与 microcopy 对齐
+- ✅ Spec hygiene 补充 complete output 标题/动作规范
+- ✅ Testing spec 增补 verification 文档指引

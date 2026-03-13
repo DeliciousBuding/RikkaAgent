@@ -142,6 +142,9 @@
 - [x] 完整输出相关 UI 文案对齐为 "complete output"
 - [x] 新增统一验证清单文档
 - [x] microcopy 与组件清单补充 complete output 对话框
+- [x] 输出截断提示文案与 microcopy 对齐
+- [x] spec hygiene 增补 complete output 标题/动作规范
+- [x] testing spec 增补 verification 文档指引
 
 ## Agent 交接快照（2026-03-13）
 
