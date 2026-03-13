@@ -21,6 +21,11 @@ This checklist keeps local regression runs consistent before release or CI triag
 ./gradlew assembleDevDebug
 ```
 
+Artifacts:
+
+- APK: `app/build/outputs/apk/dev/debug/app-dev-debug.apk`
+- Lint: `app/build/reports/lint-results-devDebug.html`
+
 ## Instrumentation (device/emulator)
 
 ```bash
