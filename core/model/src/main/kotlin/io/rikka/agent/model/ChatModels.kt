@@ -21,7 +21,8 @@ enum class ChatRole {
 enum class MessageStatus {
   Streaming,
   Final,
-  Error
+  Error,
+  Canceled,
 }
 
 @Serializable

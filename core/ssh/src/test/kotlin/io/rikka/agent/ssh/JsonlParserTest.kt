@@ -66,4 +66,42 @@ class JsonlParserTest {
 
     assertTrue(events.any { it is ExecEvent.StructuredEvent && it.kind == "markdown_delta" && it.rawJson == "nested" })
   }
+
+  @Test
+  fun `line buffer parses mixed json and plain lines in one chunk`() {
+    val buffer = JsonlLineBuffer()
+    val chunk = (
+      "{" +
+        "\"delta\":\"hello\"" +
+      "}\nplain\n"
+      ).toByteArray()
+
+    val events = buffer.feed(chunk)
+
+    assertTrue(events.any { it is ExecEvent.StructuredEvent && it.kind == "markdown_delta" && it.rawJson == "hello" })
+    assertTrue(events.any { it is ExecEvent.StdoutChunk && String(it.bytes, Charsets.UTF_8) == "plain\n" })
+  }
+
+  @Test
+  fun `parseLine handles CRLF input`() {
+    val events = JsonlParser.parseLine("{\"status\":\"ok\"}\r")
+    assertTrue(events.any { it is ExecEvent.StructuredEvent && it.kind == "status" && it.rawJson == "ok" })
+  }
+
+  @Test
+  fun `extract nested content content field`() {
+    val line = """{"content":{"content":"nested-content"},"status":"running"}"""
+    val events = JsonlParser.parseLine(line)
+
+    assertTrue(events.any { it is ExecEvent.StructuredEvent && it.kind == "markdown_delta" && it.rawJson == "nested-content" })
+    assertTrue(events.any { it is ExecEvent.StructuredEvent && it.kind == "status" && it.rawJson == "running" })
+  }
+
+  @Test
+  fun `extractTextField prefers text over message when both present`() {
+    val line = """{"text":"preferred","message":"fallback"}"""
+    val events = JsonlParser.parseLine(line)
+
+    assertTrue(events.any { it is ExecEvent.StructuredEvent && it.kind == "markdown_delta" && it.rawJson == "preferred" })
+  }
 }
