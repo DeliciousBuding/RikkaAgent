@@ -13,11 +13,12 @@ This document maps key spec requirements to current automated coverage.
   - `app/src/test/java/io/rikka/agent/ssh/ContentUriKeyContentProviderTest.kt`
   - `app/src/test/java/io/rikka/agent/ssh/KnownHostsEntryCodecTest.kt`
   - `app/src/test/java/io/rikka/agent/ui/screen/KeyImportSupportTest.kt`
+  - `app/src/androidTest/java/io/rikka/agent/ui/screen/ProfileEditorSafPickerTest.kt`
   - `app/src/test/java/io/rikka/agent/ui/screen/HostKeyDialogStateMachineTest.kt`
   - `app/src/test/java/io/rikka/agent/ui/screen/HostKeyDialogsTest.kt`
   - `app/src/test/java/io/rikka/agent/vm/ChatViewModelTest.kt`
 - Gaps:
-  - End-to-end SAF picker instrumentation coverage (ActivityResult + permission persistence)
+  - None
 
 ## 2) Remote Exec / JSONL
 
@@ -26,8 +27,9 @@ This document maps key spec requirements to current automated coverage.
   - `JsonlParserTest` (normal JSONL / split chunks / malformed fallback / nested field)
   - `app/src/test/java/io/rikka/agent/vm/ChatViewModelTest.kt` (password / passphrase / host-key request-response mapping, canceled exec state, Codex thread/turn/item progress rendering)
   - `app/src/test/java/io/rikka/agent/vm/CodexProgressFormatterTest.kt`
+  - `app/src/test/java/io/rikka/agent/ui/components/CodexProgressUiTest.kt`
 - Gaps:
-  - UI-level rendering verification for Codex progress summary cards/chips
+  - None
 
 ## 2.5) Chat Session State
 
@@ -38,6 +40,7 @@ This document maps key spec requirements to current automated coverage.
   - `app/src/test/java/io/rikka/agent/ui/components/ChatBubbleActionsTest.kt`
   - `app/src/test/java/io/rikka/agent/ui/screen/FullOutputDialogTest.kt`
   - `app/src/test/java/io/rikka/agent/ui/screen/ShareIntentsTest.kt`
+  - `app/src/test/java/io/rikka/agent/ui/screen/ChatScreenShareDispatchTest.kt`
 - Covered behaviors:
   - initial profile-ready state
   - persisted thread switch loading
@@ -49,7 +52,7 @@ This document maps key spec requirements to current automated coverage.
   - host key replacement confirmation dialogs
   - canceled exec event persistence + cancelRunning semantics
 - Gaps:
-  - Full `ChatScreen` integration coverage with platform `startActivity` dispatch observation
+  - None
 
 ## 3) Output Formatting & Truncation
 
@@ -59,8 +62,9 @@ This document maps key spec requirements to current automated coverage.
   - `app/src/test/java/io/rikka/agent/ui/components/ChatBubbleActionsTest.kt` (CodeCard expand + full-output action row)
   - `app/src/test/java/io/rikka/agent/ui/screen/FullOutputDialogTest.kt` (full-output dialog render + share/dismiss callbacks)
   - `app/src/test/java/io/rikka/agent/ui/screen/ShareIntentsTest.kt` (chooser title + text/subject payloads)
+  - `app/src/test/java/io/rikka/agent/ui/screen/ChatScreenShareDispatchTest.kt` (share/export dispatch to platform)
 - Gaps:
-  - End-to-end `ChatScreen` + platform dispatch verification
+  - None
 
 ## 4) CI Enforcement
 
@@ -77,6 +81,4 @@ This document maps key spec requirements to current automated coverage.
 
 ## 5) Next Additions
 
-1. End-to-end SAF picker instrumentation coverage
-2. End-to-end `ChatScreen` + platform dispatch verification
-3. UI-level rendering verification for Codex progress summaries
+1. None

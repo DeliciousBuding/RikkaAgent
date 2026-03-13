@@ -86,9 +86,12 @@ import org.koin.core.parameter.parametersOf
 fun ChatScreen(
   profileId: String = "",
   onBack: () -> Unit = {},
+  vmOverride: ChatViewModel? = null,
+  prefsOverride: AppPreferences? = null,
+  startActivityOverride: ((Intent) -> Unit)? = null,
 ) {
-  val vm: ChatViewModel = koinViewModel { parametersOf(profileId) }
-  val prefs: AppPreferences = koinInject()
+  val vm: ChatViewModel = vmOverride ?: koinViewModel { parametersOf(profileId) }
+  val prefs: AppPreferences = prefsOverride ?: koinInject()
   val messages by vm.messages.collectAsState()
   val enableMermaid by prefs.enableMermaid.collectAsState(initial = false)
   val connectionState by vm.connectionState.collectAsState()
@@ -98,6 +101,7 @@ fun ChatScreen(
   val scope = rememberCoroutineScope()
   val drawerState = rememberDrawerState(DrawerValue.Closed)
   val context = LocalContext.current
+  val startActivity = startActivityOverride ?: { intent -> context.startActivity(intent) }
 
   // Elapsed timer for running commands
   var elapsedSeconds by remember { mutableStateOf(0) }
@@ -209,7 +213,7 @@ fun ChatScreen(
     FullOutputDialog(
       fullText = fullText,
       onShare = {
-        context.startActivity(
+        startActivity(
           ShareIntents.plainText(
             text = fullText,
             chooserTitle = context.getString(R.string.share_full_output),
@@ -292,7 +296,7 @@ fun ChatScreen(
           if (messages.isNotEmpty() && connectionState != ConnectionState.EXECUTING) {
             IconButton(onClick = {
               val text = vm.exportSession()
-              context.startActivity(
+              startActivity(
                 ShareIntents.sessionExport(
                   text = text,
                   subject = context.getString(R.string.ssh_session_subject, profileLabel),
@@ -372,7 +376,7 @@ fun ChatScreen(
                   if (connectionState != ConnectionState.EXECUTING) vm.send(cmd)
                 },
                 onShare = { content ->
-                  context.startActivity(
+                  startActivity(
                     ShareIntents.plainText(
                       text = content,
                       chooserTitle = context.getString(R.string.share_output),
@@ -381,7 +385,7 @@ fun ChatScreen(
                 },
                 onShareFull = {
                   vm.getFullOutput(msg.id)?.let { fullText ->
-                    context.startActivity(
+                    startActivity(
                       ShareIntents.plainText(
                         text = fullText,
                         chooserTitle = context.getString(R.string.share_full_output),

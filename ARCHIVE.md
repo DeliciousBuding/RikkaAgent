@@ -143,3 +143,11 @@
 - ✅ 取消态规则可测化：新增 `CancelMessageHelper` 与 `CancelMessageHelperTest`
 - ✅ JSONL 兼容性补强：`JsonlParserTest` 新增 nested content 与字段优先级场景
 - ✅ 交接加固：`ROADMAP.md` 新增 Agent 交接快照（进行中主线/执行顺序/已验证命令），`STATE.md` 新增 Windows 本地构建前置
+
+### 测试与 CI 加固（2026-03-14）
+
+- ✅ ChatScreen 分享/导出平台分发回归：`ChatScreenShareDispatchTest`
+- ✅ SAF 端到端选择器 instrumentation 回归（DocumentsProvider + persistable permission）
+- ✅ Codex 进度 Markdown UI 渲染回归：`CodexProgressUiTest`
+- ✅ CI Node24 兼容开关（Actions 去 Node20 警告）
+- ✅ androidTest 依赖补齐与 assemble 通过

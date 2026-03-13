@@ -88,6 +88,12 @@ User command
 ./gradlew assembleDevDebug
 ```
 
+Instrumentation (requires device/emulator):
+
+```bash
+./gradlew :app:connectedDevDebugAndroidTest
+```
+
 Debug APK output:
 
 - `app/build/outputs/apk/dev/debug/app-dev-debug.apk`

@@ -98,9 +98,7 @@
 
 ## 下一步最优动作
 
-1. **补分享链路端到端验证** — `ChatScreen` 到平台分发的最后一跳
-2. **补 SAF 端到端选择器验证** — ActivityResult + 持久权限真实路径
-3. **执行发布门禁回归** — 模块单测 + lint + assemble 持续收口
+1. **执行发布门禁回归** — 模块单测 + lint + assemble 持续收口
 
 ---
 
@@ -116,18 +114,17 @@
 6. 截断输出的 CodeCard 展开、完整输出动作行、用户重跑按钮已有 Compose 回归覆盖。
 7. 完整输出弹窗的展示、分享回调、关闭动作已有 screen 级 Compose 回归覆盖。
 8. `ChatScreen` 分享/导出 chooser payload 已有单测覆盖（普通输出 / 完整输出 / 会话导出）。
+9. `ChatScreen` 端到端分享/导出分发（`startActivity`）回归覆盖已补齐。
+10. SAF 端到端选择器验证（ActivityResult + persistable permission）已补齐。
+11. Codex 进度 UI 渲染回归测试已补齐。
 
 ### 正在进行中的主线
 
-1. `ChatScreen` 与平台分发的端到端验证。
-2. SAF 端到端选择器验证（ActivityResult / persistable permission）。
-3. 发布门禁回归验证（模块单测 / lint / assemble）。
+1. 发布门禁回归验证（模块单测 / lint / assemble）。
 
 ### 下一位 Agent 建议直接执行顺序
 
-1. 先补 `ChatScreen` 与平台分发的端到端验证。
-2. 再补 SAF 端到端选择器验证（ActivityResult / persistable permission）。
-3. 最后执行全回归与发布门禁（模块单测 -> lint -> assemble）。
+1. 直接执行全回归与发布门禁（模块单测 -> lint -> assemble）。
 
 ### 本机验证前置（已验证可用）
 
