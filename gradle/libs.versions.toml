@@ -24,6 +24,8 @@ koin-bom = "3.5.6"
 junit4 = "4.13.2"
 kotlinx-coroutines-test = "1.8.1"
 turbine = "1.1.0"
+androidx-test-core = "1.6.1"
+robolectric = "4.14.1"
 sshj = "0.39.0"
 slf4j = "2.0.13"
 bcprov = "1.78.1"
@@ -73,6 +75,8 @@ koin-compose = { module = "io.insert-koin:koin-androidx-compose" }
 junit4 = { module = "junit:junit", version.ref = "junit4" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-test" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+androidx-test-core = { module = "androidx.test:core", version.ref = "androidx-test-core" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 sshj = { module = "com.hierynomus:sshj", version.ref = "sshj" }
 slf4j-nop = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bcprov" }

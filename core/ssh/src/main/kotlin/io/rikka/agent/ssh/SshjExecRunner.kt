@@ -54,7 +54,7 @@ class SshjExecRunner(
   private val keyContentProvider: KeyContentProvider? = null,
   private val passphraseProvider: PassphraseProvider? = null,
   private val reuseConnections: Boolean = false,
-) : SshExecRunner {
+) : ClosableSshExecRunner {
 
   @Volatile private var cachedClient: SSHClient? = null
   @Volatile private var cachedProfileKey: String? = null
@@ -236,7 +236,7 @@ class SshjExecRunner(
   }
 
   /** Release any cached connection. Call when this runner is no longer needed. */
-  fun close() {
+  override fun close() {
     evictCachedClient()
   }
 

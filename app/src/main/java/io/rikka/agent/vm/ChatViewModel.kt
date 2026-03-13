@@ -14,9 +14,11 @@ import io.rikka.agent.ssh.HostKeyCallback
 import io.rikka.agent.ssh.JsonlLineBuffer
 import io.rikka.agent.ssh.KeyContentProvider
 import io.rikka.agent.ssh.KnownHostsStore
+import io.rikka.agent.ssh.DefaultSshExecRunnerFactory
 import io.rikka.agent.ssh.PassphraseProvider
 import io.rikka.agent.ssh.PasswordProvider
-import io.rikka.agent.ssh.SshjExecRunner
+import io.rikka.agent.ssh.ClosableSshExecRunner
+import io.rikka.agent.ssh.SshExecRunnerFactory
 import io.rikka.agent.storage.AppPreferences
 import io.rikka.agent.storage.ChatRepository
 import io.rikka.agent.storage.ProfileStore
@@ -48,6 +50,7 @@ class ChatViewModel(
   private val chatRepository: ChatRepository,
   private val appPreferences: AppPreferences,
   private val keyContentProvider: KeyContentProvider? = null,
+  private val runnerFactory: SshExecRunnerFactory = DefaultSshExecRunnerFactory,
   private val app: Application,
 ) : ViewModel() {
 
@@ -95,8 +98,9 @@ class ChatViewModel(
 
   private var currentProfile: SshProfile? = null
   private var runningJob: Job? = null
+  private var runningAssistantId: String? = null
   private var threadId: String? = null
-  private var runner: SshjExecRunner? = null
+  private var runner: ClosableSshExecRunner? = null
 
   private val hostKeyCallback = object : HostKeyCallback {
     override suspend fun onUnknownHost(
@@ -215,6 +219,7 @@ class ChatViewModel(
     )
     _messages.update { it + assistantSeed }
     persistMessage(assistantSeed)
+    runningAssistantId = assistantId
 
     runningJob?.cancel()
     _connectionState.value = ConnectionState.EXECUTING
@@ -327,10 +332,19 @@ class ChatViewModel(
             }
             updateAssistantMessage(assistantId, finalContent, MessageStatus.Final)
             persistUpdate(assistantId, finalContent, MessageStatus.Final)
+            runningAssistantId = null
             _connectionState.value = ConnectionState.READY
           }
           is ExecEvent.Error -> {
-            val friendlyMsg = friendlyErrorMessage(event.category, event.message)
+            val friendlyMsg = ErrorMessageMapper.friendlyErrorMessage(
+              category = event.category,
+              raw = event.message,
+              connectionRefused = app.getString(R.string.err_connection_refused),
+              timeout = app.getString(R.string.err_timeout),
+              unknownHost = app.getString(R.string.err_unknown_host),
+              authFailed = app.getString(R.string.err_auth_failed),
+              generic = { raw -> app.getString(R.string.err_ssh_generic, raw) },
+            )
             val errorContent = if (stdout.isNotEmpty() || stderr.isNotEmpty()) {
               formatOutput(stdout, stderr, exitCode = null) + "\n$friendlyMsg"
             } else {
@@ -338,6 +352,7 @@ class ChatViewModel(
             }
             updateAssistantMessage(assistantId, errorContent, MessageStatus.Error)
             persistUpdate(assistantId, errorContent, MessageStatus.Error)
+            runningAssistantId = null
             _connectionState.value = ConnectionState.READY
           }
         }
@@ -346,27 +361,24 @@ class ChatViewModel(
   }
 
   fun cancelRunning() {
+    val canceledId = runningAssistantId
     runningJob?.cancel()
     runningJob = null
+    runningAssistantId = null
+    if (canceledId != null) {
+      val canceledText = app.getString(R.string.msg_command_canceled)
+      val current = _messages.value.firstOrNull { it.id == canceledId }
+      val newContent = CancelMessageHelper.mergeCanceledContent(current?.content, canceledText)
+      updateAssistantMessage(canceledId, newContent, MessageStatus.Canceled)
+      persistUpdate(canceledId, newContent, MessageStatus.Canceled)
+    }
     _connectionState.value = ConnectionState.READY
   }
 
   /** Export current session as plain text. */
-  fun exportSession(): String = buildString {
-    val profile = _profileLabel.value
-    appendLine("# Session: $profile")
-    appendLine()
-    for (msg in _messages.value) {
-      if (msg.role == ChatRole.User) {
-        appendLine("$ ${msg.content}")
-      } else {
-        appendLine(msg.content)
-      }
-      appendLine()
-    }
-  }
+  fun exportSession(): String = SessionExporter.export(_profileLabel.value, _messages.value)
 
-  private fun getOrCreateRunner(): SshjExecRunner {
+  private fun getOrCreateRunner(): ClosableSshExecRunner {
     runner?.let { return it }
 
     val passwordProvider = PasswordProvider { profile ->
@@ -381,13 +393,12 @@ class ChatViewModel(
       _passphraseResponse.first()
     }
 
-    return SshjExecRunner(
+    return runnerFactory.create(
       knownHostsStore = knownHostsStore,
       hostKeyCallback = hostKeyCallback,
       passwordProvider = passwordProvider,
       keyContentProvider = keyContentProvider,
       passphraseProvider = passphraseProvider,
-      reuseConnections = true,
     ).also { runner = it }
   }
 
@@ -414,14 +425,6 @@ class ChatViewModel(
     capChars = maxOutputChars,
     texts = outputTexts,
   )
-
-  private fun friendlyErrorMessage(category: String, raw: String): String = when (category) {
-    "connection_refused" -> app.getString(R.string.err_connection_refused)
-    "timeout" -> app.getString(R.string.err_timeout)
-    "unknown_host" -> app.getString(R.string.err_unknown_host)
-    "auth_failed" -> app.getString(R.string.err_auth_failed)
-    else -> app.getString(R.string.err_ssh_generic, raw)
-  }
 
   private fun updateAssistantContent(id: String, content: String) {
     _messages.update { list ->

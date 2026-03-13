@@ -1,0 +1,78 @@
+name: Bug report
+description: Report a defect with clear reproduction and verification details.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve `rikka-agent`.
+
+        Please remove secrets before submitting:
+        - private keys
+        - tokens / passphrases
+        - real private hostnames or IPs
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened, and what did you expect instead?
+      placeholder: Running a command in Chat view leaves the assistant bubble stuck in streaming state after reconnect.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide a small, deterministic reproduction path.
+      placeholder: |
+        1. Open profile ...
+        2. Tap ...
+        3. Run command ...
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Actual result
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Chat / rendering
+        - SSH / auth
+        - Profile editor
+        - Known hosts
+        - Codex mode
+        - Build / CI
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Device / Android version / app build / branch / commit if known.
+      placeholder: Pixel 8, Android 15, devDebug APK, commit abc123
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs, screenshots, or exported session
+      description: Paste only sanitized excerpts.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed secrets and private infrastructure identifiers from this report.
+          required: true
