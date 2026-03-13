@@ -83,7 +83,7 @@ object JsonlParser {
 
   /** Extract status from common progress fields: status, stage, progress, type. */
   private fun extractStatusField(obj: JsonObject): String? {
-    for (key in listOf("status", "stage", "progress", "type")) {
+    for (key in listOf("status", "stage", "progress")) {
       val value = obj[key]
       if (value != null) {
         return try {

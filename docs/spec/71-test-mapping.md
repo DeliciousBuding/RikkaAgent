@@ -23,9 +23,10 @@ This document maps key spec requirements to current automated coverage.
 - Spec: `docs/spec/33-remote-exec.md`
 - Coverage:
   - `JsonlParserTest` (normal JSONL / split chunks / malformed fallback / nested field)
-  - `app/src/test/java/io/rikka/agent/vm/ChatViewModelTest.kt` (password / passphrase / host-key request-response mapping, canceled exec state)
+  - `app/src/test/java/io/rikka/agent/vm/ChatViewModelTest.kt` (password / passphrase / host-key request-response mapping, canceled exec state, Codex thread/turn/item progress rendering)
+  - `app/src/test/java/io/rikka/agent/vm/CodexProgressFormatterTest.kt`
 - Gaps:
-  - Richer UI surfacing for Codex `thread/turn/item` progress events
+  - UI-level rendering verification for Codex progress summary cards/chips
 
 ## 2.5) Chat Session State
 
@@ -71,4 +72,4 @@ This document maps key spec requirements to current automated coverage.
 
 1. SAF picker permission persistence / URI lifecycle tests
 2. UI-level interaction tests for truncated-output expand/share flows
-3. Codex `thread/turn/item` progress visualization tests
+3. UI-level rendering verification for Codex progress summaries

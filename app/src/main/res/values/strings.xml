@@ -127,6 +127,9 @@
   <string name="label_stderr">[stderr]</string>
   <string name="msg_no_output">(no output)</string>
    <string name="msg_codex_status_prefix">Codex status: %1$s</string>
+  <string name="msg_codex_progress_thread">Thread</string>
+  <string name="msg_codex_progress_turn">Turn</string>
+  <string name="msg_codex_progress_item">Item</string>
   <string name="msg_no_output_failed">(no output, failed)</string>
   <string name="msg_exit_code">exit: %d</string>
   <string name="msg_output_truncated">⚠ Output truncated (showing last 256KB)</string>
@@ -176,4 +179,3 @@
   <string name="section_license">LICENSE</string>
   <string name="section_oss">OPEN SOURCE LIBRARIES</string>
 </resources>
-
