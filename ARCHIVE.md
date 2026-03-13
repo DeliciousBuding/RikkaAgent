@@ -170,3 +170,4 @@
 - ✅ 架构文档补充 SshjExecRunner 复用说明
 - ✅ 新增 troubleshooting 文档（JDK/SDK/Emulator/Lint/APK）
 - ✅ Spec index 补充 supporting docs 入口
+- ✅ SECURITY/STATE/ENV 文档指向 troubleshooting 与 verification

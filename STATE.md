@@ -21,7 +21,7 @@
 | Markdown 解析 | commonmark-java 0.22.0 (BSD-2-Clause) + GFM tables/strikethrough |
 | 密钥存储 | EncryptedFile (AES-256-GCM via AndroidX Security Crypto) |
 | Codex 集成 | `codex exec --full-auto` via SSH (exec channel) |
-| 输出策略 | 截断显示 + 消息级完整查看/完整分享 |
+| 输出策略 | 截断显示 + 消息级完整查看/完整分享（complete output） |
 | 国际化 | 中英双语 (values/strings.xml + values-zh/strings.xml)，中文优先 |
 | 持久化 | Room DB v3 (聊天/配置/Codex字段) + DataStore (偏好) |
 | DI | Koin |
@@ -48,3 +48,7 @@
 	- `JAVA_HOME=d:\Code\Projects\rikka-agent\tmp\jdk17\jdk-17.0.18+8`
 	- 将 `%JAVA_HOME%\\bin` 加入 `Path`
 - 上述路径已在本仓库当前环境中验证可用于 Gradle 测试、lint 与打包。
+
+常见环境问题排查：
+
+- `docs/troubleshooting.md`

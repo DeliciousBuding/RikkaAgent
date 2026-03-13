@@ -22,6 +22,7 @@ This project deals with sensitive materials (SSH private keys, host fingerprints
 - Keep host key verification enabled (do not disable mismatch warnings).
 - Avoid storing production secrets in profile names, commands, or chat messages.
 - Treat exported session text as sensitive data.
+- For local setup and CI troubleshooting, see `docs/troubleshooting.md`.
 
 ## Responsible Disclosure Expectations
 
@@ -33,4 +34,3 @@ This project deals with sensitive materials (SSH private keys, host fingerprints
 
 - UI copy or typo issues without security impact.
 - Missing best-practice hardening on third-party servers outside this repo.
-
