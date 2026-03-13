@@ -44,6 +44,7 @@
 - [x] CodeCard 基础组件（折叠/展开/复制/语言标签）
 - [x] 流式渲染策略（流式阶段用 CodeCard，终态切 MarkdownText 单次解析 + remember 缓存）
 - [x] Mermaid 渲染设计草案（`docs/spec/23-mermaid.md`）
+- [x] Mermaid 技术选型对比（`docs/spec/24-mermaid-options.md`）
 - [ ] 可选：Mermaid 渲染（WebView/JS bridge）
 
 ## M4 待完成
