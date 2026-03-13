@@ -9,9 +9,6 @@ import androidx.datastore.preferences.preferencesDataStore
 import io.rikka.agent.ssh.KnownHostsStore
 import io.rikka.agent.ssh.StoredHostKey
 import kotlinx.coroutines.flow.first
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 private val Context.knownHostsDataStore: DataStore<Preferences> by preferencesDataStore(
   name = "known_hosts",
@@ -19,26 +16,14 @@ private val Context.knownHostsDataStore: DataStore<Preferences> by preferencesDa
 
 class DataStoreKnownHostsStore(private val context: Context) : KnownHostsStore {
 
-  @Serializable
-  private data class Entry(
-    val fingerprint: String,
-    val keyType: String,
-    val addedAtMs: Long,
-  )
-
   override suspend fun getFingerprint(host: String, port: Int): StoredHostKey? {
     val prefs = context.knownHostsDataStore.data.first()
     val json = prefs[prefKey(host, port)] ?: return null
-    return try {
-      val e = Json.decodeFromString<Entry>(json)
-      StoredHostKey(e.fingerprint, e.keyType, e.addedAtMs)
-    } catch (_: Exception) {
-      null
-    }
+    return KnownHostsEntryCodec.decode(json)
   }
 
   override suspend fun store(host: String, port: Int, key: StoredHostKey) {
-    val json = Json.encodeToString(Entry(key.fingerprint, key.keyType, key.addedAtMs))
+    val json = KnownHostsEntryCodec.encode(key)
     context.knownHostsDataStore.edit { it[prefKey(host, port)] = json }
   }
 
@@ -50,12 +35,7 @@ class DataStoreKnownHostsStore(private val context: Context) : KnownHostsStore {
     val prefs = context.knownHostsDataStore.data.first()
     return prefs.asMap().mapNotNull { (key, value) ->
       if (value !is String) return@mapNotNull null
-      try {
-        val e = Json.decodeFromString<Entry>(value)
-        key.name to StoredHostKey(e.fingerprint, e.keyType, e.addedAtMs)
-      } catch (_: Exception) {
-        null
-      }
+      KnownHostsEntryCodec.decode(value)?.let { key.name to it }
     }
   }
 
