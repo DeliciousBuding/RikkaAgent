@@ -27,6 +27,11 @@ This checklist keeps local regression runs consistent before release or CI triag
 ./gradlew :app:connectedDevDebugAndroidTest
 ```
 
+Reports:
+
+- Unit tests: `app/build/reports/tests/`
+- Instrumentation HTML: `app/build/reports/androidTests/connected/debug/index.html`
+
 ## Windows JDK Hint
 
 ```powershell

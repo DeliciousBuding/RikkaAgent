@@ -54,7 +54,10 @@ Naming is **suggested**. The key requirement is that we design components so the
      - streaming (receiving chunks; show subtle indicator)
      - complete (exit code shown)
      - truncated (badge + export/copy all)
-3. **StatusCard**
+3. **CompleteOutputDialog**
+   - shows the complete output when truncated
+   - actions: share complete output, close
+4. **StatusCard**
    - connection lifecycle (connecting/connected/disconnected)
    - host key prompts
 4. **ErrorCard**
