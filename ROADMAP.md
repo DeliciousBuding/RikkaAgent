@@ -67,6 +67,8 @@
 - [x] 仓库文档边界清理（移除非 rikka-agent 内容并外部归档）
 - [x] README 可发布化重构（徽章/矩阵/快速上手/安全说明）
 - [x] 核心解析单测补齐（`JsonlParser` / `JsonlLineBuffer`）
+- [x] 输出截断格式化单测（`OutputFormatterTest`）
+- [x] SSH 密钥格式判定单测（`SshAuthKeyFormatTest`）
 
 ---
 

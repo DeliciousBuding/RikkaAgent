@@ -53,6 +53,15 @@ class ChatViewModel(
 
   /** Max chars for in-memory stdout/stderr per run (spec: MUST cap). */
   private val maxOutputChars = 256_000
+  private val outputTexts by lazy {
+    OutputTexts(
+      stderrLabel = app.getString(R.string.label_stderr),
+      truncatedHint = app.getString(R.string.msg_output_truncated),
+      noOutputOk = app.getString(R.string.msg_no_output),
+      noOutputFailed = app.getString(R.string.msg_no_output_failed),
+      exitCodeLabel = { c -> app.getString(R.string.msg_exit_code, c) },
+    )
+  }
 
   private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
   val messages: StateFlow<List<ChatMessage>> = _messages
@@ -267,18 +276,16 @@ class ChatViewModel(
               }
             } else {
               stdout.append(String(event.bytes, Charsets.UTF_8))
-              val display = formatOutput(stdout, stderr, exitCode = null)
-              val full = formatOutput(stdout, stderr, exitCode = null, capChars = null)
-              if (display != full) fullOutputByMessageId[assistantId] = full
-              updateAssistantContent(assistantId, display)
+              val formatted = formatOutputPair(stdout, stderr, exitCode = null)
+              if (formatted.truncated) fullOutputByMessageId[assistantId] = formatted.full
+              updateAssistantContent(assistantId, formatted.display)
             }
           }
           is ExecEvent.StderrChunk -> {
             stderr.append(String(event.bytes, Charsets.UTF_8))
-            val display = formatOutput(stdout, stderr, exitCode = null)
-            val full = formatOutput(stdout, stderr, exitCode = null, capChars = null)
-            if (display != full) fullOutputByMessageId[assistantId] = full
-            updateAssistantContent(assistantId, display)
+            val formatted = formatOutputPair(stdout, stderr, exitCode = null)
+            if (formatted.truncated) fullOutputByMessageId[assistantId] = formatted.full
+            updateAssistantContent(assistantId, formatted.display)
           }
           is ExecEvent.StructuredEvent -> { /* handled via jsonlBuffer above */ }
           is ExecEvent.Exit -> {
@@ -308,12 +315,12 @@ class ChatViewModel(
               }
               markdownAccum.toString() + extra
             } else {
-              formatOutput(stdout, stderr, event.code)
+              formatOutputPair(stdout, stderr, event.code).display
             }
             val finalFull = if (isCodex && markdownAccum != null && markdownAccum.isNotEmpty()) {
               finalContent
             } else {
-              formatOutput(stdout, stderr, event.code, capChars = null)
+              formatOutputPair(stdout, stderr, event.code).full
             }
             if (finalFull != finalContent) {
               fullOutputByMessageId[assistantId] = finalFull
@@ -394,44 +401,19 @@ class ChatViewModel(
     stdout: StringBuilder,
     stderr: StringBuilder,
     exitCode: Int?,
-    capChars: Int? = maxOutputChars,
-  ): String = buildString {
-    val stdoutTruncated = capChars != null && stdout.length > capChars
-    val stderrTruncated = capChars != null && stderr.length > capChars
-    if (stdout.isNotEmpty()) {
-      if (stdoutTruncated) {
-        append(stdout, stdout.length - capChars!!, stdout.length)
-        append("\n")
-        append(app.getString(R.string.msg_output_truncated))
-        append("\n")
-      } else {
-        append(stdout)
-      }
-      if (!endsWith("\n")) append("\n")
-    }
-    if (stderr.isNotEmpty()) {
-      if (isNotEmpty()) append("\n")
-      append(app.getString(R.string.label_stderr))
-      append("\n")
-      if (stderrTruncated) {
-        append(stderr, stderr.length - capChars!!, stderr.length)
-        append("\n")
-        append(app.getString(R.string.msg_output_truncated))
-        append("\n")
-      } else {
-        append(stderr)
-      }
-      if (!endsWith("\n")) append("\n")
-    }
-    if (exitCode != null) {
-      if (stdout.isEmpty() && stderr.isEmpty()) {
-        append(if (exitCode == 0) app.getString(R.string.msg_no_output) else app.getString(R.string.msg_no_output_failed))
-        append("\n")
-      }
-      if (isNotEmpty()) append("\n")
-      append(app.getString(R.string.msg_exit_code, exitCode))
-    }
-  }
+  ): String = formatOutputPair(stdout, stderr, exitCode).display
+
+  private fun formatOutputPair(
+    stdout: StringBuilder,
+    stderr: StringBuilder,
+    exitCode: Int?,
+  ): FormattedOutput = OutputFormatter.format(
+    stdout = stdout.toString(),
+    stderr = stderr.toString(),
+    exitCode = exitCode,
+    capChars = maxOutputChars,
+    texts = outputTexts,
+  )
 
   private fun friendlyErrorMessage(category: String, raw: String): String = when (category) {
     "connection_refused" -> app.getString(R.string.err_connection_refused)
