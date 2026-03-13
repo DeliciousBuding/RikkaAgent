@@ -1,6 +1,7 @@
 package io.rikka.agent.vm
 
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -75,5 +76,34 @@ class OutputFormatterTest {
     assertFalse(out.truncated)
     assertTrue(out.display.contains("(no output, failed)"))
     assertTrue(out.display.contains("exit: 2"))
+  }
+
+  @Test
+  fun `format emits success no-output line`() {
+    val out = OutputFormatter.format(
+      stdout = "",
+      stderr = "",
+      exitCode = 0,
+      capChars = 16,
+      texts = texts,
+    )
+
+    assertFalse(out.truncated)
+    assertTrue(out.display.contains("(no output)"))
+    assertTrue(out.display.contains("exit: 0"))
+  }
+
+  @Test
+  fun `format does not truncate when output equals cap`() {
+    val out = OutputFormatter.format(
+      stdout = "12345678",
+      stderr = "",
+      exitCode = null,
+      capChars = 8,
+      texts = texts,
+    )
+
+    assertFalse(out.truncated)
+    assertEquals("12345678\n", out.display)
   }
 }

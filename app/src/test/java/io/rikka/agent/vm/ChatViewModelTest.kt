@@ -18,6 +18,7 @@ import io.rikka.agent.ssh.PasswordProvider
 import io.rikka.agent.ssh.SshExecRunnerFactory
 import io.rikka.agent.ssh.StoredHostKey
 import io.rikka.agent.storage.AppPreferences
+import kotlinx.coroutines.awaitCancellation
 import io.rikka.agent.storage.ChatRepository
 import io.rikka.agent.storage.ProfileStore
 import kotlinx.coroutines.Dispatchers
@@ -54,7 +55,7 @@ class ChatViewModelTest {
   private lateinit var profileStore: FakeProfileStore
   private lateinit var chatRepository: FakeChatRepository
   private lateinit var appPreferences: AppPreferences
-  private lateinit var runnerFactory: RecordingExecRunnerFactory
+  private lateinit var runnerFactory: SshExecRunnerFactory
 
   @Before
   fun setUp() = runTest(dispatcher) {
@@ -339,6 +340,99 @@ class ChatViewModelTest {
     assertTrue(viewModel.messages.value.last().content.contains("replaced:false"))
     assertEquals(MessageStatus.Final, viewModel.messages.value.last().status)
     hostKeyJob.cancel()
+  }
+
+  @Test
+  fun `error events use friendly localized messages`() = runTest(dispatcher) {
+    runnerFactory = RecordingExecRunnerFactory { _, _ ->
+      listOf(ExecEvent.Error("timeout", "socket timeout"))
+    }
+    val viewModel = createViewModel()
+    advanceUntilIdle()
+
+    viewModel.send("long-run")
+    advanceUntilIdle()
+
+    val last = viewModel.messages.value.last()
+    assertEquals(MessageStatus.Error, last.status)
+    assertEquals(app.getString(R.string.err_timeout), last.content)
+    assertEquals(ConnectionState.READY, viewModel.connectionState.value)
+  }
+
+  @Test
+  fun `cancelRunning marks assistant message as canceled and preserves prior output`() = runTest(dispatcher) {
+    val hangingFactory = object : SshExecRunnerFactory {
+      override fun create(
+        knownHostsStore: KnownHostsStore,
+        hostKeyCallback: HostKeyCallback,
+        passwordProvider: PasswordProvider?,
+        keyContentProvider: KeyContentProvider?,
+        passphraseProvider: PassphraseProvider?,
+      ): ClosableSshExecRunner = object : ClosableSshExecRunner {
+        override fun run(profile: SshProfile, command: String) = kotlinx.coroutines.flow.flow {
+          emit(ExecEvent.StdoutChunk("partial output".toByteArray()))
+          awaitCancellation()
+        }
+
+        override fun close() = Unit
+      }
+    }
+    runnerFactory = hangingFactory
+    val viewModel = createViewModel()
+    advanceUntilIdle()
+
+    viewModel.send("tail -f /var/log/app.log")
+    advanceUntilIdle()
+    viewModel.cancelRunning()
+    advanceUntilIdle()
+
+    val last = viewModel.messages.value.last()
+    assertEquals(MessageStatus.Canceled, last.status)
+    assertTrue(last.content.contains("partial output"))
+    assertTrue(last.content.contains(app.getString(R.string.msg_command_canceled)))
+    assertEquals(ConnectionState.READY, viewModel.connectionState.value)
+  }
+
+  @Test
+  fun `exportSession returns plain text transcript for current thread`() = runTest(dispatcher) {
+    val targetThreadId = chatRepository.createThread(profile.id, "ls -la")
+    chatRepository.insertMessage(
+      targetThreadId,
+      ChatMessage(
+        id = "u-1",
+        role = ChatRole.User,
+        content = "ls -la",
+        timestampMs = 1L,
+        status = MessageStatus.Final,
+      ),
+    )
+    chatRepository.insertMessage(
+      targetThreadId,
+      ChatMessage(
+        id = "a-1",
+        role = ChatRole.Assistant,
+        content = "total 8",
+        timestampMs = 2L,
+        status = MessageStatus.Final,
+      ),
+    )
+
+    val viewModel = createViewModel()
+    advanceUntilIdle()
+    viewModel.switchThread(targetThreadId)
+    advanceUntilIdle()
+
+    val exported = viewModel.exportSession()
+
+    val expected = """
+      # Session: ${profile.name}
+
+      $ ls -la
+
+      total 8
+
+    """.trimIndent() + "\n"
+    assertEquals(expected, exported)
   }
 
   private fun createViewModel(): ChatViewModel = ChatViewModel(
