@@ -23,7 +23,7 @@ so that we can iterate on UI polish without destabilizing security-sensitive cod
 - `:core:storage`
   - encrypted key storage abstraction
   - profile store
-  - known_hosts store
+  - known hosts store
 - `:core:ssh`
   - SSH connection/session manager (reuse)
   - exec runner with streaming events
@@ -111,7 +111,7 @@ Two layers of state:
    - streaming buffers (stdout/stderr)
 2. **Persistent state** (disk):
    - SSH profiles
-   - known_hosts
+   - known hosts
    - session history (optional early; can start with “current session only”)
 
 Guideline:

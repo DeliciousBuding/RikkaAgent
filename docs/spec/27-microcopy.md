@@ -181,7 +181,7 @@ When output is truncated:
 
 - Badge text: `Truncated`
 - Help text:
-  - `Large output was trimmed for performance. Use Export to save the full output.`
+  - `Large output was trimmed for performance. Use Export to save the complete output.`
 
 ## 8) Localization Strategy (Later)
 
@@ -189,4 +189,3 @@ For v1:
 
 - English-only or bilingual is acceptable.
 - Microcopy strings must be centralized (single source of truth) so community can translate.
-

@@ -7,7 +7,7 @@ Purpose: keep v1 spec wording and unresolved items centralized so implementation
 - Use "Mode A" to mean non-interactive SSH exec channel behavior.
 - Use "Codex mode" to mean running remote `codex exec --json --full-auto` through SSH exec.
 - Use "known hosts" for host key trust records keyed by host+port.
-- Use "complete output" for message-level full output when display text is truncated.
+- Use "complete output" for message-level output when display text is truncated.
 
 ## Centralized Open Questions
 

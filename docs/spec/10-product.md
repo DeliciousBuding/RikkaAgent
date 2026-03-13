@@ -10,7 +10,7 @@
 - Low-latency command execution experience.
 - Security-by-default:
   - encrypted private keys at rest
-  - strict host key verification (`known_hosts`)
+  - strict host key verification (known hosts)
   - no server-side HTTP remote-exec relay required
 - Open-source, directly usable by others (Apache-2.0).
 
@@ -44,4 +44,3 @@
 - Connection reuse reduces repeated latency for sequential commands.
 - Streaming output updates feel smooth (no visible UI jank).
 - Large outputs do not freeze the UI; truncation/load-more is available.
-

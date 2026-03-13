@@ -14,7 +14,7 @@ Naming is **suggested**. The key requirement is that we design components so the
    - host / port / username
    - auth method selector
    - private key import
-   - known_hosts policy summary
+   - known hosts policy summary
 3. **Fingerprint Confirm**
    - first-use trust prompt
    - host key mismatch prompt (danger)
