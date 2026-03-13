@@ -152,6 +152,7 @@
 - [x] 架构文档补充 SshjExecRunner 复用说明
 - [x] 新增 troubleshooting 文档（JDK/SDK/Emulator/Lint/APK）
 - [x] Spec index 补充 supporting docs 入口
+- [x] SECURITY/STATE/ENV 文档指向 troubleshooting 与 verification
 
 ## Agent 交接快照（2026-03-13）
 

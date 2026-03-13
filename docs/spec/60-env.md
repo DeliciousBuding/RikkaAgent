@@ -41,4 +41,4 @@ If we need runtime toggles:
 
 - `./gradlew test` should run in CI without device secrets.
 - Instrumentation tests must not depend on real servers by default.
-
+- Refer to `docs/verification.md` for local checks and `docs/troubleshooting.md` for setup issues.
