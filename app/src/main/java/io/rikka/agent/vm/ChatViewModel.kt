@@ -538,10 +538,6 @@ class ChatViewModel(
     return CommandComposer.wrapForCodex(task, workDir, apiKey)
   }
 
-  private fun shellQuote(s: String): String {
-    return CommandComposer.shellQuote(s)
-  }
-
   private fun wrapWithShell(command: String): String {
     val shell = kotlinx.coroutines.runBlocking {
       appPreferences.defaultShell.first()
