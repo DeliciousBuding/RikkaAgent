@@ -19,6 +19,35 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+/**
+ * A single pulsing dot indicator for loading states.
+ *
+ * Renders a circle that fades between 30% and 100% alpha in an infinite
+ * reverse-repeat animation. Useful as a lightweight inline loading indicator
+ * or composed into a row of dots for richer feedback.
+ *
+ * @param modifier Modifier applied to the [Box] container.
+ * @param color Dot fill color. Defaults to [MaterialTheme.colorScheme.primary].
+ * @param animationDuration Duration of a single fade cycle in milliseconds. Defaults to `600`.
+ * @param size Diameter of the dot. Defaults to `16.dp`.
+ *
+ * ```
+ * // Standalone usage
+ * DotLoading()
+ *
+ * // Custom size and color
+ * DotLoading(
+ *     color = MaterialTheme.colorScheme.tertiary,
+ *     size = 8.dp,
+ *     animationDuration = 400,
+ * )
+ *
+ * // Three-dot row
+ * Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+ *     repeat(3) { DotLoading(size = 8.dp) }
+ * }
+ * ```
+ */
 @Preview
 @Composable
 fun DotLoading(

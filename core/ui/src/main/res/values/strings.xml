@@ -35,4 +35,15 @@
   <!-- ReasoningCard -->
   <string name="label_reasoning">Thinking</string>
   <string name="label_reasoning_step">Step %s</string>
+
+  <!-- ChainOfThought -->
+  <string name="chain_of_thought_collapse">Collapse</string>
+  <string name="chain_of_thought_show_more_steps">Show %d more steps</string>
+
+  <!-- ActionsSheet -->
+  <string name="action_copy">Copy</string>
+  <string name="action_rerun">Re-run</string>
+  <string name="action_share">Share</string>
+  <string name="action_full_output">Complete output</string>
+  <string name="action_delete">Delete</string>
 </resources>

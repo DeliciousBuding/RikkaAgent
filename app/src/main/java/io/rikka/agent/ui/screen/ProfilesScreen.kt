@@ -44,13 +44,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.rikka.agent.R
 import io.rikka.agent.model.AuthType
 import io.rikka.agent.model.SshProfile
-import io.rikka.agent.R
 import io.rikka.agent.vm.ProfilesViewModel
 import lucide.icons.Lucide
 import org.koin.androidx.compose.koinViewModel

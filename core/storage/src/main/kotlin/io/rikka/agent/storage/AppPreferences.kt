@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -24,14 +25,23 @@ class AppPreferences(
 
   companion object Keys {
     val THEME = stringPreferencesKey("theme")
+    val PRESET_THEME = stringPreferencesKey("preset_theme")
     val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
     val DEFAULT_SHELL = stringPreferencesKey("default_shell")
     val LAST_PROFILE_ID = stringPreferencesKey("last_profile_id")
     val ENABLE_MERMAID = booleanPreferencesKey("enable_mermaid")
+    val SHOW_USER_AVATAR = booleanPreferencesKey("show_user_avatar")
+    val SHOW_MODEL_ICON = booleanPreferencesKey("show_model_icon")
+    val CHAT_FONT = stringPreferencesKey("chat_font")
+    val FONT_SIZE_RATIO = floatPreferencesKey("font_size_ratio")
   }
 
   val theme: Flow<String> = dataStore.data.map { prefs ->
     prefs[THEME] ?: "system"
+  }
+
+  val presetTheme: Flow<String> = dataStore.data.map { prefs ->
+    prefs[PRESET_THEME] ?: "sakura"
   }
 
   val dynamicColor: Flow<Boolean> = dataStore.data.map { prefs ->
@@ -50,8 +60,28 @@ class AppPreferences(
     prefs[ENABLE_MERMAID] ?: false
   }
 
+  val showUserAvatar: Flow<Boolean> = dataStore.data.map { prefs ->
+    prefs[SHOW_USER_AVATAR] ?: true
+  }
+
+  val showModelIcon: Flow<Boolean> = dataStore.data.map { prefs ->
+    prefs[SHOW_MODEL_ICON] ?: true
+  }
+
+  val chatFont: Flow<String> = dataStore.data.map { prefs ->
+    prefs[CHAT_FONT] ?: "default"
+  }
+
+  val fontSizeRatio: Flow<Float> = dataStore.data.map { prefs ->
+    prefs[FONT_SIZE_RATIO] ?: 1.0f
+  }
+
   suspend fun setTheme(value: String) {
     dataStore.edit { prefs -> prefs[THEME] = value }
+  }
+
+  suspend fun setPresetTheme(value: String) {
+    dataStore.edit { prefs -> prefs[PRESET_THEME] = value }
   }
 
   suspend fun setDynamicColor(value: Boolean) {
@@ -68,5 +98,21 @@ class AppPreferences(
 
   suspend fun setEnableMermaid(value: Boolean) {
     dataStore.edit { prefs -> prefs[ENABLE_MERMAID] = value }
+  }
+
+  suspend fun setShowUserAvatar(value: Boolean) {
+    dataStore.edit { prefs -> prefs[SHOW_USER_AVATAR] = value }
+  }
+
+  suspend fun setShowModelIcon(value: Boolean) {
+    dataStore.edit { prefs -> prefs[SHOW_MODEL_ICON] = value }
+  }
+
+  suspend fun setChatFont(value: String) {
+    dataStore.edit { prefs -> prefs[CHAT_FONT] = value }
+  }
+
+  suspend fun setFontSizeRatio(value: Float) {
+    dataStore.edit { prefs -> prefs[FONT_SIZE_RATIO] = value.coerceIn(0.8f, 1.5f) }
   }
 }

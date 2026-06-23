@@ -168,15 +168,38 @@
   <string name="section_security">安全</string>
   <string name="section_about">关于</string>
   <string name="theme">主题</string>
+  <string name="dynamic_color">动态取色</string>
+  <string name="dynamic_color_subtitle">使用 Material You 从壁纸提取的颜色（Android 12+）</string>
   <string name="default_shell">默认 Shell</string>
   <string name="default_shell_title">默认 Shell</string>
   <string name="enable_mermaid_rendering">启用 Mermaid 渲染</string>
   <string name="enable_mermaid_rendering_subtitle">在助手最终消息中渲染 mermaid 代码块</string>
+  <string name="show_user_avatar">显示用户头像</string>
+  <string name="show_user_avatar_subtitle">为用户消息显示圆形首字母头像</string>
+  <string name="show_model_icon">显示模型图标</string>
+  <string name="show_model_icon_subtitle">为助手消息显示圆形图标</string>
   <string name="known_hosts">已知主机</string>
   <string name="known_hosts_subtitle">管理信任的服务器指纹</string>
   <string name="version">版本</string>
   <string name="license">许可证</string>
   <string name="apache_license">Apache 许可证 2.0</string>
+
+  <!-- Theme names -->
+  <string name="theme_sakura">樱花</string>
+  <string name="theme_ocean">海洋</string>
+  <string name="theme_spring">春</string>
+  <string name="theme_autumn">秋</string>
+  <string name="theme_black">暗黑</string>
+
+  <!-- Font names -->
+  <string name="font_default">默认</string>
+  <string name="font_serif">衬线</string>
+  <string name="font_monospace">等宽</string>
+
+  <!-- NerdLine -->
+  <string name="nerd_line_exit_code">退出码：%d</string>
+  <string name="nerd_line_duration">%d毫秒</string>
+  <string name="nerd_line_lines">%d 行</string>
 
   <!-- KnownHostsScreen -->
   <string name="known_hosts_title">已知主机</string>

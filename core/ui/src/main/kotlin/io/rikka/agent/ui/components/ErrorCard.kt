@@ -43,7 +43,18 @@ import kotlinx.coroutines.launch
  * @param title Optional short title / category.
  * @param message The error message body.
  * @param actionLabel Optional action link label (e.g. "Check settings").
+ *   Must be paired with [onAction] to be displayed.
  * @param onAction Optional callback when the action link is tapped.
+ *
+ * ```
+ * val error = ErrorInfo(
+ *     id = "auth_expired",
+ *     title = "Session expired",
+ *     message = "Please sign in again to continue.",
+ *     actionLabel = "Sign in",
+ *     onAction = { navigateToLogin() },
+ * )
+ * ```
  */
 data class ErrorInfo(
     val id: String,
@@ -56,11 +67,26 @@ data class ErrorInfo(
 /**
  * Animated container that displays a stack of [ErrorCard]s.
  *
- * @param errors List of active errors.
- * @param onDismissError Callback when a single error is dismissed.
+ * Cards are rendered bottom-aligned with a slide-in/fade animation.
+ * When multiple errors are present, a "Clear all" button appears above the stack.
+ *
+ * @param errors List of active errors to display.
+ * @param onDismissError Callback when a single error is dismissed, receiving the error [ErrorInfo.id].
  * @param onClearAllErrors Callback when the "clear all" button is tapped.
- * @param modifier Modifier applied to the outer AnimatedVisibility.
- * @param autoDismissMs Auto-dismiss delay in milliseconds; 0 disables auto-dismiss.
+ * @param modifier Modifier applied to the outer [AnimatedVisibility].
+ * @param autoDismissMs Auto-dismiss delay in milliseconds; `0` disables auto-dismiss.
+ *   Defaults to `5000` (5 seconds).
+ *
+ * ```
+ * val errors by viewModel.errors.collectAsState()
+ *
+ * ErrorCardsDisplay(
+ *     errors = errors,
+ *     onDismissError = { id -> viewModel.dismissError(id) },
+ *     onClearAllErrors = { viewModel.clearAllErrors() },
+ *     autoDismissMs = 8000,
+ * )
+ * ```
  */
 @Composable
 fun ErrorCardsDisplay(
@@ -122,10 +148,31 @@ fun ErrorCardsDisplay(
 /**
  * A single dismissible error card with optional action link and copy-to-clipboard.
  *
+ * Displays an error message in a Material3 error container with:
+ * - Optional title and action link
+ * - Copy-to-clipboard button for the error message
+ * - Dismiss (close) button
+ * - Auto-dismiss after [autoDismissMs] (unless set to `0`)
+ *
  * @param error The [ErrorInfo] to display.
- * @param onDismiss Callback when the card is dismissed (by user or auto-dismiss).
- * @param modifier Modifier applied to the card.
- * @param autoDismissMs Auto-dismiss delay in milliseconds; 0 disables auto-dismiss.
+ * @param onDismiss Callback when the card is dismissed (by user tap or auto-dismiss timer).
+ * @param modifier Modifier applied to the card [Surface].
+ * @param autoDismissMs Auto-dismiss delay in milliseconds; `0` disables auto-dismiss.
+ *   Defaults to `5000` (5 seconds).
+ *
+ * ```
+ * ErrorCard(
+ *     error = ErrorInfo(
+ *         id = "network_err",
+ *         title = "Connection failed",
+ *         message = "Could not reach the server at api.example.com",
+ *         actionLabel = "Retry",
+ *         onAction = { retryConnection() },
+ *     ),
+ *     onDismiss = { viewModel.dismissError("network_err") },
+ *     autoDismissMs = 10000,
+ * )
+ * ```
  */
 @Composable
 fun ErrorCard(

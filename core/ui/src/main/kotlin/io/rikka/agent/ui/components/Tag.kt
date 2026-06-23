@@ -19,6 +19,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.rikka.agent.ui.theme.extendColors
 
+/**
+ * Semantic type of a [Tag], controlling its background and text colors.
+ *
+ * - [DEFAULT] -- tertiary container colors (neutral)
+ * - [SUCCESS] -- green tones
+ * - [ERROR]   -- red tones
+ * - [WARNING] -- orange tones
+ * - [INFO]    -- blue tones
+ */
 enum class TagType {
     DEFAULT,
     SUCCESS,
@@ -27,6 +36,27 @@ enum class TagType {
     INFO
 }
 
+/**
+ * A pill-shaped inline label for status or category indication.
+ *
+ * Uses [MaterialTheme.extendColors] for semantic color mapping based on [type].
+ * The tag is non-clickable by default; pass an [onClick] handler to make it interactive.
+ *
+ * @param modifier Modifier applied to the outer [Row].
+ * @param type Semantic [TagType] that controls background and text colors. Defaults to [TagType.DEFAULT].
+ * @param onClick Optional click handler. When non-null, the tag becomes clickable and a ripple effect is shown.
+ * @param children Composable content rendered inside the tag row, typically a [Text].
+ *
+ * ```
+ * Tag(type = TagType.SUCCESS) {
+ *     Text("Deployed")
+ * }
+ *
+ * Tag(type = TagType.ERROR, onClick = { showErrorDetails() }) {
+ *     Text("Build failed")
+ * }
+ * ```
+ */
 @Composable
 fun Tag(
     modifier: Modifier = Modifier,

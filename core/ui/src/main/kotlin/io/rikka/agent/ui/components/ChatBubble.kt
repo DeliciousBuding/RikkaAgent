@@ -43,6 +43,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -51,13 +52,16 @@ import io.rikka.agent.model.ChatRole
 import io.rikka.agent.model.MessagePart
 import io.rikka.agent.model.MessageStatus
 import io.rikka.agent.ui.R
-import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+
+private val BubbleShape = RoundedCornerShape(16.dp)
+private val ActionBarIconSize = Modifier.size(48.dp)
+private val ActionBarIconInnerSize = Modifier.size(14.dp)
 
 /**
  * Main chat bubble component for RikkaAgent.
@@ -77,7 +81,7 @@ fun ChatBubble(
     message: ChatMessage,
     enableMermaid: Boolean = false,
     modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+    contentPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
     onRerun: ((String) -> Unit)? = null,
     onShare: ((String) -> Unit)? = null,
     showExpand: Boolean = false,
@@ -88,22 +92,16 @@ fun ChatBubble(
     val isError = message.status == MessageStatus.Error
     val isCanceled = message.status == MessageStatus.Canceled
     val isStreaming = message.status == MessageStatus.Streaming
-    val bubbleShape = RoundedCornerShape(
-        topStart = 18.dp,
-        topEnd = 18.dp,
-        bottomEnd = if (isUser) 6.dp else 18.dp,
-        bottomStart = if (isUser) 18.dp else 6.dp,
-    )
 
     val bubbleColor = when {
-        isUser -> MaterialTheme.colorScheme.primary
+        isUser -> MaterialTheme.colorScheme.primaryContainer
         isError -> MaterialTheme.colorScheme.errorContainer
         isCanceled -> MaterialTheme.colorScheme.surfaceVariant
         else -> MaterialTheme.colorScheme.surface
     }
 
     val contentColor = when {
-        isUser -> MaterialTheme.colorScheme.onPrimary
+        isUser -> MaterialTheme.colorScheme.onPrimaryContainer
         isError -> MaterialTheme.colorScheme.onErrorContainer
         isCanceled -> MaterialTheme.colorScheme.onSurfaceVariant
         else -> MaterialTheme.colorScheme.onSurface
@@ -113,11 +111,18 @@ fun ChatBubble(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = if (isUser) Alignment.End else Alignment.Start,
     ) {
+        // User avatar (shown above the bubble, right-aligned)
+        if (isUser) {
+            ChatUserAvatar(
+                message = message,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
+            )
+        }
+
         if (isUser) {
             // User messages: chat bubble style with plain text
             UserBubble(
                 message = message,
-                bubbleShape = bubbleShape,
                 bubbleColor = bubbleColor,
                 contentColor = contentColor,
                 contentPadding = contentPadding,
@@ -127,10 +132,10 @@ fun ChatBubble(
             Surface(
                 tonalElevation = 0.dp,
                 shadowElevation = 0.dp,
-                color = bubbleColor,
-                shape = bubbleShape,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 1f),
+                shape = BubbleShape,
                 modifier = Modifier
-                    .clip(bubbleShape)
+                    .clip(BubbleShape)
                     .padding(horizontal = 12.dp, vertical = 6.dp),
             ) {
                 Box(modifier = Modifier.padding(contentPadding)) {
@@ -138,19 +143,35 @@ fun ChatBubble(
                 }
             }
         } else {
-            // Assistant messages: dispatch each part to its renderer
-            Column(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                MessagePartsBlock(
+            // Assistant messages: avatar + dispatch each part to its renderer
+            Column {
+                ChatAssistantAvatar(
                     message = message,
-                    enableMermaid = enableMermaid,
-                    isStreaming = isStreaming,
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
                 )
-                if (isStreaming) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    StreamingDots()
+                Surface(
+                    tonalElevation = 0.dp,
+                    shadowElevation = 0.dp,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 1f),
+                    shape = BubbleShape,
+                    modifier = Modifier
+                        .clip(BubbleShape)
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(contentPadding),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        MessagePartsBlock(
+                            message = message,
+                            enableMermaid = enableMermaid,
+                            isStreaming = isStreaming,
+                        )
+                        if (isStreaming) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            StreamingDots()
+                        }
+                    }
                 }
             }
         }
@@ -180,7 +201,6 @@ fun ChatBubble(
 @Composable
 private fun UserBubble(
     message: ChatMessage,
-    bubbleShape: RoundedCornerShape,
     bubbleColor: androidx.compose.ui.graphics.Color,
     contentColor: androidx.compose.ui.graphics.Color,
     contentPadding: PaddingValues,
@@ -189,9 +209,9 @@ private fun UserBubble(
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
         color = bubbleColor,
-        shape = bubbleShape,
+        shape = BubbleShape,
         modifier = Modifier
-            .clip(bubbleShape)
+            .clip(BubbleShape)
             .animateContentSize()
             .padding(horizontal = 12.dp, vertical = 6.dp),
     ) {
@@ -323,7 +343,7 @@ private fun CopyButton(content: String) {
                 copied = false
             }
         },
-        modifier = Modifier.size(24.dp),
+        modifier = ActionBarIconSize,
     ) {
         if (copied) {
             Text(
@@ -350,13 +370,13 @@ private fun RerunButton(command: String, onRerun: (String) -> Unit) {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onRerun(command)
         },
-        modifier = Modifier.size(24.dp),
+        modifier = ActionBarIconSize,
     ) {
         Icon(
             painter = painterResource(id = R.drawable.ic_replay),
             contentDescription = stringResource(R.string.cd_rerun),
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            modifier = Modifier.size(14.dp),
+            modifier = ActionBarIconInnerSize,
         )
     }
 }

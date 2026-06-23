@@ -35,6 +35,7 @@ dependencies {
   implementation(libs.commonmark.ext.gfm.strikethrough)
   implementation(libs.intellij.markdown)
   implementation(libs.kotlinx.coroutines.core)
+  implementation(libs.lucide.icons)
   implementation(projects.core.model)
 
   testImplementation(libs.junit4)

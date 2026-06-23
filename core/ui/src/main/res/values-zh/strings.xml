@@ -35,4 +35,15 @@
   <!-- ReasoningCard -->
   <string name="label_reasoning">思考中</string>
   <string name="label_reasoning_step">步骤 %s</string>
+
+  <!-- ChainOfThought -->
+  <string name="chain_of_thought_collapse">收起</string>
+  <string name="chain_of_thought_show_more_steps">显示剩余 %d 步</string>
+
+  <!-- ActionsSheet -->
+  <string name="action_copy">复制</string>
+  <string name="action_rerun">重新执行</string>
+  <string name="action_share">分享</string>
+  <string name="action_full_output">完整输出</string>
+  <string name="action_delete">删除</string>
 </resources>

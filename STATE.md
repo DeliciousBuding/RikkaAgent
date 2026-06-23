@@ -23,7 +23,7 @@
 | Icon system | Lucide Icons 1.1.0 (`composables:icons-lucide`) |
 | Theme | MaterialExpressiveTheme + AMOLED + dynamic color + extend colors |
 | Message model | `MessagePart` sealed class (Command/Stdout/Stderr/Text/Code/Reasoning/Error/Mermaid) |
-| Key storage | EncryptedFile (AES-256-GCM via AndroidX Security Crypto) |
+| Key storage | SSH private keys: EncryptedFile (AES-256-GCM via AndroidX Security Crypto); Codex API Key: Room DB plaintext (known debt, see ROADMAP) |
 | Codex integration | `codex exec --full-auto` via SSH (exec channel) |
 | Output strategy | Truncation display + message-level complete output view/share |
 | i18n | Chinese + English (values/strings.xml + values-zh/strings.xml), Chinese-first |

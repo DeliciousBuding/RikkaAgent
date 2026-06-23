@@ -30,6 +30,32 @@ import io.rikka.agent.ui.util.AnsiStripper
  * - Gray/dark header with `$` prompt and command text in monospace
  * - Exit code badge at the right (green for 0, red for non-null non-zero, spinner for running)
  * - Rounded corners, consistent with CodeCard
+ *
+ * ANSI escape sequences are stripped from the command text via [AnsiStripper].
+ * Long command text is horizontally scrollable.
+ *
+ * @param command The shell command string to display. ANSI codes are stripped automatically.
+ * @param exitCode The exit code of the command. `null` when the command has not finished.
+ *   `0` renders a green badge; non-zero renders a red badge.
+ * @param isRunning Whether the command is currently executing.
+ *   When `true`, a pulsing "..." badge is shown instead of an exit code.
+ * @param modifier Modifier applied to the outer [Surface].
+ *
+ * ```
+ * // Completed command
+ * CommandCard(
+ *     command = "git log --oneline -5",
+ *     exitCode = 0,
+ *     isRunning = false,
+ * )
+ *
+ * // Running command
+ * CommandCard(
+ *     command = "npm run build",
+ *     exitCode = null,
+ *     isRunning = true,
+ * )
+ * ```
  */
 @Composable
 fun CommandCard(

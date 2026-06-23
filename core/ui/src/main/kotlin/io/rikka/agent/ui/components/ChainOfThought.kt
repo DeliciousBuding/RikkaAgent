@@ -14,16 +14,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -37,8 +35,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
+import io.rikka.agent.ui.R
+import lucide.icons.Lucide
 
 private val LocalCardColor = staticCompositionLocalOf { Color.White }
 
@@ -144,7 +147,7 @@ fun <T> ChainOfThought(
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
-                                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                imageVector = if (expanded) Lucide.ChevronUp else Lucide.ChevronDown,
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp),
                                 tint = MaterialTheme.colorScheme.primary,
@@ -155,9 +158,12 @@ fun <T> ChainOfThought(
                         Text(
                             modifier = Modifier.padding(start = 8.dp),
                             text = if (expanded) {
-                                "Collapse"
+                                stringResource(R.string.chain_of_thought_collapse)
                             } else {
-                                "Show ${steps.size - collapsedVisibleCount} more steps"
+                                stringResource(
+                                    R.string.chain_of_thought_show_more_steps,
+                                    steps.size - collapsedVisibleCount
+                                )
                             },
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary,
@@ -220,7 +226,7 @@ interface ChainOfThoughtScope {
      *
      * ```
      * ChainOfThoughtStep(
-     *     icon = { Icon(Icons.Default.Search, contentDescription = null) },
+     *     icon = { Icon(Lucide.Search, contentDescription = null) },
      *     label = { Text("Searching files") },
      *     extra = { Text("2s", style = MaterialTheme.typography.labelSmall) },
      *     content = { Text("Found 3 matching files in src/") },
@@ -431,14 +437,14 @@ private class ChainOfThoughtScopeImpl : ChainOfThoughtScope {
                 // Indicator: onClick shows right arrow, content shows expand/collapse arrow
                 if (onClick != null) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        imageVector = Lucide.ChevronRight,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else if (hasContent) {
                     Icon(
-                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        imageVector = if (expanded) Lucide.ChevronUp else Lucide.ChevronDown,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -460,6 +466,82 @@ private class ChainOfThoughtScopeImpl : ChainOfThoughtScope {
                         .padding(start = 32.dp, top = 4.dp, bottom = 8.dp)
                 ) {
                     content()
+                }
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ChainOfThoughtPreview() {
+    data class StepData(
+        val label: String,
+        val icon: ImageVector?,
+        val status: String?,
+        val hasContent: Boolean = false,
+        val hasOnClick: Boolean = false,
+    )
+
+    MaterialTheme {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text("Chain of Thought")
+                    }
+                )
+            }
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier.padding(innerPadding),
+            ) {
+                ChainOfThought(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    steps = listOf(
+                        StepData("Searching files", Lucide.Search, "3 results", hasContent = true),
+                        StepData("Reading documents", Lucide.FileText, "Completed", hasOnClick = true),
+                        StepData("Analyzing results", Lucide.Sparkles, "In progress", hasContent = true),
+                        StepData("Step without icon", null, null),
+                        StepData("Final step", Lucide.Check, "Done"),
+                    ),
+                    collapsedVisibleCount = 2,
+                ) { step ->
+                    ChainOfThoughtStep(
+                        icon = step.icon?.let {
+                            {
+                                Icon(
+                                    imageVector = it,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        },
+                        label = { Text(step.label, style = MaterialTheme.typography.bodyMedium) },
+                        extra = step.status?.let {
+                            {
+                                Text(
+                                    it,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        },
+                        onClick = if (step.hasOnClick) {
+                            { /* Navigate */ }
+                        } else null,
+                        content = if (step.hasContent) {
+                            {
+                                Text(
+                                    text = "Detailed content for this step.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        } else null,
+                    )
                 }
             }
         }

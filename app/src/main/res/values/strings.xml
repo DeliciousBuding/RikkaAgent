@@ -174,11 +174,32 @@
   <string name="default_shell_title">Default Shell</string>
   <string name="enable_mermaid_rendering">Enable Mermaid rendering</string>
   <string name="enable_mermaid_rendering_subtitle">Render mermaid code blocks in finalized assistant messages</string>
+  <string name="show_user_avatar">Show user avatar</string>
+  <string name="show_user_avatar_subtitle">Display a circular avatar with initial for user messages</string>
+  <string name="show_model_icon">Show model icon</string>
+  <string name="show_model_icon_subtitle">Display a circular icon for assistant messages</string>
   <string name="known_hosts">Known hosts</string>
   <string name="known_hosts_subtitle">Manage trusted server fingerprints</string>
   <string name="version">Version</string>
   <string name="license">License</string>
   <string name="apache_license">Apache License 2.0</string>
+
+  <!-- Theme names -->
+  <string name="theme_sakura">Sakura</string>
+  <string name="theme_ocean">Ocean</string>
+  <string name="theme_spring">Spring</string>
+  <string name="theme_autumn">Autumn</string>
+  <string name="theme_black">Black</string>
+
+  <!-- Font names -->
+  <string name="font_default">Default</string>
+  <string name="font_serif">Serif</string>
+  <string name="font_monospace">Monospace</string>
+
+  <!-- NerdLine -->
+  <string name="nerd_line_exit_code">exit: %d</string>
+  <string name="nerd_line_duration">%dms</string>
+  <string name="nerd_line_lines">%d lines</string>
 
   <!-- KnownHostsScreen -->
   <string name="known_hosts_title">Known Hosts</string>
