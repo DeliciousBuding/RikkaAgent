@@ -23,6 +23,7 @@ import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Settings
 import com.composables.icons.lucide.Plus
 import com.composables.icons.lucide.Trash2
+import com.composables.icons.lucide.Server
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -243,6 +244,13 @@ private fun EmptyState(
     verticalArrangement = Arrangement.Center,
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
+    Icon(
+      imageVector = Lucide.Server,
+      contentDescription = null,
+      modifier = Modifier.size(64.dp),
+      tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+    )
+    Spacer(modifier = Modifier.height(16.dp))
     Text(
       text = stringResource(R.string.no_profiles_title),
       style = MaterialTheme.typography.titleMedium,
@@ -252,7 +260,7 @@ private fun EmptyState(
     Text(
       text = stringResource(R.string.no_profiles_subtitle),
       style = MaterialTheme.typography.bodyMedium,
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
+      color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
     )
   }
 }
