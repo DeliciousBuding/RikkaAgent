@@ -98,7 +98,7 @@ fun ReasoningCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = cardColors,
-        shape = RoundedCornerShape(12.dp),
+        shape = ReasoningShape,
     ) {
         Column(
             modifier = Modifier.animateContentSize(),
@@ -161,7 +161,7 @@ private fun ReasoningHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(ReasoningShape)
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,

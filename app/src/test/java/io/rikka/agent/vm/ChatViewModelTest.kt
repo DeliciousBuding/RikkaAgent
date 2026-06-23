@@ -10,6 +10,7 @@ import io.rikka.agent.model.MessagePart
 import io.rikka.agent.model.MessageStatus
 import io.rikka.agent.model.SshProfile
 import io.rikka.agent.ssh.ClosableSshExecRunner
+import io.rikka.agent.ssh.ConnectionState
 import io.rikka.agent.ssh.ExecEvent
 import io.rikka.agent.ssh.HostKeyCallback
 import io.rikka.agent.ssh.KeyContentProvider
@@ -89,7 +90,7 @@ class ChatViewModelTest {
 
     advanceUntilIdle()
 
-    assertEquals(ConnectionState.READY, viewModel.connectionState.value)
+    assertEquals(ConnectionState.Ready, viewModel.connectionState.value)
     assertEquals(profile.name, viewModel.profileLabel.value)
     assertTrue(viewModel.messages.value.single().content.contains(profile.username))
     assertTrue(viewModel.messages.value.single().content.contains(profile.host))
@@ -146,7 +147,7 @@ class ChatViewModelTest {
     viewModel.newSession()
     advanceUntilIdle()
 
-    assertEquals(ConnectionState.READY, viewModel.connectionState.value)
+    assertEquals(ConnectionState.Ready, viewModel.connectionState.value)
     assertEquals(1, viewModel.messages.value.size)
     assertEquals(app.getString(R.string.msg_new_session, profile.name, profile.username, profile.host), viewModel.messages.value.single().content)
   }
@@ -356,7 +357,7 @@ class ChatViewModelTest {
     val last = viewModel.messages.value.last()
     assertEquals(MessageStatus.Error, last.status)
     assertEquals(app.getString(R.string.err_timeout), last.content)
-    assertEquals(ConnectionState.READY, viewModel.connectionState.value)
+    assertEquals(ConnectionState.Ready, viewModel.connectionState.value)
   }
 
   @Test
@@ -390,7 +391,7 @@ class ChatViewModelTest {
     assertEquals(MessageStatus.Canceled, last.status)
     assertTrue(last.content.contains("partial output"))
     assertTrue(last.content.contains(app.getString(R.string.msg_command_canceled)))
-    assertEquals(ConnectionState.READY, viewModel.connectionState.value)
+    assertEquals(ConnectionState.Ready, viewModel.connectionState.value)
   }
 
   @Test
@@ -411,7 +412,7 @@ class ChatViewModelTest {
     assertEquals(MessageStatus.Canceled, last.status)
     assertTrue(last.content.contains("partial output"))
     assertTrue(last.content.contains(app.getString(R.string.msg_command_canceled)))
-    assertEquals(ConnectionState.READY, viewModel.connectionState.value)
+    assertEquals(ConnectionState.Ready, viewModel.connectionState.value)
   }
 
   @Test

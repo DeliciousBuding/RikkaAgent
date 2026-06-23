@@ -9,6 +9,7 @@ import io.rikka.agent.model.ChatMessage
 import io.rikka.agent.model.ChatRole
 import io.rikka.agent.model.ChatThread
 import io.rikka.agent.model.MessageStatus
+import io.rikka.agent.model.SessionStats
 import io.rikka.agent.ssh.ConnectionState
 import io.rikka.agent.ssh.DefaultSshExecRunnerFactory
 import io.rikka.agent.ssh.KeyContentProvider
@@ -31,6 +32,8 @@ import java.util.UUID
  * ## Responsibilities
  * - Orchestrates [ChatSessionManager] (thread lifecycle), [CommandExecutor] (SSH execution),
  *   and [AuthCallbackBroker] (authentication callbacks) to drive the chat UI.
+ *   Also bridges session management features: search, pin, archive, tags, stats, and
+ *   multi-format export.
  * - Owns the observable message list and exposes it as a [StateFlow] for Compose collection.
  * - Delegates all domain logic (SSH connection, command execution, persistence) to sub-components,
  *   keeping itself as a thin coordination layer.
@@ -49,7 +52,10 @@ import java.util.UUID
  * |------------------------------|-------------------------------|--------------------------------------------------|
  * | [messages]                   | `StateFlow<List<ChatMessage>>`| Full message list for the current thread.        |
  * | [profileLabel]               | `StateFlow<String>`           | Display label for the loaded SSH profile.        |
- * | [threads]                    | `StateFlow<List<ChatThread>>` | Past thread list for thread-switcher UI.         |
+ * | [activeThreads]              | `StateFlow<List<ChatThread>>` | Non-archived threads, pinned first.              |
+ * | [archivedThreads]            | `StateFlow<List<ChatThread>>` | Archived threads.                                |
+ * | [searchResults]              | `StateFlow<List<ChatThread>>` | FTS search results.                              |
+ * | [searchQuery]                | `StateFlow<String>`           | Current search query.                            |
  * | [connectionState]            | `StateFlow<ConnectionState>`  | IDLE / READY / EXECUTING / ERROR.                |
  * | [lastConnectionError]        | `StateFlow<ConnectionError?>` | Most recent connection-level error, dismissable. |
  *
@@ -79,7 +85,7 @@ class ChatViewModel(
   /** Broker that bridges SSH authentication callbacks to UI-side SharedFlows. */
   private val authBroker = AuthCallbackBroker()
 
-  /** Manages thread CRUD, title generation, and message persistence. */
+  /** Manages thread CRUD, title generation, message persistence, search, pin/archive, tags. */
   private val sessionManager = ChatSessionManager(
     profileId = profileId,
     chatRepository = chatRepository,
@@ -119,8 +125,23 @@ class ChatViewModel(
   /** Human-readable label for the loaded SSH profile (e.g. "root@host"). */
   val profileLabel: StateFlow<String> = _profileLabel
 
+  /** Current active thread ID, exposed for UI. */
+  private val _currentThreadId = MutableStateFlow<String?>(null)
+  val currentThreadId: StateFlow<String?> = _currentThreadId
+
+  // ── Session management state (forwarded from sessionManager) ────────────
+
+  /** Observable list of active (non-archived) threads, pinned first. */
+  val activeThreads: StateFlow<List<ChatThread>> = sessionManager.activeThreads
+  /** Observable list of archived threads. */
+  val archivedThreads: StateFlow<List<ChatThread>> = sessionManager.archivedThreads
+  /** FTS search results for the current search query. */
+  val searchResults: StateFlow<List<ChatThread>> = sessionManager.searchResults
+  /** Current search query text. */
+  val searchQuery: StateFlow<String> = sessionManager.searchQuery
+
   /** Observable list of past chat threads for the thread-switcher drawer. */
-  val threads: StateFlow<List<ChatThread>> = sessionManager.threads
+  val threads: StateFlow<List<ChatThread>> = sessionManager.activeThreads
   /** Current SSH connection lifecycle state. */
   val connectionState: StateFlow<ConnectionState> = commandExecutor.connectionState
   /** Most recent connection-level error, or null if none / dismissed. */
@@ -183,6 +204,7 @@ class ChatViewModel(
     sessionManager.newSession()
     commandExecutor.clearFullOutput()
     _messages.value = emptyList()
+    _currentThreadId.value = null
     commandExecutor.resetConnectionState()
     val profile = commandExecutor.currentProfile ?: return
     appendSystemMessage(
@@ -201,6 +223,7 @@ class ChatViewModel(
   fun switchThread(targetThreadId: String) {
     commandExecutor.cancel()
     sessionManager.switchThread(targetThreadId)
+    _currentThreadId.value = targetThreadId
     commandExecutor.resetConnectionState()
     viewModelScope.launch(errorHandler) {
       _messages.value = sessionManager.getMessages(targetThreadId)
@@ -219,8 +242,86 @@ class ChatViewModel(
       val wasActive = sessionManager.deleteThread(targetThreadId)
       if (wasActive) {
         commandExecutor.clearFullOutput()
+        _currentThreadId.value = null
         newSession()
       }
+    }
+  }
+
+  // ── Search ─────────────────────────────────────────────────────────────
+
+  /**
+   * Update the search query for full-text session search.
+   *
+   * @param query The search text. Empty string clears the search.
+   */
+  fun setSearchQuery(query: String) {
+    sessionManager.setSearchQuery(query)
+  }
+
+  // ── Pin / Archive ──────────────────────────────────────────────────────
+
+  /**
+   * Toggle the pinned state of a thread.
+   *
+   * @param threadId The thread to toggle.
+   */
+  fun togglePin(threadId: String) {
+    sessionManager.togglePin(threadId)
+  }
+
+  /**
+   * Archive a thread, moving it from the active list to the archived list.
+   *
+   * @param threadId The thread to archive.
+   */
+  fun archiveThread(threadId: String) {
+    sessionManager.archiveThread(threadId)
+  }
+
+  /**
+   * Unarchive a thread, restoring it to the active list.
+   *
+   * @param threadId The thread to unarchive.
+   */
+  fun unarchiveThread(threadId: String) {
+    sessionManager.unarchiveThread(threadId)
+  }
+
+  // ── Tags ───────────────────────────────────────────────────────────────
+
+  /**
+   * Add a tag to a thread.
+   *
+   * @param threadId The thread to tag.
+   * @param tag The tag name (will be trimmed).
+   */
+  fun addTag(threadId: String, tag: String) {
+    sessionManager.addTag(threadId, tag)
+  }
+
+  /**
+   * Remove a tag from a thread.
+   *
+   * @param threadId The thread to remove the tag from.
+   * @param tag The tag name to remove.
+   */
+  fun removeTag(threadId: String, tag: String) {
+    sessionManager.removeTag(threadId, tag)
+  }
+
+  // ── Stats ──────────────────────────────────────────────────────────────
+
+  /**
+   * Compute session statistics for a thread.
+   *
+   * @param threadId The thread to compute stats for.
+   * @param callback Callback to receive the computed stats (called on Main dispatcher).
+   */
+  fun computeThreadStats(threadId: String, callback: (SessionStats) -> Unit) {
+    viewModelScope.launch(errorHandler) {
+      val stats = sessionManager.getThreadStats(threadId)
+      callback(stats)
     }
   }
 
@@ -322,12 +423,32 @@ class ChatViewModel(
   }
 
   /**
-   * Export the current session as a plain-text string.
+   * Export the current session in the given format.
    *
-   * @return A formatted string containing the profile label and all messages.
+   * For non-PLAIN formats, includes computed session statistics.
+   *
+   * @param format The export format (default: [ExportFormat.PLAIN]).
+   * @return A formatted string containing the profile label, messages, and optionally stats.
    */
-  fun exportSession(): String =
-    SessionExporter.export(_profileLabel.value, _messages.value)
+  fun exportSession(format: ExportFormat = ExportFormat.PLAIN): String {
+    val stats = if (format != ExportFormat.PLAIN) {
+      val msgs = _messages.value
+      val commandCount = msgs.count { it.role == ChatRole.User }
+      val outputLineCount = msgs
+        .filter { it.role == ChatRole.Assistant && it.content.isNotEmpty() }
+        .sumOf { it.content.lines().size }
+      var totalTime = 0L
+      for (i in 0 until msgs.size - 1) {
+        if (msgs[i].role == ChatRole.User && msgs[i + 1].role == ChatRole.Assistant) {
+          val delta = msgs[i + 1].timestampMs - msgs[i].timestampMs
+          if (delta > 0) totalTime += delta
+        }
+      }
+      SessionStats(commandCount, totalTime, outputLineCount)
+    } else null
+
+    return SessionExporter.export(_profileLabel.value, _messages.value, stats, format)
+  }
 
   /**
    * Called when the ViewModel is being cleared (Activity/Fragment destroyed).

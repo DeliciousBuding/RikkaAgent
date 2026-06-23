@@ -30,6 +30,7 @@ import lucide.icons.Lucide
  * [MaterialTheme.colorScheme.errorContainer] to signal danger.
  *
  * @param onDelete Called when the user taps "Delete".
+ * @param onEdit Called when the user taps "Edit". May be `null` to hide the item.
  * @param onRerun Called when the user taps "Re-run". May be `null` to hide the item.
  * @param onCopy Called when the user taps "Copy".
  * @param onShare Called when the user taps "Share".
@@ -40,6 +41,7 @@ import lucide.icons.Lucide
 @Composable
 fun ActionsSheet(
     onDelete: () -> Unit,
+    onEdit: (() -> Unit)? = null,
     onRerun: (() -> Unit)? = null,
     onCopy: () -> Unit,
     onShare: () -> Unit,
@@ -66,6 +68,18 @@ fun ActionsSheet(
                     onCopy()
                 },
             )
+
+            // Edit
+            if (onEdit != null) {
+                ActionItem(
+                    icon = Lucide.Pencil,
+                    label = stringResource(R.string.action_edit),
+                    onClick = {
+                        onDismissRequest()
+                        onEdit()
+                    },
+                )
+            }
 
             // Re-run
             if (onRerun != null) {

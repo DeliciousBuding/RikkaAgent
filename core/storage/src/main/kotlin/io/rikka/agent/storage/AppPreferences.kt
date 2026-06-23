@@ -40,6 +40,15 @@ class AppPreferences(
     val SHOW_ASSISTANT_BUBBLE = booleanPreferencesKey("show_assistant_bubble")
     val SHOW_TIMESTAMP = booleanPreferencesKey("show_timestamp")
     val QUICK_MESSAGES = stringPreferencesKey("quick_messages")
+
+    /** Default quick messages shown when the user has not configured any. */
+    val DEFAULT_QUICK_MESSAGES = listOf(
+      QuickMessage(label = "uname -a", command = "uname -a"),
+      QuickMessage(label = "df -h", command = "df -h"),
+      QuickMessage(label = "uptime", command = "uptime"),
+      QuickMessage(label = "free -m", command = "free -m"),
+      QuickMessage(label = "top -bn1", command = "top -bn1"),
+    )
   }
 
   val theme: Flow<String> = dataStore.data.map { prefs ->
@@ -172,16 +181,5 @@ class AppPreferences(
     dataStore.edit { prefs ->
       prefs[QUICK_MESSAGES] = Json.encodeToString(messages)
     }
-  }
-
-  companion object {
-    /** Default quick messages shown when the user has not configured any. */
-    val DEFAULT_QUICK_MESSAGES = listOf(
-      QuickMessage(label = "uname -a", command = "uname -a"),
-      QuickMessage(label = "df -h", command = "df -h"),
-      QuickMessage(label = "uptime", command = "uptime"),
-      QuickMessage(label = "free -m", command = "free -m"),
-      QuickMessage(label = "top -bn1", command = "top -bn1"),
-    )
   }
 }

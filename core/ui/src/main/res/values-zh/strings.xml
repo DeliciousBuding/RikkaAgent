@@ -2,6 +2,7 @@
   <!-- ChatBubble -->
   <string name="cd_copy">复制</string>
   <string name="cd_rerun">重新执行</string>
+  <string name="cd_edit">编辑</string>
   <string name="cd_share">分享</string>
   <string name="cd_share_full">分享完整输出</string>
   <string name="expand_output">完整</string>
@@ -23,6 +24,7 @@
   <!-- ChatInput -->
   <string name="input_placeholder">$ 命令</string>
   <string name="cd_send">发送</string>
+  <string name="editing_message">正在编辑消息</string>
 
   <!-- StreamOutputCard -->
   <string name="label_stdout">标准输出</string>
@@ -43,6 +45,7 @@
   <!-- ActionsSheet -->
   <string name="action_copy">复制</string>
   <string name="action_rerun">重新执行</string>
+  <string name="action_edit">编辑</string>
   <string name="action_share">分享</string>
   <string name="action_full_output">完整输出</string>
   <string name="action_delete">删除</string>

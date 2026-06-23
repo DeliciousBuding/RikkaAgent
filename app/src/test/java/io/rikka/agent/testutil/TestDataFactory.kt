@@ -7,6 +7,7 @@ import io.rikka.agent.model.ChatThread
 import io.rikka.agent.model.HostKeyPolicy
 import io.rikka.agent.model.MessagePart
 import io.rikka.agent.model.MessageStatus
+import io.rikka.agent.model.ProfileGroup
 import io.rikka.agent.model.SshProfile
 import java.util.concurrent.atomic.AtomicLong
 
@@ -66,7 +67,9 @@ object TestDataFactory {
      * val profile = TestDataFactory.createProfile(
      *     name = "Production Server",
      *     host = "10.0.1.50",
-     *     username = "deploy"
+     *     username = "deploy",
+     *     group = ProfileGroup.Production,
+     *     tags = listOf("web", "nginx"),
      * )
      * ```
      */
@@ -83,6 +86,8 @@ object TestDataFactory {
         codexMode: Boolean = false,
         codexWorkDir: String? = null,
         codexApiKey: String? = null,
+        group: ProfileGroup = ProfileGroup.None,
+        tags: List<String> = emptyList(),
     ): SshProfile = SshProfile(
         id = id,
         name = name,
@@ -96,6 +101,8 @@ object TestDataFactory {
         codexMode = codexMode,
         codexWorkDir = codexWorkDir,
         codexApiKey = codexApiKey,
+        group = group,
+        tags = tags,
     )
 
     /**

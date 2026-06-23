@@ -1,7 +1,12 @@
 package io.rikka.agent.fake
 
+import io.rikka.agent.model.ProfileSearchFilter
 import io.rikka.agent.model.SshProfile
+import io.rikka.agent.model.filterAndSort
 import io.rikka.agent.storage.ProfileStore
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 
 /**
  * In-memory [ProfileStore] for tests.
@@ -11,6 +16,7 @@ import io.rikka.agent.storage.ProfileStore
 class FakeProfileStore : ProfileStore {
 
   private val profiles = mutableMapOf<String, SshProfile>()
+  private val profilesFlow = MutableStateFlow<List<SshProfile>>(emptyList())
 
   // ── Configurable hooks ─────────────────────────────────────────────────────
 
@@ -31,18 +37,32 @@ class FakeProfileStore : ProfileStore {
   override suspend fun upsert(profile: SshProfile) {
     throwOnUpsert?.let { throw it }
     profiles[profile.id] = profile
+    profilesFlow.value = profiles.values.toList()
   }
 
   override suspend fun delete(profileId: String) {
     throwOnDelete?.let { throw it }
     profiles.remove(profileId)
+    profilesFlow.value = profiles.values.toList()
   }
+
+  override fun observeFiltered(filter: ProfileSearchFilter): Flow<List<SshProfile>> =
+    profilesFlow.map { it.filterAndSort(filter) }
+
+  override fun observeByGroup(group: String): Flow<List<SshProfile>> =
+    profilesFlow.map { all ->
+      all.filter { it.group.name == group }
+    }
+
+  override suspend fun allIds(): Set<String> =
+    profiles.keys.toSet()
 
   // ── Test helpers ───────────────────────────────────────────────────────────
 
   /** Seed profiles directly (bypasses hooks). */
   fun seed(vararg items: SshProfile) {
     items.forEach { profiles[it.id] = it }
+    profilesFlow.value = profiles.values.toList()
   }
 
   /** Return a snapshot of all stored profiles. */
@@ -51,6 +71,7 @@ class FakeProfileStore : ProfileStore {
   /** Clear all data. */
   fun reset() {
     profiles.clear()
+    profilesFlow.value = emptyList()
   }
 
   companion object {

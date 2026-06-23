@@ -1,0 +1,24 @@
+# RikkaAgent Code Owners
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner
+* @DeliciousBuding
+
+# Core modules
+/core/model/ @DeliciousBuding
+/core/ssh/ @DeliciousBuding
+/core/storage/ @DeliciousBuding
+/core/ui/ @DeliciousBuding
+
+# App module
+/app/ @DeliciousBuding
+
+# Build configuration
+*.gradle.kts @DeliciousBuding
+gradle/ @DeliciousBuding
+
+# CI/CD
+.github/ @DeliciousBuding
+
+# Documentation
+/docs/ @DeliciousBuding

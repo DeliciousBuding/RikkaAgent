@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import io.rikka.agent.BuildConfig
 import io.rikka.agent.R
@@ -153,7 +154,7 @@ fun SettingsScreen(
         onClick = { showThemePicker = true },
       )
       SettingsItem(
-        title = "Preset Theme",
+        title = stringResource(R.string.preset_theme),
         subtitle = PresetTheme.findById(presetThemeId).displayName,
         onClick = { showPresetThemePicker = true },
       )
@@ -286,7 +287,7 @@ private fun PresetThemePickerDialog(
   val presets = PresetTheme.all
   AlertDialog(
     onDismissRequest = onDismiss,
-    title = { Text("Preset Theme") },
+    title = { Text(stringResource(R.string.preset_theme)) },
     text = {
       Column {
         presets.forEach { preset ->
