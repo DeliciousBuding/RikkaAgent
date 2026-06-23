@@ -79,7 +79,10 @@
   <string name="no_past_sessions">No past sessions</string>
   <string name="empty_chat_hint">Type a command to run on the server</string>
   <string name="input_placeholder">$ command</string>
+  <!-- ChatInput -->
   <string name="send">Send</string>
+  <string name="cd_expand">Expand editor</string>
+  <string name="done">Done</string>
 
   <!-- Host key dialog -->
   <string name="trust_host_title">Trust this host?</string>

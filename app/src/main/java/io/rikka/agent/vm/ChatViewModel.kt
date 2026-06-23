@@ -7,121 +7,75 @@ import io.rikka.agent.R
 import io.rikka.agent.model.ChatMessage
 import io.rikka.agent.model.ChatRole
 import io.rikka.agent.model.ChatThread
-import io.rikka.agent.model.MessagePart
 import io.rikka.agent.model.MessageStatus
-import io.rikka.agent.model.SshProfile
-import io.rikka.agent.ssh.ExecEvent
-import io.rikka.agent.ssh.HostKeyCallback
-import io.rikka.agent.ssh.JsonlLineBuffer
+import io.rikka.agent.ssh.DefaultSshExecRunnerFactory
 import io.rikka.agent.ssh.KeyContentProvider
 import io.rikka.agent.ssh.KnownHostsStore
-import io.rikka.agent.ssh.DefaultSshExecRunnerFactory
-import io.rikka.agent.ssh.PassphraseProvider
-import io.rikka.agent.ssh.PasswordProvider
-import io.rikka.agent.ssh.ClosableSshExecRunner
 import io.rikka.agent.ssh.SshExecRunnerFactory
 import io.rikka.agent.storage.AppPreferences
 import io.rikka.agent.storage.ChatRepository
 import io.rikka.agent.storage.ProfileStore
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
 
 /**
- * Chat ViewModel that drives real SSH command execution.
+ * Thin orchestrator that composes [ChatSessionManager], [CommandExecutor],
+ * and [AuthCallbackBroker] to drive the chat UI.
  *
- * Architecture:
- * - Receives a profileId to look up connection details
- * - Creates an SshjExecRunner with host key callback that emits UI events
- * - Streams stdout/stderr into chat messages in real time
+ * Owns the message list and delegates all domain logic to sub-components.
  */
 class ChatViewModel(
   private val profileId: String,
-  private val profileStore: ProfileStore,
-  private val knownHostsStore: KnownHostsStore,
-  private val chatRepository: ChatRepository,
-  private val appPreferences: AppPreferences,
-  private val keyContentProvider: KeyContentProvider? = null,
-  private val runnerFactory: SshExecRunnerFactory = DefaultSshExecRunnerFactory,
+  profileStore: ProfileStore,
+  knownHostsStore: KnownHostsStore,
+  chatRepository: ChatRepository,
+  appPreferences: AppPreferences,
+  keyContentProvider: KeyContentProvider? = null,
+  runnerFactory: SshExecRunnerFactory = DefaultSshExecRunnerFactory,
   private val app: Application,
 ) : ViewModel() {
 
-  /** Max chars for in-memory stdout/stderr per run (spec: MUST cap). */
-  private val maxOutputChars = 256_000
-  private val outputTexts by lazy {
-    OutputTexts(
-      stderrLabel = app.getString(R.string.label_stderr),
-      truncatedHint = app.getString(R.string.msg_output_truncated),
-      noOutputOk = app.getString(R.string.msg_no_output),
-      noOutputFailed = app.getString(R.string.msg_no_output_failed),
-      exitCodeLabel = { c -> app.getString(R.string.msg_exit_code, c) },
-    )
-  }
+  // ── Sub-components ─────────────────────────────────────────────────────
+
+  private val authBroker = AuthCallbackBroker()
+
+  private val sessionManager = ChatSessionManager(
+    profileId = profileId,
+    chatRepository = chatRepository,
+    scope = viewModelScope,
+  )
+
+  private val commandExecutor = CommandExecutor(
+    profileStore = profileStore,
+    knownHostsStore = knownHostsStore,
+    appPreferences = appPreferences,
+    keyContentProvider = keyContentProvider,
+    runnerFactory = runnerFactory,
+    authBroker = authBroker,
+    app = app,
+    scope = viewModelScope,
+  )
+
+  // ── UI State ───────────────────────────────────────────────────────────
 
   private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
   val messages: StateFlow<List<ChatMessage>> = _messages
-  private val fullOutputByMessageId = mutableMapOf<String, String>()
 
-  /** Observable list of past threads for this profile. */
-  val threads: StateFlow<List<ChatThread>> = chatRepository.observeThreads(profileId)
-    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
-  private val _connectionState = MutableStateFlow(ConnectionState.IDLE)
-  val connectionState: StateFlow<ConnectionState> = _connectionState
-
-  /** Profile display info for the top bar. */
   private val _profileLabel = MutableStateFlow("")
   val profileLabel: StateFlow<String> = _profileLabel
 
-  private val _hostKeyEvent = MutableSharedFlow<HostKeyEvent>(extraBufferCapacity = 1)
-  val hostKeyEvent: SharedFlow<HostKeyEvent> = _hostKeyEvent.asSharedFlow()
+  val threads: StateFlow<List<ChatThread>> = sessionManager.threads
+  val connectionState: StateFlow<ConnectionState> = commandExecutor.connectionState
 
-  private val _hostKeyDecision = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
+  // ── Auth flows (forwarded from broker) ─────────────────────────────────
 
-  /** Password auth: emits profile description, waits for password or null (cancel) */
-  private val _passwordRequest = MutableSharedFlow<String>(extraBufferCapacity = 1)
-  val passwordRequest: SharedFlow<String> = _passwordRequest.asSharedFlow()
-  private val _passwordResponse = MutableSharedFlow<String?>(extraBufferCapacity = 1)
-
-  /** Key passphrase: emits profile description, waits for passphrase or null (cancel) */
-  private val _passphraseRequest = MutableSharedFlow<String>(extraBufferCapacity = 1)
-  val passphraseRequest: SharedFlow<String> = _passphraseRequest.asSharedFlow()
-  private val _passphraseResponse = MutableSharedFlow<String?>(extraBufferCapacity = 1)
-
-  private var currentProfile: SshProfile? = null
-  private var runningJob: Job? = null
-  private var runningAssistantId: String? = null
-  private var threadId: String? = null
-  private var runner: ClosableSshExecRunner? = null
-
-  private val hostKeyCallback = object : HostKeyCallback {
-    override suspend fun onUnknownHost(
-      host: String, port: Int, fingerprint: String, keyType: String,
-    ): Boolean {
-      _hostKeyEvent.emit(HostKeyEvent.UnknownHost(host, port, fingerprint, keyType))
-      return _hostKeyDecision.first()
-    }
-
-    override suspend fun onHostKeyMismatch(
-      host: String, port: Int,
-      expectedFingerprint: String, actualFingerprint: String,
-      keyType: String,
-    ): Boolean {
-      _hostKeyEvent.emit(
-        HostKeyEvent.Mismatch(host, port, expectedFingerprint, actualFingerprint, keyType)
-      )
-      return _hostKeyDecision.first()
-    }
-  }
+  val hostKeyEvent: SharedFlow<HostKeyEvent> = authBroker.hostKeyEvent
+  val passwordRequest: SharedFlow<String> = authBroker.passwordRequest
+  val passphraseRequest: SharedFlow<String> = authBroker.passphraseRequest
 
   init {
     loadProfile()
@@ -129,77 +83,81 @@ class ChatViewModel(
 
   private fun loadProfile() {
     viewModelScope.launch {
-      val profile = profileStore.getById(profileId)
-      if (profile != null) {
-        currentProfile = profile
-        _profileLabel.value = profile.name.ifBlank { "${profile.username}@${profile.host}" }
-        _connectionState.value = ConnectionState.READY
-        appendSystemMessage(app.getString(R.string.msg_profile_ready, profile.name, profile.username, profile.host))
+      val result = commandExecutor.loadProfile(profileId)
+      if (result != null) {
+        val (profile, label) = result
+        _profileLabel.value = label
+        appendSystemMessage(
+          app.getString(R.string.msg_profile_ready, profile.name, profile.username, profile.host),
+        )
       } else {
-        _connectionState.value = ConnectionState.ERROR
         appendSystemMessage(app.getString(R.string.msg_profile_not_found))
       }
     }
   }
 
-  fun respondToHostKey(accepted: Boolean) {
-    _hostKeyDecision.tryEmit(accepted)
-  }
+  // ── Auth responses (forwarded to broker) ───────────────────────────────
 
-  fun respondToPassword(password: String?) {
-    _passwordResponse.tryEmit(password)
-  }
+  fun respondToHostKey(accepted: Boolean) = authBroker.respondToHostKey(accepted)
+  fun respondToPassword(password: String?) = authBroker.respondToPassword(password)
+  fun respondToPassphrase(passphrase: String?) = authBroker.respondToPassphrase(passphrase)
 
-  fun respondToPassphrase(passphrase: String?) {
-    _passphraseResponse.tryEmit(passphrase)
-  }
+  // ── Session management ─────────────────────────────────────────────────
 
   /** Start a fresh session (new thread). */
   fun newSession() {
-    runningJob?.cancel()
-    threadId = null
-    fullOutputByMessageId.clear()
+    commandExecutor.cancel()
+    sessionManager.newSession()
+    commandExecutor.clearFullOutput()
     _messages.value = emptyList()
-    _connectionState.value = if (currentProfile != null) ConnectionState.READY else ConnectionState.ERROR
-    val profile = currentProfile ?: return
-    appendSystemMessage(app.getString(R.string.msg_new_session, profile.name, profile.username, profile.host))
+    commandExecutor.resetConnectionState()
+    val profile = commandExecutor.currentProfile ?: return
+    appendSystemMessage(
+      app.getString(R.string.msg_new_session, profile.name, profile.username, profile.host),
+    )
   }
 
   /** Switch to an existing thread and load its messages. */
   fun switchThread(targetThreadId: String) {
-    runningJob?.cancel()
-    threadId = targetThreadId
-    _connectionState.value = if (currentProfile != null) ConnectionState.READY else ConnectionState.ERROR
+    commandExecutor.cancel()
+    sessionManager.switchThread(targetThreadId)
+    commandExecutor.resetConnectionState()
     viewModelScope.launch {
-      val msgs = chatRepository.getMessages(targetThreadId)
-      _messages.value = msgs
+      _messages.value = sessionManager.getMessages(targetThreadId)
     }
   }
 
   /** Delete a thread and clear UI if it was the current one. */
   fun deleteThread(targetThreadId: String) {
     viewModelScope.launch {
-      chatRepository.deleteThread(targetThreadId)
-      if (threadId == targetThreadId) {
-        fullOutputByMessageId.clear()
+      val wasActive = sessionManager.deleteThread(targetThreadId)
+      if (wasActive) {
+        commandExecutor.clearFullOutput()
         newSession()
       }
     }
   }
 
-  fun hasFullOutput(messageId: String): Boolean = fullOutputByMessageId.containsKey(messageId)
+  // ── Output access ──────────────────────────────────────────────────────
 
-  fun getFullOutput(messageId: String): String? = fullOutputByMessageId[messageId]
+  fun hasFullOutput(messageId: String): Boolean =
+    commandExecutor.hasFullOutput(messageId)
+
+  fun getFullOutput(messageId: String): String? =
+    commandExecutor.getFullOutput(messageId)
+
+  // ── Command execution ──────────────────────────────────────────────────
 
   fun send(text: String) {
     val command = text.trim()
     if (command.isEmpty()) return
 
-    val profile = currentProfile ?: run {
+    if (commandExecutor.currentProfile == null) {
       appendSystemMessage(app.getString(R.string.msg_not_connected))
       return
     }
 
+    // User message
     val userMsg = ChatMessage(
       id = "u-${UUID.randomUUID()}",
       role = ChatRole.User,
@@ -208,8 +166,9 @@ class ChatViewModel(
       status = MessageStatus.Final,
     )
     _messages.update { it + userMsg }
-    persistMessage(userMsg)
+    sessionManager.persistMessage(userMsg)
 
+    // Assistant seed
     val assistantId = "a-${UUID.randomUUID()}"
     val assistantSeed = ChatMessage(
       id = assistantId,
@@ -219,251 +178,44 @@ class ChatViewModel(
       status = MessageStatus.Streaming,
     )
     _messages.update { it + assistantSeed }
-    persistMessage(assistantSeed)
-    runningAssistantId = assistantId
+    sessionManager.persistMessage(assistantSeed)
 
-    runningJob?.cancel()
-    _connectionState.value = ConnectionState.EXECUTING
-
-    val execRunner = getOrCreateRunner()
-    val isCodex = profile.codexMode
-    val shellCommand = if (isCodex) {
-      wrapForCodex(command, profile.codexWorkDir, profile.codexApiKey)
-    } else {
-      wrapWithShell(command)
-    }
-
-    runningJob = viewModelScope.launch {
-      val stdout = StringBuilder()
-      val stderr = StringBuilder()
-      // For Codex mode: parse JSONL, accumulate markdown deltas
-      val jsonlBuffer = if (isCodex) JsonlLineBuffer() else null
-      val markdownAccum = if (isCodex) StringBuilder() else null
-      var codexStatus: String? = null
-      var codexProgress = CodexProgressState()
-
-      fun renderCodexContent(exitCode: Int?): String {
-        val progressLines = buildList {
-          codexStatus?.takeIf { it.isNotBlank() }?.let {
-            add("_${app.getString(R.string.msg_codex_status_prefix, it)}_")
-          }
-          codexProgress.thread?.let {
-            add("- ${app.getString(R.string.msg_codex_progress_thread)}: $it")
-          }
-          codexProgress.turn?.let {
-            add("- ${app.getString(R.string.msg_codex_progress_turn)}: $it")
-          }
-          codexProgress.item?.let {
-            add("- ${app.getString(R.string.msg_codex_progress_item)}: $it")
-          }
-        }.joinToString("\n")
-
-        val body = if (markdownAccum != null && markdownAccum.isNotEmpty()) {
-          buildString {
-            append(markdownAccum)
-            if (stderr.isNotEmpty()) {
-              append("\n\n")
-              append(app.getString(R.string.label_stderr))
-              append("\n")
-              append(stderr)
-            }
-            if (exitCode != null && exitCode != 0) {
-              append("\n")
-              append(app.getString(R.string.msg_exit_code, exitCode))
-            }
-          }
-        } else {
-          formatOutput(stdout, stderr, exitCode = exitCode)
-        }
-
-        return if (progressLines.isBlank()) body else "$progressLines\n\n$body"
-      }
-
-      execRunner.run(profile, shellCommand).collect { event ->
-        when (event) {
-          is ExecEvent.StdoutChunk -> {
-            if (isCodex && jsonlBuffer != null && markdownAccum != null) {
-              val parsed = jsonlBuffer.feed(event.bytes)
-              for (e in parsed) {
-                when (e) {
-                  is ExecEvent.StructuredEvent -> {
-                    if (e.kind == "json") {
-                      codexProgress = CodexProgressFormatter.update(codexProgress, e.rawJson)
-                      updateAssistantContent(assistantId, renderCodexContent(exitCode = null))
-                    }
-                    if (e.kind == "markdown_delta") {
-                      markdownAccum.append(e.rawJson)
-                      updateAssistantContent(assistantId, renderCodexContent(exitCode = null))
-                    }
-                    if (e.kind == "status") {
-                      codexStatus = e.rawJson
-                      updateAssistantContent(assistantId, renderCodexContent(exitCode = null))
-                    }
-                  }
-                  is ExecEvent.StdoutChunk -> {
-                    // Non-JSON line from Codex — append to raw stdout
-                    stdout.append(String(e.bytes, Charsets.UTF_8))
-                  }
-                  else -> { /* ignore */ }
-                }
-              }
-              // If no markdown deltas yet, show raw output as fallback
-              if (markdownAccum.isEmpty()) {
-                updateAssistantContent(assistantId, renderCodexContent(exitCode = null))
-              }
-            } else {
-              stdout.append(String(event.bytes, Charsets.UTF_8))
-              val formatted = formatOutputPair(stdout, stderr, exitCode = null)
-              if (formatted.truncated) fullOutputByMessageId[assistantId] = formatted.full
-              updateAssistantContent(assistantId, formatted.display)
-            }
-          }
-          is ExecEvent.StderrChunk -> {
-            stderr.append(String(event.bytes, Charsets.UTF_8))
-            val formatted = formatOutputPair(stdout, stderr, exitCode = null)
-            if (formatted.truncated) fullOutputByMessageId[assistantId] = formatted.full
-            updateAssistantContent(assistantId, formatted.display)
-          }
-          is ExecEvent.StructuredEvent -> { /* handled via jsonlBuffer above */ }
-          is ExecEvent.Exit -> {
-            // Flush remaining JSONL buffer
-            if (isCodex && jsonlBuffer != null && markdownAccum != null) {
-              for (e in jsonlBuffer.flush()) {
-                when (e) {
-                  is ExecEvent.StructuredEvent -> {
-                    if (e.kind == "json") {
-                      codexProgress = CodexProgressFormatter.update(codexProgress, e.rawJson)
-                    } else if (e.kind == "markdown_delta") {
-                      markdownAccum.append(e.rawJson)
-                    } else if (e.kind == "status") {
-                      codexStatus = e.rawJson
-                    }
-                  }
-                  is ExecEvent.StdoutChunk -> {
-                    stdout.append(String(e.bytes, Charsets.UTF_8))
-                  }
-                  else -> Unit
-                }
-              }
-            }
-
-            val finalContent = if (isCodex && markdownAccum != null && markdownAccum.isNotEmpty()) {
-              renderCodexContent(event.code)
-            } else {
-              if (isCodex) renderCodexContent(event.code) else formatOutputPair(stdout, stderr, event.code).display
-            }
-            val finalFull = if (isCodex && markdownAccum != null && markdownAccum.isNotEmpty()) {
-              finalContent
-            } else {
-              if (isCodex) finalContent else formatOutputPair(stdout, stderr, event.code).full
-            }
-            if (finalFull != finalContent) {
-              fullOutputByMessageId[assistantId] = finalFull
-            }
-            updateAssistantMessage(assistantId, finalContent, MessageStatus.Final)
-            persistUpdate(assistantId, finalContent, MessageStatus.Final)
-            runningAssistantId = null
-            _connectionState.value = ConnectionState.READY
-          }
-          is ExecEvent.Canceled -> {
-            val canceledText = app.getString(R.string.msg_command_canceled)
-            val current = _messages.value.firstOrNull { it.id == assistantId }
-            val canceledContent = CancelMessageHelper.mergeCanceledContent(current?.content, canceledText)
-            updateAssistantMessage(assistantId, canceledContent, MessageStatus.Canceled)
-            persistUpdate(assistantId, canceledContent, MessageStatus.Canceled)
-            runningAssistantId = null
-            _connectionState.value = ConnectionState.READY
-          }
-          is ExecEvent.Error -> {
-            val friendlyMsg = ErrorMessageMapper.friendlyErrorMessage(
-              category = event.category,
-              raw = event.message,
-              connectionRefused = app.getString(R.string.err_connection_refused),
-              timeout = app.getString(R.string.err_timeout),
-              unknownHost = app.getString(R.string.err_unknown_host),
-              authFailed = app.getString(R.string.err_auth_failed),
-              generic = { raw -> app.getString(R.string.err_ssh_generic, raw) },
-            )
-            val errorContent = if (stdout.isNotEmpty() || stderr.isNotEmpty()) {
-              formatOutput(stdout, stderr, exitCode = null) + "\n$friendlyMsg"
-            } else {
-              friendlyMsg
-            }
-            updateAssistantMessage(assistantId, errorContent, MessageStatus.Error)
-            persistUpdate(assistantId, errorContent, MessageStatus.Error)
-            runningAssistantId = null
-            _connectionState.value = ConnectionState.READY
-          }
-        }
-      }
-    }
+    val profile = commandExecutor.currentProfile!!
+    commandExecutor.execute(
+      command = command,
+      assistantId = assistantId,
+      isCodex = profile.codexMode,
+      updateContent = ::updateAssistantContent,
+      updateMessage = { id, content, status ->
+        updateAssistantMessage(id, content, status)
+        sessionManager.persistUpdate(id, content, status)
+      },
+      getAssistantContent = ::getAssistantContent,
+    )
   }
 
   fun cancelRunning() {
-    val canceledId = runningAssistantId
-    runningJob?.cancel()
-    runningJob = null
-    runningAssistantId = null
+    val canceledId = commandExecutor.cancel()
     if (canceledId != null) {
       val canceledText = app.getString(R.string.msg_command_canceled)
       val current = _messages.value.firstOrNull { it.id == canceledId }
       val newContent = CancelMessageHelper.mergeCanceledContent(current?.content, canceledText)
       updateAssistantMessage(canceledId, newContent, MessageStatus.Canceled)
-      persistUpdate(canceledId, newContent, MessageStatus.Canceled)
+      sessionManager.persistUpdate(canceledId, newContent, MessageStatus.Canceled)
     }
-    _connectionState.value = ConnectionState.READY
+    commandExecutor.resetConnectionState()
   }
 
   /** Export current session as plain text. */
-  fun exportSession(): String = SessionExporter.export(_profileLabel.value, _messages.value)
-
-  private fun getOrCreateRunner(): ClosableSshExecRunner {
-    runner?.let { return it }
-
-    val passwordProvider = PasswordProvider { profile ->
-      val desc = "${profile.username}@${profile.host}:${profile.port}"
-      _passwordRequest.emit(desc)
-      _passwordResponse.first() ?: throw IllegalStateException("Authentication cancelled")
-    }
-
-    val passphraseProvider = PassphraseProvider { profile ->
-      val desc = "${profile.username}@${profile.host}:${profile.port}"
-      _passphraseRequest.emit(desc)
-      _passphraseResponse.first()
-    }
-
-    return runnerFactory.create(
-      knownHostsStore = knownHostsStore,
-      hostKeyCallback = hostKeyCallback,
-      passwordProvider = passwordProvider,
-      keyContentProvider = keyContentProvider,
-      passphraseProvider = passphraseProvider,
-    ).also { runner = it }
-  }
+  fun exportSession(): String =
+    SessionExporter.export(_profileLabel.value, _messages.value)
 
   override fun onCleared() {
     super.onCleared()
-    runningJob?.cancel()
-    runner?.close()
+    commandExecutor.cleanUp()
   }
 
-  private fun formatOutput(
-    stdout: StringBuilder,
-    stderr: StringBuilder,
-    exitCode: Int?,
-  ): String = formatOutputPair(stdout, stderr, exitCode).display
-
-  private fun formatOutputPair(
-    stdout: StringBuilder,
-    stderr: StringBuilder,
-    exitCode: Int?,
-  ): FormattedOutput = OutputFormatter.format(
-    stdout = stdout.toString(),
-    stderr = stderr.toString(),
-    exitCode = exitCode,
-    capChars = maxOutputChars,
-    texts = outputTexts,
-  )
+  // ── Private helpers ────────────────────────────────────────────────────
 
   private fun updateAssistantContent(id: String, content: String) {
     _messages.update { list ->
@@ -477,25 +229,8 @@ class ChatViewModel(
     }
   }
 
-  private fun persistMessage(msg: ChatMessage) {
-    viewModelScope.launch {
-      val isNewThread = threadId == null
-      val tid = threadId ?: chatRepository.createThread(profileId, "").also { threadId = it }
-      chatRepository.insertMessage(tid, msg)
-      // Auto-title the thread from the first user command
-      if (isNewThread && msg.role == ChatRole.User) {
-        val title = msg.content.take(50).let { if (msg.content.length > 50) "$it…" else it }
-        chatRepository.updateThreadTitle(tid, title)
-      }
-    }
-  }
-
-  private fun persistUpdate(id: String, content: String, status: MessageStatus) {
-    viewModelScope.launch {
-      val parts = if (content.isNotEmpty()) listOf(MessagePart.Text(content)) else emptyList()
-      chatRepository.updateMessage(id, parts, status)
-    }
-  }
+  private fun getAssistantContent(id: String): String? =
+    _messages.value.firstOrNull { it.id == id }?.content
 
   private fun appendSystemMessage(text: String) {
     val msg = ChatMessage(
@@ -506,27 +241,6 @@ class ChatViewModel(
       status = MessageStatus.Final,
     )
     _messages.update { it + msg }
-  }
-
-  /**
-   * Wrap a user command with the configured default shell.
-   * SSH exec typically runs commands through the server's login shell,
-   * but this allows explicit shell selection (e.g., bash -c '...').
-   */
-  /** Wrap a natural-language task as a `codex exec --json` command. */
-  private fun wrapForCodex(task: String, workDir: String?, apiKey: String? = null): String {
-    return CommandComposer.wrapForCodex(task, workDir, apiKey)
-  }
-
-  private fun shellQuote(s: String): String {
-    return CommandComposer.shellQuote(s)
-  }
-
-  private fun wrapWithShell(command: String): String {
-    val shell = kotlinx.coroutines.runBlocking {
-      appPreferences.defaultShell.first()
-    }
-    return CommandComposer.wrapWithShell(command, shell)
   }
 }
 

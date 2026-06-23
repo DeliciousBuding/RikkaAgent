@@ -23,4 +23,16 @@
   <!-- ChatInput -->
   <string name="input_placeholder">$ command</string>
   <string name="cd_send">Send</string>
+
+  <!-- StreamOutputCard -->
+  <string name="label_stdout">stdout</string>
+  <string name="label_stderr">stderr</string>
+
+  <!-- MessagePartErrorCard -->
+  <string name="label_error">Error</string>
+  <string name="label_cause">Cause:</string>
+
+  <!-- ReasoningCard -->
+  <string name="label_reasoning">Thinking</string>
+  <string name="label_reasoning_step">Step %s</string>
 </resources>

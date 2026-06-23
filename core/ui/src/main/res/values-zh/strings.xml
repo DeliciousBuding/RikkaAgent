@@ -23,4 +23,16 @@
   <!-- ChatInput -->
   <string name="input_placeholder">$ 命令</string>
   <string name="cd_send">发送</string>
+
+  <!-- StreamOutputCard -->
+  <string name="label_stdout">标准输出</string>
+  <string name="label_stderr">标准错误</string>
+
+  <!-- MessagePartErrorCard -->
+  <string name="label_error">错误</string>
+  <string name="label_cause">原因：</string>
+
+  <!-- ReasoningCard -->
+  <string name="label_reasoning">思考中</string>
+  <string name="label_reasoning_step">步骤 %s</string>
 </resources>

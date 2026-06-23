@@ -79,7 +79,10 @@
   <string name="no_past_sessions">暂无历史会话</string>
   <string name="empty_chat_hint">输入要在服务器上执行的命令</string>
   <string name="input_placeholder">$ 命令</string>
+  <!-- ChatInput -->
   <string name="send">发送</string>
+  <string name="cd_expand">展开编辑器</string>
+  <string name="done">完成</string>
 
   <!-- Host key dialog -->
   <string name="trust_host_title">信任此主机？</string>

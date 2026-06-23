@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,14 +23,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,12 +32,12 @@ import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -62,10 +55,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import io.rikka.agent.model.MessageStatus
 import io.rikka.agent.storage.AppPreferences
 import io.rikka.agent.vm.ChatViewModel
 import io.rikka.agent.vm.ConnectionState
@@ -77,6 +70,7 @@ import androidx.compose.ui.res.stringResource
 import io.rikka.agent.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import lucide.icons.Lucide
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
@@ -245,6 +239,7 @@ fun ChatScreen(
     drawerContent = {
       SessionDrawerContent(
         threads = threads,
+        currentThreadId = threads.firstOrNull()?.id,
         onNewSession = {
           vm.newSession()
           scope.launch { drawerState.close() }
@@ -257,223 +252,276 @@ fun ChatScreen(
       )
     },
   ) {
-  Scaffold(
-    topBar = {
-      TopAppBar(
-        title = {
-          Column {
-            Text(
-              text = profileLabel.ifBlank { stringResource(R.string.session_fallback_name) },
-              style = MaterialTheme.typography.titleMedium,
-              maxLines = 1,
-              overflow = TextOverflow.Ellipsis,
-            )
-            val statusText = when (connectionState) {
-              ConnectionState.IDLE -> stringResource(R.string.status_connecting)
-              ConnectionState.READY -> stringResource(R.string.status_ready)
-              ConnectionState.EXECUTING -> stringResource(R.string.status_running, elapsedSeconds)
-              ConnectionState.ERROR -> stringResource(R.string.status_error)
-            }
-            val statusColor = when (connectionState) {
-              ConnectionState.READY -> MaterialTheme.colorScheme.primary
-              ConnectionState.EXECUTING -> MaterialTheme.colorScheme.tertiary
-              ConnectionState.ERROR -> MaterialTheme.colorScheme.error
-              else -> MaterialTheme.colorScheme.onSurfaceVariant
-            }
-            Text(
-              text = statusText,
-              style = MaterialTheme.typography.labelSmall,
-              color = statusColor,
-            )
-          }
-        },
-        navigationIcon = {
-          IconButton(onClick = { scope.launch { drawerState.open() } }) {
-            Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.sessions))
-          }
-        },
-        actions = {
-          if (messages.isNotEmpty() && connectionState != ConnectionState.EXECUTING) {
-            IconButton(onClick = {
-              val text = vm.exportSession()
-              startActivity(
-                ShareIntents.sessionExport(
-                  text = text,
-                  subject = context.getString(R.string.ssh_session_subject, profileLabel),
-                  chooserTitle = context.getString(R.string.export_session),
-                )
+    Scaffold(
+      topBar = {
+        ChatTopAppBar(
+          profileLabel = profileLabel,
+          connectionState = connectionState,
+          elapsedSeconds = elapsedSeconds,
+          hasMessages = messages.isNotEmpty(),
+          isStreaming = isStreaming,
+          onMenuClick = { scope.launch { drawerState.open() } },
+          onExportClick = {
+            val text = vm.exportSession()
+            startActivity(
+              ShareIntents.sessionExport(
+                text = text,
+                subject = context.getString(R.string.ssh_session_subject, profileLabel),
+                chooserTitle = context.getString(R.string.export_session),
               )
-            }) {
-              Icon(
-                painter = androidx.compose.ui.res.painterResource(
-                  id = io.rikka.agent.ui.R.drawable.ic_share,
-                ),
-                contentDescription = stringResource(R.string.export_session),
-                modifier = Modifier.size(20.dp),
-              )
-            }
+            )
+          },
+          onCancelClick = { vm.cancelRunning() },
+          onBackClick = onBack,
+        )
+      },
+      containerColor = MaterialTheme.colorScheme.background,
+    ) { innerPadding ->
+      Box(
+        modifier = Modifier
+          .fillMaxSize()
+          .padding(innerPadding),
+      ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+          // Progress bar when executing
+          if (connectionState == ConnectionState.EXECUTING) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
           }
-          when (connectionState) {
-            ConnectionState.EXECUTING -> {
-              IconButton(onClick = { vm.cancelRunning() }) {
-                Icon(
-                  Icons.Default.Close,
-                  contentDescription = stringResource(R.string.cancel),
-                  tint = MaterialTheme.colorScheme.error,
-                )
-              }
-            }
-            else -> {
-              IconButton(onClick = onBack) {
-                Icon(
-                  Icons.AutoMirrored.Filled.ArrowBack,
-                  contentDescription = stringResource(R.string.back),
-                )
-              }
-            }
-          }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-          containerColor = MaterialTheme.colorScheme.background,
-        ),
-      )
-    },
-    containerColor = MaterialTheme.colorScheme.background,
-  ) { innerPadding ->
-    Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .padding(innerPadding)
-        .imePadding(),
-    ) {
-      Column(modifier = Modifier.fillMaxSize()) {
-        // Progress bar when executing
-        if (connectionState == ConnectionState.EXECUTING) {
-          LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-        }
 
-        if (messages.isEmpty()) {
-          EmptySessionState(
-            modifier = Modifier.weight(1f).fillMaxWidth(),
-            onSuggestionClick = { vm.send(it) },
-          )
-        } else {
-          LazyColumn(
-            state = listState,
-            modifier = Modifier.weight(1f).fillMaxSize(),
-            contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-          ) {
-            items(messages, key = { it.id }) { msg ->
-              ChatBubble(
-                message = msg,
-                enableMermaid = enableMermaid,
-                showExpand = vm.hasFullOutput(msg.id),
-                onExpand = {
-                  fullOutputDialog = vm.getFullOutput(msg.id)
-                },
-                onRerun = { cmd ->
-                  if (connectionState != ConnectionState.EXECUTING) vm.send(cmd)
-                },
-                onShare = { content ->
-                  startActivity(
-                    ShareIntents.plainText(
-                      text = content,
-                      chooserTitle = context.getString(R.string.share_output),
-                    )
-                  )
-                },
-                onShareFull = {
-                  vm.getFullOutput(msg.id)?.let { fullText ->
+          if (messages.isEmpty()) {
+            EmptySessionState(
+              modifier = Modifier.weight(1f).fillMaxWidth(),
+              onSuggestionClick = { cmd ->
+                vm.send(cmd)
+              },
+            )
+          } else {
+            LazyColumn(
+              state = listState,
+              modifier = Modifier.weight(1f).fillMaxSize(),
+              contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp),
+              verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+              items(messages, key = { it.id }) { msg ->
+                ChatBubble(
+                  message = msg,
+                  enableMermaid = enableMermaid,
+                  showExpand = vm.hasFullOutput(msg.id),
+                  onExpand = {
+                    fullOutputDialog = vm.getFullOutput(msg.id)
+                  },
+                  onRerun = { cmd ->
+                    if (connectionState != ConnectionState.EXECUTING) vm.send(cmd)
+                  },
+                  onShare = { content ->
                     startActivity(
                       ShareIntents.plainText(
-                        text = fullText,
-                        chooserTitle = context.getString(R.string.share_full_output),
+                        text = content,
+                        chooserTitle = context.getString(R.string.share_output),
                       )
                     )
-                  }
-                },
-              )
-            }
-            item {
-              Spacer(modifier = Modifier.height(12.dp))
+                  },
+                  onShareFull = {
+                    vm.getFullOutput(msg.id)?.let { fullText ->
+                      startActivity(
+                        ShareIntents.plainText(
+                          text = fullText,
+                          chooserTitle = context.getString(R.string.share_full_output),
+                        )
+                      )
+                    }
+                  },
+                )
+              }
+              item {
+                Spacer(modifier = Modifier.height(12.dp))
+              }
             }
           }
         }
-      }
 
-      // Scroll-to-bottom FAB
-      AnimatedVisibility(
-        visible = showScrollToBottom && !isStreaming,
-        modifier = Modifier
-          .align(Alignment.BottomCenter)
-          .padding(bottom = 80.dp),
-        enter = fadeIn() + slideInVertically { it },
-        exit = fadeOut(),
-      ) {
-        SmallFloatingActionButton(
-          onClick = {
-            scope.launch {
-              if (messages.isNotEmpty()) {
-                listState.animateScrollToItem(messages.size - 1)
-              }
-            }
-          },
-          shape = CircleShape,
-          containerColor = MaterialTheme.colorScheme.surfaceVariant,
-          elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 2.dp),
+        // Scroll-to-bottom FAB
+        AnimatedVisibility(
+          visible = showScrollToBottom && !isStreaming,
+          modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .padding(bottom = 80.dp),
+          enter = fadeIn() + slideInVertically { it },
+          exit = fadeOut(),
         ) {
+          SmallFloatingActionButton(
+            onClick = {
+              scope.launch {
+                if (messages.isNotEmpty()) {
+                  listState.animateScrollToItem(messages.size - 1)
+                }
+              }
+            },
+            shape = CircleShape,
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 2.dp),
+          ) {
+            Icon(
+              Lucide.ChevronDown,
+              contentDescription = stringResource(R.string.scroll_to_bottom),
+              modifier = Modifier.size(20.dp),
+            )
+          }
+        }
+
+        // ChatInput at bottom
+        Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+          ChatInput(
+            enabled = !isStreaming,
+            onSend = { text -> vm.send(text) },
+          )
+        }
+      }
+    }
+  }
+}
+
+// ── Top App Bar ──────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ChatTopAppBar(
+  profileLabel: String,
+  connectionState: ConnectionState,
+  elapsedSeconds: Int,
+  hasMessages: Boolean,
+  isStreaming: Boolean,
+  onMenuClick: () -> Unit,
+  onExportClick: () -> Unit,
+  onCancelClick: () -> Unit,
+  onBackClick: () -> Unit,
+) {
+  TopAppBar(
+    title = {
+      Column {
+        Text(
+          text = profileLabel.ifBlank { stringResource(R.string.session_fallback_name) },
+          style = MaterialTheme.typography.titleMedium,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
+        )
+        // Connection status indicator
+        val statusText = when (connectionState) {
+          ConnectionState.IDLE -> stringResource(R.string.status_connecting)
+          ConnectionState.READY -> stringResource(R.string.status_ready)
+          ConnectionState.EXECUTING -> stringResource(R.string.status_running, elapsedSeconds)
+          ConnectionState.ERROR -> stringResource(R.string.status_error)
+        }
+        val statusColor = when (connectionState) {
+          ConnectionState.READY -> MaterialTheme.colorScheme.primary
+          ConnectionState.EXECUTING -> MaterialTheme.colorScheme.tertiary
+          ConnectionState.ERROR -> MaterialTheme.colorScheme.error
+          else -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+          // Dot indicator
+          Surface(
+            modifier = Modifier.size(8.dp),
+            shape = CircleShape,
+            color = statusColor,
+          ) {}
+          Text(
+            text = statusText,
+            style = MaterialTheme.typography.labelSmall,
+            color = statusColor,
+          )
+        }
+      }
+    },
+    navigationIcon = {
+      IconButton(onClick = onMenuClick) {
+        Icon(Lucide.Menu, contentDescription = stringResource(R.string.sessions))
+      }
+    },
+    actions = {
+      // Export button -- visible when messages exist and not executing
+      if (hasMessages && !isStreaming) {
+        IconButton(onClick = onExportClick) {
           Icon(
-            Icons.Default.KeyboardArrowDown,
-            contentDescription = stringResource(R.string.scroll_to_bottom),
+            Lucide.Share,
+            contentDescription = stringResource(R.string.export_session),
             modifier = Modifier.size(20.dp),
           )
         }
       }
-
-      // Input bar at bottom
-      Box(modifier = Modifier.align(Alignment.BottomCenter)) {
-        ChatInput(
-          enabled = !isStreaming,
-          onSend = { text -> vm.send(text) },
-        )
+      // Cancel button when executing
+      if (isStreaming) {
+        IconButton(onClick = onCancelClick) {
+          Icon(
+            Lucide.X,
+            contentDescription = stringResource(R.string.cancel),
+            tint = MaterialTheme.colorScheme.error,
+          )
+        }
+      } else {
+        IconButton(onClick = onBackClick) {
+          Icon(
+            Lucide.ArrowLeft,
+            contentDescription = stringResource(R.string.back),
+          )
+        }
       }
-    }
-  }
-  } // ModalNavigationDrawer
+    },
+    colors = TopAppBarDefaults.topAppBarColors(
+      containerColor = MaterialTheme.colorScheme.background,
+    ),
+  )
 }
+
+// ── Session Drawer ───────────────────────────────────────────────────────────
 
 @Composable
 private fun SessionDrawerContent(
   threads: List<io.rikka.agent.model.ChatThread>,
+  currentThreadId: String?,
   onNewSession: () -> Unit,
   onSelectThread: (String) -> Unit,
   onDeleteThread: (String) -> Unit,
 ) {
   var confirmDeleteId by remember { mutableStateOf<String?>(null) }
 
+  // Delete confirmation dialog
   confirmDeleteId?.let { id ->
     val thread = threads.find { it.id == id }
     AlertDialog(
       onDismissRequest = { confirmDeleteId = null },
       title = { Text(stringResource(R.string.delete_session_title)) },
-      text = { Text(stringResource(R.string.delete_session_msg, thread?.title?.ifBlank { stringResource(R.string.session_fallback_name) } ?: stringResource(R.string.session_fallback_name))) },
+      text = {
+        Text(
+          stringResource(
+            R.string.delete_session_msg,
+            thread?.title?.ifBlank { stringResource(R.string.session_fallback_name) }
+              ?: stringResource(R.string.session_fallback_name),
+          )
+        )
+      },
       confirmButton = {
         TextButton(onClick = { onDeleteThread(id); confirmDeleteId = null }) {
           Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
         }
       },
       dismissButton = {
-        TextButton(onClick = { confirmDeleteId = null }) { Text(stringResource(R.string.cancel)) }
+        TextButton(onClick = { confirmDeleteId = null }) {
+          Text(stringResource(R.string.cancel))
+        }
       },
     )
   }
 
-  ModalDrawerSheet(modifier = Modifier.width(280.dp)) {
+  ModalDrawerSheet(modifier = Modifier.width(300.dp)) {
+    // Header: title + new session button
     Row(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(horizontal = 16.dp, vertical = 12.dp),
+        .padding(horizontal = 16.dp, vertical = 16.dp),
       verticalAlignment = Alignment.CenterVertically,
     ) {
       Text(
@@ -481,10 +529,18 @@ private fun SessionDrawerContent(
         style = MaterialTheme.typography.titleMedium,
         modifier = Modifier.weight(1f),
       )
-      IconButton(onClick = onNewSession) {
-        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.new_session))
+      IconButton(
+        onClick = onNewSession,
+        modifier = Modifier.size(36.dp),
+      ) {
+        Icon(
+          Lucide.Plus,
+          contentDescription = stringResource(R.string.new_session),
+          modifier = Modifier.size(20.dp),
+        )
       }
     }
+
     if (threads.isEmpty()) {
       Box(
         modifier = Modifier
@@ -499,35 +555,175 @@ private fun SessionDrawerContent(
         )
       }
     } else {
-      LazyColumn {
+      LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 16.dp),
+      ) {
         items(threads, key = { it.id }) { thread ->
-          ListItem(
-            headlineContent = {
-              Text(
-                text = thread.title.ifBlank { stringResource(R.string.session_fallback_name) },
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-              )
-            },
-            trailingContent = {
-              IconButton(
-                onClick = { confirmDeleteId = thread.id },
-                modifier = Modifier.size(32.dp),
-              ) {
-                Icon(
-                  Icons.Default.Delete,
-                  contentDescription = stringResource(R.string.delete),
-                  modifier = Modifier.size(16.dp),
-                  tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                )
-              }
-            },
-            modifier = Modifier.clickable { onSelectThread(thread.id) },
+          val isActive = thread.id == currentThreadId
+          SessionItem(
+            title = thread.title.ifBlank { stringResource(R.string.session_fallback_name) },
+            isActive = isActive,
+            onClick = { onSelectThread(thread.id) },
+            onDelete = { confirmDeleteId = thread.id },
           )
         }
       }
     }
   }
+}
+
+@Composable
+private fun SessionItem(
+  title: String,
+  isActive: Boolean,
+  onClick: () -> Unit,
+  onDelete: () -> Unit,
+) {
+  val containerColor = if (isActive) {
+    MaterialTheme.colorScheme.secondaryContainer
+  } else {
+    MaterialTheme.colorScheme.surface
+  }
+  val contentColor = if (isActive) {
+    MaterialTheme.colorScheme.onSecondaryContainer
+  } else {
+    MaterialTheme.colorScheme.onSurface
+  }
+
+  Surface(
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(horizontal = 12.dp, vertical = 2.dp)
+      .clip(RoundedCornerShape(12.dp))
+      .clickable { onClick() },
+    shape = RoundedCornerShape(12.dp),
+    color = containerColor,
+    tonalElevation = 0.dp,
+  ) {
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 12.dp, vertical = 10.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Icon(
+        Lucide.MessageSquare,
+        contentDescription = null,
+        modifier = Modifier.size(18.dp),
+        tint = contentColor.copy(alpha = 0.6f),
+      )
+      Spacer(modifier = Modifier.width(10.dp))
+      Text(
+        text = title,
+        style = MaterialTheme.typography.bodyMedium,
+        color = contentColor,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.weight(1f),
+      )
+      IconButton(
+        onClick = onDelete,
+        modifier = Modifier.size(28.dp),
+      ) {
+        Icon(
+          Lucide.Trash2,
+          contentDescription = stringResource(R.string.delete),
+          modifier = Modifier.size(14.dp),
+          tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+        )
+      }
+    }
+  }
+}
+
+// ── Empty State ──────────────────────────────────────────────────────────────
+
+@Composable
+private fun EmptySessionState(
+  modifier: Modifier = Modifier,
+  onSuggestionClick: (String) -> Unit = {},
+) {
+  Column(
+    modifier = modifier,
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.Center,
+  ) {
+    Text(
+      text = stringResource(R.string.empty_chat_hint),
+      style = MaterialTheme.typography.bodyMedium,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+      modifier = Modifier.alpha(0.6f),
+    )
+    Spacer(modifier = Modifier.height(16.dp))
+    Row(
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+      listOf("uname -a", "df -h", "uptime").forEach { cmd ->
+        androidx.compose.material3.SuggestionChip(
+          onClick = { onSuggestionClick(cmd) },
+          label = {
+            Text(
+              text = cmd,
+              style = MaterialTheme.typography.labelSmall.copy(
+                fontFamily = FontFamily.Monospace,
+              ),
+            )
+          },
+        )
+      }
+    }
+  }
+}
+
+// ── Dialogs ──────────────────────────────────────────────────────────────────
+
+@Composable
+private fun PasswordDialog(
+  target: String,
+  title: String = stringResource(R.string.ssh_password),
+  label: String = stringResource(R.string.label_password),
+  onSubmit: (String) -> Unit,
+  onCancel: () -> Unit,
+) {
+  var password by remember { mutableStateOf("") }
+  var passwordVisible by remember { mutableStateOf(false) }
+
+  AlertDialog(
+    onDismissRequest = onCancel,
+    title = { Text(title) },
+    text = {
+      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+          text = stringResource(R.string.password_prompt, label, target),
+          style = MaterialTheme.typography.bodyMedium,
+        )
+        androidx.compose.material3.OutlinedTextField(
+          value = password,
+          onValueChange = { password = it },
+          label = { Text(label) },
+          singleLine = true,
+          visualTransformation = if (passwordVisible) {
+            androidx.compose.ui.text.input.VisualTransformation.None
+          } else {
+            androidx.compose.ui.text.input.PasswordVisualTransformation()
+          },
+          modifier = Modifier.fillMaxWidth(),
+        )
+      }
+    },
+    confirmButton = {
+      TextButton(
+        onClick = { onSubmit(password) },
+        enabled = password.isNotEmpty(),
+      ) {
+        Text(stringResource(R.string.btn_connect))
+      }
+    },
+    dismissButton = {
+      TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel)) }
+    },
+  )
 }
 
 @Composable
@@ -602,91 +798,6 @@ internal fun HostKeyReplacementConfirmDialog(
       TextButton(onClick = onReject) {
         Text(stringResource(R.string.btn_reject))
       }
-    },
-  )
-}
-
-@Composable
-private fun EmptySessionState(
-  modifier: Modifier = Modifier,
-  onSuggestionClick: (String) -> Unit = {},
-) {
-  Column(
-    modifier = modifier,
-    horizontalAlignment = Alignment.CenterHorizontally,
-    verticalArrangement = Arrangement.Center,
-  ) {
-    Text(
-      text = stringResource(R.string.empty_chat_hint),
-      style = MaterialTheme.typography.bodyMedium,
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
-      modifier = Modifier.alpha(0.6f),
-    )
-    Spacer(modifier = Modifier.height(16.dp))
-    Row(
-      horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-      listOf("uname -a", "df -h", "uptime").forEach { cmd ->
-        androidx.compose.material3.SuggestionChip(
-          onClick = { onSuggestionClick(cmd) },
-          label = {
-            Text(
-              text = cmd,
-              style = MaterialTheme.typography.labelSmall.copy(
-                fontFamily = FontFamily.Monospace,
-              ),
-            )
-          },
-        )
-      }
-    }
-  }
-}
-
-@Composable
-private fun PasswordDialog(
-  target: String,
-  title: String = stringResource(R.string.ssh_password),
-  label: String = stringResource(R.string.label_password),
-  onSubmit: (String) -> Unit,
-  onCancel: () -> Unit,
-) {
-  var password by remember { mutableStateOf("") }
-  var passwordVisible by remember { mutableStateOf(false) }
-
-  AlertDialog(
-    onDismissRequest = onCancel,
-    title = { Text(title) },
-    text = {
-      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-          text = stringResource(R.string.password_prompt, label, target),
-          style = MaterialTheme.typography.bodyMedium,
-        )
-        androidx.compose.material3.OutlinedTextField(
-          value = password,
-          onValueChange = { password = it },
-          label = { Text(label) },
-          singleLine = true,
-          visualTransformation = if (passwordVisible) {
-            androidx.compose.ui.text.input.VisualTransformation.None
-          } else {
-            androidx.compose.ui.text.input.PasswordVisualTransformation()
-          },
-          modifier = Modifier.fillMaxWidth(),
-        )
-      }
-    },
-    confirmButton = {
-      TextButton(
-        onClick = { onSubmit(password) },
-        enabled = password.isNotEmpty(),
-      ) {
-        Text(stringResource(R.string.btn_connect))
-      }
-    },
-    dismissButton = {
-      TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel)) }
     },
   )
 }

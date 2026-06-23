@@ -18,10 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -56,6 +52,7 @@ import io.rikka.agent.model.AuthType
 import io.rikka.agent.model.SshProfile
 import io.rikka.agent.R
 import io.rikka.agent.vm.ProfilesViewModel
+import lucide.icons.Lucide
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,7 +73,7 @@ fun ProfilesScreen(
         title = { Text(stringResource(R.string.app_name)) },
         actions = {
           IconButton(onClick = onOpenSettings) {
-            Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.settings))
+            Icon(Lucide.Settings, contentDescription = stringResource(R.string.settings))
           }
         },
         scrollBehavior = scrollBehavior,
@@ -84,7 +81,7 @@ fun ProfilesScreen(
     },
     floatingActionButton = {
       FloatingActionButton(onClick = { onEditProfile(null) }) {
-        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.new_profile))
+        Icon(Lucide.Plus, contentDescription = stringResource(R.string.new_profile))
       }
     },
   ) { innerPadding ->
@@ -120,7 +117,7 @@ fun ProfilesScreen(
                 contentAlignment = Alignment.CenterEnd,
               ) {
                 Icon(
-                  Icons.Default.Delete,
+                  Lucide.Trash2,
                   contentDescription = stringResource(R.string.delete),
                   tint = MaterialTheme.colorScheme.error,
                 )

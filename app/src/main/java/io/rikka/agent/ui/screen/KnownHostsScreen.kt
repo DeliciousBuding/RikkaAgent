@@ -7,9 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -35,6 +32,7 @@ import io.rikka.agent.R
 import io.rikka.agent.ssh.KnownHostEndpointParser
 import io.rikka.agent.ssh.KnownHostsStore
 import io.rikka.agent.ssh.StoredHostKey
+import lucide.icons.Lucide
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -87,7 +85,7 @@ fun KnownHostsScreen(
         title = { Text(stringResource(R.string.known_hosts_title)) },
         navigationIcon = {
           IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+            Icon(Lucide.ArrowLeft, contentDescription = stringResource(R.string.back))
           }
         },
       )
@@ -141,7 +139,7 @@ fun KnownHostsScreen(
             trailingContent = {
               IconButton(onClick = { confirmDelete = hostKey }) {
                 Icon(
-                  Icons.Default.Delete,
+                  Lucide.Trash2,
                   contentDescription = stringResource(R.string.btn_remove),
                   tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
                 )
