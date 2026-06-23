@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import io.rikka.agent.BuildConfig
 import io.rikka.agent.R
 import io.rikka.agent.vm.SettingsViewModel
+import io.rikka.agent.ui.components.MeshGradientBackground
 import androidx.compose.ui.res.stringResource
 import org.koin.androidx.compose.koinViewModel
 
@@ -65,7 +66,9 @@ fun SettingsScreen(
     )
   }
 
+  MeshGradientBackground {
   Scaffold(
+    containerColor = androidx.compose.ui.graphics.Color.Transparent,
     topBar = {
       TopAppBar(
         title = { Text(stringResource(R.string.settings)) },
@@ -74,6 +77,9 @@ fun SettingsScreen(
             Icon(Lucide.ArrowLeft, contentDescription = stringResource(R.string.back))
           }
         },
+        colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+          containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        ),
       )
     },
   ) { innerPadding ->
@@ -121,6 +127,7 @@ fun SettingsScreen(
       )
     }
   }
+  } // MeshGradientBackground
 }
 
 @Composable
