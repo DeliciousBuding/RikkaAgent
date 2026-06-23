@@ -35,7 +35,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Send
-import com.composables.icons.lucide.Square
+import com.composables.icons.lucide.Globe
+import com.composables.icons.lucide.Search
+import com.composables.icons.lucide.Lightbulb
 import io.rikka.agent.ui.R
 
 /**
@@ -107,11 +109,19 @@ fun ChatInput(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
       ) {
-        // Left side: placeholder for future action buttons
+        // Left side: action buttons
         Row(
           horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-          // Reserved for future: model picker, search, etc.
+          IconButton(onClick = { }, modifier = Modifier.size(30.dp)) {
+            Icon(Lucide.Globe, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+          }
+          IconButton(onClick = { }, modifier = Modifier.size(30.dp)) {
+            Icon(Lucide.Search, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+          }
+          IconButton(onClick = { }, modifier = Modifier.size(30.dp)) {
+            Icon(Lucide.Lightbulb, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+          }
         }
 
         // Right side: send / stop button
