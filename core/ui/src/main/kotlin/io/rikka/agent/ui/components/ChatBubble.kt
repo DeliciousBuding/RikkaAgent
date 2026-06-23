@@ -127,12 +127,17 @@ fun ChatBubble(
         }
       }
     } else {
-      // Assistant messages: markdown for rich content, code card for plain output/errors
-      // During streaming, skip markdown parsing (expensive) — render as CodeCard until finalized
+      // Assistant messages: use MessagePartsBlock if parts available, else legacy rendering
       Column(
         modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
       ) {
-        if (isError || isCanceled || isStreaming || !looksLikeMarkdown(message.content)) {
+        if (message.parts.isNotEmpty()) {
+          // New rendering path: structured MessageParts
+          MessagePartsBlock(
+            parts = message.parts,
+            modifier = Modifier.fillMaxWidth(),
+          )
+        } else if (isError || isCanceled || isStreaming || !looksLikeMarkdown(message.content)) {
           CodeCard(
             code = message.content,
             language = when {
