@@ -3,9 +3,12 @@ package io.rikka.agent.ui
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -95,6 +98,14 @@ private val AmoledScheme: ColorScheme = darkColorScheme(
   onErrorContainer = Color(0xFFF2B8B5),
 )
 
+private val AppShapes = Shapes(
+  extraSmall = RoundedCornerShape(6.dp),   // chips, small controls
+  small = RoundedCornerShape(6.dp),         // buttons, inputs
+  medium = RoundedCornerShape(12.dp),       // cards, dialogs
+  large = RoundedCornerShape(16.dp),        // bottom sheets
+  extraLarge = RoundedCornerShape(16.dp),   // fullscreen surfaces
+)
+
 /** Code font for code blocks and monospace content. */
 val LocalCodeFontFamily = staticCompositionLocalOf { FontFamily.Monospace }
 
@@ -162,6 +173,7 @@ fun RikkaAgentTheme(
   ) {
     MaterialTheme(
       colorScheme = colors,
+      shapes = AppShapes,
       typography = AppTypography,
       content = content,
     )

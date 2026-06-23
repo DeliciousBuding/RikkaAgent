@@ -1,12 +1,9 @@
 package io.rikka.agent.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,8 +18,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,7 +31,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -99,7 +95,7 @@ fun ChatBubble(
         shape = bubbleShape,
         modifier = Modifier
           .clip(bubbleShape)
-          .animateContentSize()
+          .animateContentSize(animationSpec = tween(150))
           .padding(horizontal = 12.dp, vertical = 6.dp),
       ) {
         Box(
@@ -127,7 +123,7 @@ fun ChatBubble(
           .padding(horizontal = 12.dp, vertical = 6.dp),
       ) {
         Box(modifier = Modifier.padding(contentPadding)) {
-          StreamingDots()
+          TypingIndicator()
         }
       }
     } else {
@@ -155,7 +151,7 @@ fun ChatBubble(
         }
         if (isStreaming) {
           Spacer(modifier = Modifier.height(4.dp))
-          StreamingDots()
+          TypingIndicator()
         }
       }
     }
@@ -191,22 +187,14 @@ fun ChatBubble(
 }
 
 @Composable
-private fun StreamingDots() {
-  val transition = rememberInfiniteTransition(label = "streaming")
-  val dotCount by transition.animateFloat(
-    initialValue = 1f,
-    targetValue = 4f,
-    animationSpec = infiniteRepeatable(
-      animation = tween(durationMillis = 800, easing = LinearEasing),
-      repeatMode = RepeatMode.Restart,
-    ),
-    label = "dots",
-  )
-  Text(
-    text = ".".repeat(dotCount.toInt().coerceIn(1, 3)),
-    style = MaterialTheme.typography.bodyLarge,
-    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-  )
+private fun TypingIndicator() {
+  AnimatedVisibility(visible = true, enter = fadeIn(tween(400))) {
+    Text(
+      text = "Typing...",
+      style = MaterialTheme.typography.bodyLarge,
+      color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+    )
+  }
 }
 
 @Composable
@@ -216,7 +204,7 @@ private fun CopyButton(content: String) {
   val scope = rememberCoroutineScope()
   var copied by remember { mutableStateOf(false) }
 
-  IconButton(
+  OutlinedIconButton(
     onClick = {
       clipboardManager.setText(AnnotatedString(content))
       haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -248,7 +236,7 @@ private fun CopyButton(content: String) {
 @Composable
 private fun RerunButton(command: String, onRerun: (String) -> Unit) {
   val haptic = LocalHapticFeedback.current
-  IconButton(
+  OutlinedIconButton(
     onClick = {
       haptic.performHapticFeedback(HapticFeedbackType.LongPress)
       onRerun(command)
@@ -266,7 +254,7 @@ private fun RerunButton(command: String, onRerun: (String) -> Unit) {
 
 @Composable
 private fun ShareButton(content: String, onShare: (String) -> Unit) {
-  IconButton(
+  OutlinedIconButton(
     onClick = { onShare(content) },
     modifier = Modifier.size(24.dp),
   ) {
@@ -295,7 +283,7 @@ private fun ExpandButton(onExpand: () -> Unit) {
 
 @Composable
 private fun ShareFullButton(onShareFull: () -> Unit) {
-  IconButton(
+  OutlinedIconButton(
     onClick = { onShareFull() },
     modifier = Modifier.size(24.dp),
   ) {

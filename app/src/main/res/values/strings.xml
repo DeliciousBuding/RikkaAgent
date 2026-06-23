@@ -76,7 +76,7 @@
   <string name="delete_session_title">Delete session?</string>
   <string name="delete_session_msg">Delete \"%s\"? This cannot be undone.</string>
   <string name="session_fallback_name">Session</string>
-  <string name="no_past_sessions">No past sessions</string>
+  <string name="no_past_sessions">No command history yet. Run a command to get started.</string>
   <string name="empty_chat_hint">Type a command to run on the server</string>
   <string name="input_placeholder">$ command</string>
   <string name="send">Send</string>
@@ -124,7 +124,7 @@
 
   <!-- ChatViewModel messages -->
   <string name="msg_profile_ready">Ready. Profile: %1$s (%2$s@%3$s)</string>
-  <string name="msg_profile_not_found">Error: Profile not found</string>
+  <string name="msg_profile_not_found">Profile not found — create a new profile to get started</string>
   <string name="msg_new_session">New session. Profile: %1$s (%2$s@%3$s)</string>
   <string name="msg_not_connected">Not connected. No profile loaded</string>
   <string name="label_stderr">[stderr]</string>
@@ -138,19 +138,19 @@
   <string name="msg_output_truncated">⚠ Large output was trimmed for performance. Use Export to save the complete output</string>
   <string name="msg_command_canceled">[canceled by user]</string>
   <string name="err_connection_refused">Connection refused — is the SSH server running on the target host?</string>
-  <string name="err_timeout">Connection timed out — check the host address and network connectivity</string>
-  <string name="err_unknown_host">Host not found — verify the hostname or IP address</string>
-  <string name="err_auth_failed">Authentication failed — check your credentials or key file</string>
+  <string name="err_timeout">Connection timed out — check your network and server availability</string>
+  <string name="err_unknown_host">Unknown host — verify the hostname in profile settings</string>
+  <string name="err_auth_failed">Authentication failed — check your credentials</string>
   <string name="err_ssh_generic">SSH error: %s</string>
 
   <!-- ProfileEditorViewModel test messages -->
-  <string name="test_host_empty">Host is empty</string>
+  <string name="test_host_empty">Host cannot be empty — enter a hostname or IP</string>
   <string name="test_no_banner">Connected (no banner)</string>
   <string name="test_ok">OK — %s</string>
   <string name="test_refused">Connection refused — is SSH running on %1$s:%2$d?</string>
   <string name="test_timeout">Timed out — host %s may be unreachable</string>
   <string name="test_host_not_found">Host not found — check the hostname</string>
-  <string name="test_failed">Failed: %s</string>
+  <string name="test_failed">Connection test failed — verify host, port, and credentials</string>
 
   <!-- SettingsScreen -->
   <string name="section_general">General</string>
