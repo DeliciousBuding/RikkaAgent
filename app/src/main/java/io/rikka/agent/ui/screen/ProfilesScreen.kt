@@ -82,8 +82,8 @@ fun ProfilesScreen(
         style = androidx.compose.ui.text.TextStyle(
           fontFamily = androidx.compose.ui.text.font.FontFamily.SansSerif,
           fontWeight = androidx.compose.ui.text.font.FontWeight.Normal,
-          fontSize = 18.sp,
-          lineHeight = 24.sp,
+          fontSize = 14.sp,
+          lineHeight = 18.sp,
           color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
         ),
         modifier = Modifier.padding(start = 16.dp, top = 16.dp),
