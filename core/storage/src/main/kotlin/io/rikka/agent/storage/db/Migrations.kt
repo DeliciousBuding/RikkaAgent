@@ -37,6 +37,95 @@ object Migrations {
     }
   }
 
+  /**
+   * v5 → v6: Session management enhancements.
+   *
+   * Changes:
+   * - ALTER TABLE chat_threads ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0
+   * - ALTER TABLE chat_threads ADD COLUMN isArchived INTEGER NOT NULL DEFAULT 0
+   * - CREATE TABLE thread_tags (for session tagging)
+   * - CREATE VIRTUAL TABLE chat_messages_fts (FTS4 for full-text search)
+   * - Populate FTS table from existing chat_messages content
+   * - Create triggers to keep FTS table in sync with chat_messages
+   */
+  val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+      // 1. Add pin/archive columns to chat_threads
+      db.execSQL("ALTER TABLE chat_threads ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0")
+      db.execSQL("ALTER TABLE chat_threads ADD COLUMN isArchived INTEGER NOT NULL DEFAULT 0")
+
+      // 2. Create thread_tags table
+      db.execSQL(
+        """
+        CREATE TABLE IF NOT EXISTS thread_tags (
+          id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+          threadId TEXT NOT NULL,
+          name TEXT NOT NULL,
+          FOREIGN KEY (threadId) REFERENCES chat_threads(id) ON DELETE CASCADE
+        )
+        """.trimIndent()
+      )
+      db.execSQL("CREATE INDEX IF NOT EXISTS index_thread_tags_threadId ON thread_tags(threadId)")
+
+      // 3. Create FTS4 virtual table for full-text message search
+      db.execSQL("CREATE VIRTUAL TABLE IF NOT EXISTS chat_messages_fts USING fts4(content)")
+
+      // 4. Populate FTS table from existing chat_messages data
+      db.execSQL(
+        """
+        INSERT INTO chat_messages_fts(docid, content)
+        SELECT rowid, content FROM chat_messages
+        WHERE content IS NOT NULL AND content != ''
+        """.trimIndent()
+      )
+
+      // 5. Create triggers to keep FTS table in sync with chat_messages
+      db.execSQL(
+        """
+        CREATE TRIGGER IF NOT EXISTS chat_messages_fts_insert AFTER INSERT ON chat_messages
+        BEGIN
+          INSERT INTO chat_messages_fts(docid, content) VALUES (new.rowid, new.content);
+        END
+        """.trimIndent()
+      )
+      db.execSQL(
+        """
+        CREATE TRIGGER IF NOT EXISTS chat_messages_fts_delete AFTER DELETE ON chat_messages
+        BEGIN
+          INSERT INTO chat_messages_fts(chat_messages_fts, docid, content)
+          VALUES ('delete', old.rowid, old.content);
+        END
+        """.trimIndent()
+      )
+      db.execSQL(
+        """
+        CREATE TRIGGER IF NOT EXISTS chat_messages_fts_update AFTER UPDATE ON chat_messages
+        BEGIN
+          INSERT INTO chat_messages_fts(chat_messages_fts, docid, content)
+          VALUES ('delete', old.rowid, old.content);
+          INSERT INTO chat_messages_fts(docid, content) VALUES (new.rowid, new.content);
+        END
+        """.trimIndent()
+      )
+    }
+  }
+
+  /**
+   * v6 → v7: Add `group` and `tags` columns to `ssh_profiles`.
+   *
+   * Changes:
+   * - ALTER TABLE ssh_profiles ADD COLUMN "group" TEXT NOT NULL DEFAULT 'None'
+   * - ALTER TABLE ssh_profiles ADD COLUMN tags TEXT NOT NULL DEFAULT ''
+   *
+   * These columns support the new profile grouping and tagging features.
+   */
+  val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+      db.execSQL("ALTER TABLE ssh_profiles ADD COLUMN \"group\" TEXT NOT NULL DEFAULT 'None'")
+      db.execSQL("ALTER TABLE ssh_profiles ADD COLUMN tags TEXT NOT NULL DEFAULT ''")
+    }
+  }
+
   /** All migrations in order. */
-  val ALL = arrayOf(MIGRATION_4_5)
+  val ALL = arrayOf(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
 }

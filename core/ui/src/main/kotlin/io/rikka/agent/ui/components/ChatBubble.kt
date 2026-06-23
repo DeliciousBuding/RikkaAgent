@@ -39,6 +39,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -81,6 +82,7 @@ private val ActionBarIconInnerSize = Modifier.size(14.dp)
 fun ChatBubble(
     message: ChatMessage,
     enableMermaid: Boolean = false,
+    bubbleOpacity: Float = 1.0f,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
     onRerun: ((String) -> Unit)? = null,
@@ -126,6 +128,7 @@ fun ChatBubble(
                 message = message,
                 bubbleColor = bubbleColor,
                 contentColor = contentColor,
+                bubbleOpacity = bubbleOpacity,
                 contentPadding = contentPadding,
             )
         } else if (isStreaming && message.parts.isEmpty()) {
@@ -133,7 +136,7 @@ fun ChatBubble(
             Surface(
                 tonalElevation = 0.dp,
                 shadowElevation = 0.dp,
-                color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 1f),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = bubbleOpacity),
                 shape = BubbleShape,
                 modifier = Modifier
                     .clip(BubbleShape)
@@ -153,7 +156,7 @@ fun ChatBubble(
                 Surface(
                     tonalElevation = 0.dp,
                     shadowElevation = 0.dp,
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 1f),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = bubbleOpacity),
                     shape = BubbleShape,
                     modifier = Modifier
                         .clip(BubbleShape)
@@ -204,21 +207,23 @@ private fun UserBubble(
     message: ChatMessage,
     bubbleColor: androidx.compose.ui.graphics.Color,
     contentColor: androidx.compose.ui.graphics.Color,
+    bubbleOpacity: Float,
     contentPadding: PaddingValues,
 ) {
     Surface(
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
-        color = bubbleColor,
+        color = bubbleColor.copy(alpha = bubbleOpacity),
         shape = BubbleShape,
         modifier = Modifier
+            .alpha(bubbleOpacity)
             .clip(BubbleShape)
             .animateContentSize()
             .padding(horizontal = 12.dp, vertical = 6.dp),
     ) {
         Box(
             modifier = Modifier
-                .background(color = bubbleColor)
+                .background(color = bubbleColor.copy(alpha = bubbleOpacity))
                 .padding(contentPadding),
         ) {
             Text(

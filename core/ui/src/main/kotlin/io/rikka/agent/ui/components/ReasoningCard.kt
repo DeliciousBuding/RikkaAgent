@@ -52,6 +52,8 @@ private enum class ReasoningState {
     Expanded,
 }
 
+private val ReasoningShape = RoundedCornerShape(12.dp)
+
 /**
  * Renders a [MessagePart.Reasoning] as a collapsible chain-of-thought card.
  *

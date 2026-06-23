@@ -1,12 +1,14 @@
 package io.rikka.agent.ui.components
 
 import androidx.compose.material3.ColorScheme
+import androidx.compose.runtime.Immutable
 
 enum class MermaidSegmentKind {
   Markdown,
   Mermaid,
 }
 
+@Immutable
 data class MermaidSegment(
   val kind: MermaidSegmentKind,
   val content: String,

@@ -215,6 +215,17 @@
   <string name="show_timestamp">Show timestamp</string>
   <string name="show_timestamp_subtitle">Display time below each message</string>
 
+  <!-- Quick Messages -->
+  <string name="section_quick_messages">Quick Messages</string>
+  <string name="quick_message_add">Add quick message</string>
+  <string name="quick_message_edit">Edit quick message</string>
+  <string name="quick_message_label">Label</string>
+  <string name="quick_message_label_hint">e.g. Disk usage</string>
+  <string name="quick_message_command">Command</string>
+  <string name="quick_message_command_hint">e.g. df -h</string>
+  <string name="quick_message_delete_title">Delete quick message?</string>
+  <string name="quick_message_delete_msg">Delete \"%s\"? This cannot be undone.</string>
+
   <!-- NerdLine -->
   <string name="nerd_line_exit_code">exit: %d</string>
   <string name="nerd_line_duration">%dms</string>

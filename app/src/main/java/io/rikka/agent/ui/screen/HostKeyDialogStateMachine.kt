@@ -1,12 +1,15 @@
 package io.rikka.agent.ui.screen
 
+import androidx.compose.runtime.Immutable
 import io.rikka.agent.vm.HostKeyEvent
 
+@Immutable
 data class HostKeyDialogState(
   val event: HostKeyEvent? = null,
   val confirmReplacement: HostKeyEvent.Mismatch? = null,
 )
 
+@Immutable
 data class HostKeyDialogResult(
   val nextState: HostKeyDialogState,
   val decision: Boolean? = null,

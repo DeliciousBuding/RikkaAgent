@@ -44,6 +44,7 @@ import io.rikka.agent.ui.R
 import lucide.icons.Lucide
 
 private val LocalCardColor = staticCompositionLocalOf { Color.White }
+private val ChainOfThoughtShape = RoundedCornerShape(16.dp)
 
 /**
  * Displays a list of reasoning / tool-call steps as a timeline card.
@@ -110,7 +111,7 @@ fun <T> ChainOfThought(
         Card(
             modifier = modifier,
             colors = cardColors,
-            shape = RoundedCornerShape(16.dp),
+            shape = ChainOfThoughtShape,
         ) {
             Column(
                 modifier = Modifier

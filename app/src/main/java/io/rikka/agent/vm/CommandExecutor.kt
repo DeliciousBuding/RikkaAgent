@@ -5,11 +5,13 @@ import io.rikka.agent.R
 import io.rikka.agent.model.MessagePart
 import io.rikka.agent.model.MessageStatus
 import io.rikka.agent.model.SshProfile
-import io.rikka.agent.ssh.ClosableSshExecRunner
+import io.rikka.agent.ssh.AcquiredConnection
+import io.rikka.agent.ssh.ConnectionState
 import io.rikka.agent.ssh.ExecEvent
 import io.rikka.agent.ssh.JsonlLineBuffer
 import io.rikka.agent.ssh.KeyContentProvider
 import io.rikka.agent.ssh.KnownHostsStore
+import io.rikka.agent.ssh.SshConnectionPool
 import io.rikka.agent.ssh.SshExecRunnerFactory
 import io.rikka.agent.storage.AppPreferences
 import io.rikka.agent.storage.ProfileStore
@@ -45,7 +47,7 @@ data class ConnectionError(
  *
  * ## Responsibilities
  * - Loads an [SshProfile] from the [ProfileStore] and exposes the connection state.
- * - Executes commands over SSH via [ClosableSshExecRunner], streaming stdout/stderr chunks
+ * - Executes commands over SSH via [SshConnectionPool], streaming stdout/stderr chunks
  *   back to the caller through callbacks.
  * - Supports two execution modes:
  *   - **Plain shell**: Wraps the command with the user-configured default shell.
@@ -54,28 +56,23 @@ data class ConnectionError(
  * - Manages output truncation (max [maxOutputChars] chars) and stores full output separately
  *   for "view full output" UI affordance.
  * - Handles authentication callbacks (host key, password, passphrase) via [AuthCallbackBroker].
- *
- * ## Thread Safety
- * - All mutable UI-facing state is held in [MutableStateFlow] instances, safe for concurrent access.
- * - [runningJob], [runningAssistantId], and [runner] are mutated only from the calling coroutine
- *   and the single [scope.launch] block; no concurrent mutation occurs because a new `execute()`
- *   call cancels the previous job before mutating.
- * - The [fullOutputByMessageId] map is accessed only from coroutines launched in [scope], which
- *   run on the Main dispatcher by default.
- * - Callbacks ([updateContent], [updateMessage]) are invoked from the [scope] coroutine and
- *   must be thread-safe (they are, via `StateFlow.update` in [ChatViewModel]).
+ * - Integrates with [SshConnectionPool] for connection reuse, health checks, and
+ *   exponential-backoff reconnection.
  *
  * ## Exposed State
  * | StateFlow                  | Type                           | Description                                     |
  * |----------------------------|--------------------------------|-------------------------------------------------|
- * | [connectionState]          | `StateFlow<ConnectionState>`   | IDLE / READY / EXECUTING / ERROR.               |
+ * | [connectionState]          | `StateFlow<ConnectionState>`   | Idle / Ready / Executing / Reconnecting / ...    |
  * | [lastConnectionError]      | `StateFlow<ConnectionError?>`  | Most recent connection error, dismissable.       |
  *
  * @param profileStore      Source for loading [SshProfile] by ID.
  * @param knownHostsStore   Persistent store for SSH known-hosts fingerprints.
  * @param appPreferences    User preferences (default shell, etc.).
  * @param keyContentProvider Optional provider for SSH private-key content.
- * @param runnerFactory     Factory for creating [ClosableSshExecRunner] instances.
+ * @param runnerFactory     Factory for creating [io.rikka.agent.ssh.ClosableSshExecRunner] instances
+ *                          (used as fallback when no pool is configured).
+ * @param connectionPool    Optional connection pool for managed connections. When provided,
+ *                          the pool handles TTL, health checks, reconnection, and concurrency.
  * @param authBroker        Broker that bridges SSH auth callbacks to UI SharedFlows.
  * @param app               Android [Application] for string resource access.
  * @param scope             Coroutine scope for launching execution jobs (typically [viewModelScope]).
@@ -86,6 +83,7 @@ class CommandExecutor(
   private val appPreferences: AppPreferences,
   private val keyContentProvider: KeyContentProvider?,
   private val runnerFactory: SshExecRunnerFactory,
+  private val connectionPool: SshConnectionPool? = null,
   private val authBroker: AuthCallbackBroker,
   private val app: Application,
   private val scope: CoroutineScope,
@@ -104,9 +102,17 @@ class CommandExecutor(
     )
   }
 
-  /** Backing field for connection lifecycle state. */
-  private val _connectionState = MutableStateFlow(ConnectionState.IDLE)
-  /** Observable SSH connection lifecycle state. */
+  /** Backing field for the application-level connection lifecycle state.
+   *  When a [connectionPool] is provided, this delegates to pool state observation. */
+  private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Idle)
+
+  /**
+   * Observable SSH connection lifecycle state.
+   *
+   * When a [SshConnectionPool] is provided, this reflects the pool's state for the
+   * current profile (Idle / Ready / Executing / Reconnecting / Disconnected / Failed).
+   * When no pool is configured, falls back to simple Idle / Ready / Executing / Failed states.
+   */
   val connectionState: StateFlow<ConnectionState> = _connectionState
 
   /** Backing field for the most recent connection error. */
@@ -130,38 +136,64 @@ class CommandExecutor(
   private var runningJob: Job? = null
   /** The assistant message ID of the currently running command, or null. */
   private var runningAssistantId: String? = null
-  /** The reusable SSH exec runner, lazily created on first execution. */
-  private var runner: ClosableSshExecRunner? = null
+  /** The reusable SSH exec runner (legacy mode, when no pool is configured). */
+  private var runner: io.rikka.agent.ssh.ClosableSshExecRunner? = null
+  /** The currently acquired pool connection, if using a pool. */
+  private var acquiredConnection: AcquiredConnection? = null
 
   // ── Profile ────────────────────────────────────────────────────────────
 
   /**
    * Load an SSH profile by [profileId] and set the connection state.
    *
+   * When a [SshConnectionPool] is available, subscribes to the pool's state flow
+   * for this profile so that [connectionState] reflects pool-level transitions
+   * (Reconnecting, Disconnected, etc.) in real time.
+   *
    * @param profileId The profile ID to load from [ProfileStore].
    * @return A pair of (profile, display label) on success, or null if the profile was not found.
-   *         On success, [connectionState] transitions to [ConnectionState.READY];
-   *         on failure, it transitions to [ConnectionState.ERROR].
+   *         On success, [connectionState] transitions to [ConnectionState.Ready];
+   *         on failure, it transitions to [ConnectionState.Failed].
    */
   suspend fun loadProfile(profileId: String): Pair<SshProfile, String>? {
     val profile = profileStore.getById(profileId)
     if (profile != null) {
       currentProfile = profile
-      _connectionState.value = ConnectionState.READY
+      _connectionState.value = ConnectionState.Ready
+
+      // If pool is available, observe its state for this profile.
+      connectionPool?.let { pool ->
+        scope.launch {
+          pool.getConnectionState(profile).collect { poolState ->
+            // Only update if we're not in Executing state (which we control).
+            if (_connectionState.value != ConnectionState.Executing) {
+              _connectionState.value = poolState
+            }
+          }
+        }
+      }
+
       return profile to profile.name.ifBlank { "${profile.username}@${profile.host}" }
     } else {
-      _connectionState.value = ConnectionState.ERROR
+      _connectionState.value = ConnectionState.Failed(
+        message = "Profile not found: $profileId",
+        category = "profile_not_found",
+      )
       return null
     }
   }
 
   /**
-   * Reset [connectionState] to [ConnectionState.READY] if a profile is loaded,
-   * or [ConnectionState.ERROR] otherwise. Typically called after cancellation or
+   * Reset [connectionState] to [ConnectionState.Ready] if a profile is loaded,
+   * or [ConnectionState.Failed] otherwise. Typically called after cancellation or
    * thread switching.
    */
   fun resetConnectionState() {
-    _connectionState.value = if (currentProfile != null) ConnectionState.READY else ConnectionState.ERROR
+    _connectionState.value = if (currentProfile != null) {
+      ConnectionState.Ready
+    } else {
+      ConnectionState.Failed(message = "No profile loaded", category = "no_profile")
+    }
   }
 
   // ── Full output access ─────────────────────────────────────────────────
@@ -194,6 +226,15 @@ class CommandExecutor(
   /**
    * Execute a command over SSH. Events update the assistant message via callbacks.
    *
+   * When a [SshConnectionPool] is configured:
+   * - Acquires a connection from the pool (with concurrency limiting).
+   * - Uses the pooled runner for command execution.
+   * - On connection error, notifies the pool for reconnection management.
+   * - Releases the connection back to the pool when done.
+   *
+   * When no pool is configured (legacy mode):
+   * - Uses a directly-created runner from [runnerFactory].
+   *
    * For Codex JSONL mode, structured [MessagePart] instances are accumulated and
    * emitted via [updateParts] for ChainOfThought rendering. A flat-string rendering
    * is also provided via [updateContent] for backward compatibility.
@@ -218,13 +259,41 @@ class CommandExecutor(
     val profile = currentProfile ?: return
 
     runningJob?.cancel()
-    _connectionState.value = ConnectionState.EXECUTING
-
-    val execRunner = getOrCreateRunner()
+    _connectionState.value = ConnectionState.Executing
 
     runningAssistantId = assistantId
 
     runningJob = scope.launch {
+      // Acquire runner from pool or legacy factory.
+      val execRunner: io.rikka.agent.ssh.SshExecRunner
+      var isPooled = false
+      if (connectionPool != null) {
+        try {
+          val acquired = connectionPool.acquire(profile)
+          acquiredConnection = acquired
+          execRunner = acquired.runner
+          isPooled = true
+        } catch (e: Exception) {
+          val category = categorizeError(e)
+          val friendlyMsg = ErrorMessageMapper.friendlyErrorMessage(
+            category = category,
+            raw = e.message ?: e.javaClass.simpleName,
+            connectionRefused = app.getString(R.string.err_connection_refused),
+            timeout = app.getString(R.string.err_timeout),
+            unknownHost = app.getString(R.string.err_unknown_host),
+            authFailed = app.getString(R.string.err_auth_failed),
+            generic = { raw -> app.getString(R.string.err_ssh_generic, raw) },
+          )
+          _lastConnectionError.value = ConnectionError(category, friendlyMsg)
+          updateMessage(assistantId, friendlyMsg, MessageStatus.Error)
+          runningAssistantId = null
+          _connectionState.value = ConnectionState.Ready
+          return@launch
+        }
+      } else {
+        execRunner = getOrCreateRunner()
+      }
+
       val shellCommand = if (isCodex) {
         CommandComposer.wrapForCodex(command, profile.codexWorkDir, profile.codexApiKey)
       } else {
@@ -255,8 +324,6 @@ class CommandExecutor(
             emitCodexUpdate()
           }
           "markdown_delta" -> {
-            // Legacy path: raw markdown delta from older JsonlParser extraction.
-            // Prefer the structured "json" path above; this handles pre-mapped deltas.
             codexParts?.let { parts ->
               val last = parts.lastOrNull()
               if (last is MessagePart.Text) {
@@ -278,8 +345,9 @@ class CommandExecutor(
         .catch { e ->
           // Defensive catch: SshjExecRunner handles errors internally via ExecEvent.Error,
           // but if the Flow itself throws (e.g. connection dropped mid-stream), surface it.
+          val category = categorizeException(e)
           val friendlyMsg = ErrorMessageMapper.friendlyErrorMessage(
-            category = "ssh_error",
+            category = category,
             raw = e.message ?: e.javaClass.simpleName,
             connectionRefused = app.getString(R.string.err_connection_refused),
             timeout = app.getString(R.string.err_timeout),
@@ -287,10 +355,16 @@ class CommandExecutor(
             authFailed = app.getString(R.string.err_auth_failed),
             generic = { raw -> app.getString(R.string.err_ssh_generic, raw) },
           )
-          _lastConnectionError.value = ConnectionError("ssh_error", friendlyMsg)
+          _lastConnectionError.value = ConnectionError(category, friendlyMsg)
+
+          // Notify pool of connection error for reconnection.
+          if (isPooled) {
+            connectionPool?.notifyConnectionError(profile, e as? Exception ?: RuntimeException(e.message))
+          }
+
           updateMessage(assistantId, friendlyMsg, MessageStatus.Error)
           runningAssistantId = null
-          _connectionState.value = ConnectionState.READY
+          _connectionState.value = ConnectionState.Ready
         }
         .collect { event ->
         when (event) {
@@ -347,7 +421,7 @@ class CommandExecutor(
             }
             updateMessage(assistantId, finalContent, MessageStatus.Final)
             runningAssistantId = null
-            _connectionState.value = ConnectionState.READY
+            _connectionState.value = ConnectionState.Ready
           }
           is ExecEvent.Canceled -> {
             val canceledText = app.getString(R.string.msg_command_canceled)
@@ -355,7 +429,7 @@ class CommandExecutor(
             val canceledContent = CancelMessageHelper.mergeCanceledContent(current, canceledText)
             updateMessage(assistantId, canceledContent, MessageStatus.Canceled)
             runningAssistantId = null
-            _connectionState.value = ConnectionState.READY
+            _connectionState.value = ConnectionState.Ready
           }
           is ExecEvent.Error -> {
             val friendlyMsg = ErrorMessageMapper.friendlyErrorMessage(
@@ -368,6 +442,15 @@ class CommandExecutor(
               generic = { raw -> app.getString(R.string.err_ssh_generic, raw) },
             )
             _lastConnectionError.value = ConnectionError(event.category, friendlyMsg)
+
+            // Notify pool of connection error for reconnection.
+            if (isPooled && isConnectionErrorCategory(event.category)) {
+              connectionPool?.notifyConnectionError(
+                profile,
+                RuntimeException(event.message),
+              )
+            }
+
             val errorContent = if (stdout.isNotEmpty() || stderr.isNotEmpty()) {
               formatOutput(stdout, stderr, exitCode = null) + "\n$friendlyMsg"
             } else {
@@ -375,9 +458,15 @@ class CommandExecutor(
             }
             updateMessage(assistantId, errorContent, MessageStatus.Error)
             runningAssistantId = null
-            _connectionState.value = ConnectionState.READY
+            _connectionState.value = ConnectionState.Ready
           }
         }
+      }
+
+      // Release pool connection when done.
+      if (isPooled) {
+        acquiredConnection?.let { connectionPool?.release(it) }
+        acquiredConnection = null
       }
     }
   }
@@ -385,7 +474,8 @@ class CommandExecutor(
   /**
    * Cancel the currently running command.
    *
-   * Cancels the coroutine [Job] and clears the running state.
+   * Cancels the coroutine [Job], releases any acquired pool connection,
+   * and clears the running state.
    *
    * @return The assistant message ID that was canceled, or null if nothing was running.
    */
@@ -394,15 +484,20 @@ class CommandExecutor(
     runningJob?.cancel()
     runningJob = null
     runningAssistantId = null
+    // Release pool connection on cancel.
+    acquiredConnection?.let { connectionPool?.release(it) }
+    acquiredConnection = null
     return canceledId
   }
 
   /**
-   * Release SSH runner resources. Cancels any running job and closes the underlying
-   * [ClosableSshExecRunner]. Called from [ChatViewModel.onCleared].
+   * Release SSH runner resources. Cancels any running job, releases pool connections,
+   * and closes the underlying runner. Called from [ChatViewModel.onCleared].
    */
   fun cleanUp() {
     runningJob?.cancel()
+    acquiredConnection?.let { connectionPool?.release(it) }
+    acquiredConnection = null
     runner?.close()
   }
 
@@ -514,7 +609,7 @@ class CommandExecutor(
 
   // ── Private ────────────────────────────────────────────────────────────
 
-  private fun getOrCreateRunner(): ClosableSshExecRunner {
+  private fun getOrCreateRunner(): io.rikka.agent.ssh.ClosableSshExecRunner {
     runner?.let { return it }
     return runnerFactory.create(
       knownHostsStore = knownHostsStore,
@@ -548,6 +643,33 @@ class CommandExecutor(
       appPreferences.defaultShell.first()
     }
     return CommandComposer.wrapWithShell(command, shell)
+  }
+
+  /** Categorize an exception for error reporting. */
+  private fun categorizeException(e: Throwable): String = when (e) {
+    is java.net.ConnectException -> "connection_refused"
+    is java.net.SocketTimeoutException -> "timeout"
+    is java.net.UnknownHostException -> "unknown_host"
+    is io.rikka.agent.ssh.SshHostKeyRejectedException -> "host_key_rejected"
+    else -> if (e.message?.contains("Auth") == true) "auth_failed" else "ssh_error"
+  }
+
+  /** Check if an error category represents a connection-level error (not auth). */
+  private fun isConnectionErrorCategory(category: String): Boolean = when (category) {
+    "connection_refused", "timeout", "unknown_host", "ssh_error" -> true
+    else -> false
+  }
+
+  /**
+   * Categorize an exception for pool notification.
+   * Auth failures are not notified to the pool (they are fatal).
+   */
+  private fun categorizeError(e: Exception): String = when (e) {
+    is java.net.ConnectException -> "connection_refused"
+    is java.net.SocketTimeoutException -> "timeout"
+    is java.net.UnknownHostException -> "unknown_host"
+    is io.rikka.agent.ssh.SshHostKeyRejectedException -> "host_key_rejected"
+    else -> if (e.message?.contains("Auth") == true) "auth_failed" else "ssh_error"
   }
 }
 

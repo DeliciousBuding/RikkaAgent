@@ -9,8 +9,10 @@ import androidx.room.TypeConverters
     SshProfileEntity::class,
     ChatThreadEntity::class,
     ChatMessageEntity::class,
+    ThreadTagEntity::class,
+    ChatMessageFtsEntity::class,
   ],
-  version = 5,
+  version = 7,
   exportSchema = false,
 )
 @TypeConverters(MessagePartConverter::class)

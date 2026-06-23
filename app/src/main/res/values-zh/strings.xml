@@ -215,6 +215,17 @@
   <string name="show_timestamp">显示时间戳</string>
   <string name="show_timestamp_subtitle">在每条消息下方显示时间</string>
 
+  <!-- Quick Messages -->
+  <string name="section_quick_messages">快捷消息</string>
+  <string name="quick_message_add">添加快捷消息</string>
+  <string name="quick_message_edit">编辑快捷消息</string>
+  <string name="quick_message_label">标签</string>
+  <string name="quick_message_label_hint">例如：磁盘使用情况</string>
+  <string name="quick_message_command">命令</string>
+  <string name="quick_message_command_hint">例如：df -h</string>
+  <string name="quick_message_delete_title">删除快捷消息？</string>
+  <string name="quick_message_delete_msg">删除「%s」？此操作不可撤销。</string>
+
   <!-- NerdLine -->
   <string name="nerd_line_exit_code">退出码：%d</string>
   <string name="nerd_line_duration">%d毫秒</string>

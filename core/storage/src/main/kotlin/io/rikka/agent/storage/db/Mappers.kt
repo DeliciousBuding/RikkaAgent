@@ -92,3 +92,55 @@ fun ChatMessage.toEntity(threadId: String): ChatMessageEntity {
     status = status.name,
   )
 }
+
+// ── ChatThreadEntity → ChatThread ─────────────────────────────────────────────
+
+/**
+ * Convert [ChatThreadEntity] to domain [ChatThread].
+ *
+ * Maps the persisted entity fields (including [ChatThreadEntity.isPinned] and
+ * [ChatThreadEntity.isArchived]) to the domain model. Tags and stats are
+ * populated separately by the repository layer.
+ */
+fun ChatThreadEntity.toModel(
+  tags: List<String> = emptyList(),
+  stats: io.rikka.agent.model.SessionStats = io.rikka.agent.model.SessionStats(),
+): io.rikka.agent.model.ChatThread = io.rikka.agent.model.ChatThread(
+  id = id,
+  title = title,
+  messages = emptyList(),
+  isPinned = isPinned,
+  isArchived = isArchived,
+  tags = tags,
+  stats = stats,
+)
+
+// ── Thread statistics computation ─────────────────────────────────────────────
+
+/**
+ * Compute [io.rikka.agent.model.SessionStats] from a list of [ChatMessageEntity].
+ *
+ * - [io.rikka.agent.model.SessionStats.commandCount]: number of User messages.
+ * - [io.rikka.agent.model.SessionStats.outputLineCount]: total lines in
+ *   non-empty Assistant message content.
+ * - [io.rikka.agent.model.SessionStats.totalExecutionTimeMs]: sum of
+ *   (assistant.timestamp - preceding.user.timestamp) for each consecutive
+ *   user->assistant pair.
+ */
+fun List<ChatMessageEntity>.computeStats(): io.rikka.agent.model.SessionStats {
+  val commandCount = count { it.role == "User" }
+  val outputLineCount = filter { it.role == "Assistant" && it.content.isNotEmpty() }
+    .sumOf { msg -> msg.content.lines().size }
+  var totalTime = 0L
+  for (i in 0 until size - 1) {
+    if (this[i].role == "User" && this[i + 1].role == "Assistant") {
+      val delta = this[i + 1].timestampMs - this[i].timestampMs
+      if (delta > 0) totalTime += delta
+    }
+  }
+  return io.rikka.agent.model.SessionStats(
+    commandCount = commandCount,
+    totalExecutionTimeMs = totalTime,
+    outputLineCount = outputLineCount,
+  )
+}
