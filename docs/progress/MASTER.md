@@ -14,6 +14,9 @@
 | **Phase 2** | ✅ 3 commits | ExtendColors + Lucide Icons (6 屏 11 处) |
 | **设计合规** | ✅ 3 commits | P0+P1+P2 全部修复 (78→0 Critical) |
 | **ADB 验收** | ✅ | MuMu 127.0.0.1:5555 已连接，竖屏模式正常 |
+| **Material Icons** | ✅ 4 commits | 全部替换为 Lucide Icons（全模块零残留） |
+| **SshOutputMapper** | ✅ | SSH 输出→MessagePart 桥接，ChatViewModel 已集成 |
+| **UI 验收** | ✅ | 首页/设置/配置编辑器 三屏截图通过 |
 
 ## 当前阶段
 
@@ -22,24 +25,30 @@
 目标：确认原始代码在 SDK 36 下编译通过，APK 可构建。
 结果：编译成功，APK 24MB，已安装到模拟器。
 
-## 下一步
-
 **Phase 1：数据模型升级** ✅
 
 - 1A MessagePart sealed class ✅ (`ee9d0c9`)
 - 1B ChatMessage.parts field ✅ (`4a200ba`)
 - 1C Room v5 + TypeConverter + Migration ✅ (`6afa71b`)
 
-**Phase 2：主题系统对齐** ⏳
-- ExtendColors + MaterialExpressiveTheme
-- 预设主题（Sakura/Ocean/Spring/Autumn/Black）
-- Lucide Icons 替换
+**Phase 2：主题系统对齐** ✅
+- ExtendColors + MaterialExpressiveTheme ✅
+- Lucide Icons 全模块替换 ✅
+- SshOutputMapper + ChatViewModel 集成 ✅
+- UI 三屏截图验收 ✅
 
-**Phase 3：UI 组件复刻** ⏳
-- ChatBubble → MessagePartsBlock
-- MarkdownBlock → IntelliJ MarkdownParser
-- HighlightCodeBlock → 语法高亮
-- ChatInput 增强
+## 下一步
+
+**Phase 3：Chat 完整流程验证**
+- 创建 SSH 配置 → 连接 → 执行命令 → 查看 MessagePart 渲染
+- Codex 模式 JSONL 流式解析验证
+- MarkdownBlock / HighlightCodeBlock 实际效果验收
+
+**Phase 4：完善与打磨**
+- ReasoningCard 推理步骤展示
+- DataTable 结构化数据渲染
+- ChatInput 增强（多行、历史命令）
+- 导出/分享功能端到端测试
 
 每个 Phase 要求：逐文件增量添加 + 编译验证通过后 commit。
 
