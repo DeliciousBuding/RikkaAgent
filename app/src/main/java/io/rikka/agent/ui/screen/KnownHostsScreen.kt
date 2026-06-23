@@ -7,11 +7,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.ArrowLeft
+import com.composables.icons.lucide.Trash2
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -142,7 +141,7 @@ fun KnownHostsScreen(
             trailingContent = {
               IconButton(onClick = { confirmDelete = hostKey }) {
                 Icon(
-                  Icons.Default.Delete,
+                  Lucide.Trash2,
                   contentDescription = stringResource(R.string.btn_remove),
                   tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
                 )
