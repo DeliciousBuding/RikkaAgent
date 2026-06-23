@@ -25,15 +25,17 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.AlertDialog
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.ArrowLeft
 import com.composables.icons.lucide.X
 import com.composables.icons.lucide.Menu
+import com.composables.icons.lucide.Plus
+import com.composables.icons.lucide.Trash2
+import com.composables.icons.lucide.ChevronDown
+import com.composables.icons.lucide.Terminal
+import com.composables.icons.lucide.Database
+import com.composables.icons.lucide.Clock
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButtonDefaults
@@ -425,7 +427,7 @@ fun ChatScreen(
           elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 2.dp),
         ) {
           Icon(
-            Icons.Default.KeyboardArrowDown,
+            Lucide.ChevronDown,
             contentDescription = stringResource(R.string.scroll_to_bottom),
             modifier = Modifier.size(20.dp),
           )
@@ -483,7 +485,7 @@ private fun SessionDrawerContent(
         modifier = Modifier.weight(1f),
       )
       IconButton(onClick = onNewSession) {
-        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.new_session))
+        Icon(Lucide.Plus, contentDescription = stringResource(R.string.new_session))
       }
     }
     if (threads.isEmpty()) {
@@ -516,7 +518,7 @@ private fun SessionDrawerContent(
                 modifier = Modifier.size(32.dp),
               ) {
                 Icon(
-                  Icons.Default.Delete,
+                  Lucide.Trash2,
                   contentDescription = stringResource(R.string.delete),
                   modifier = Modifier.size(16.dp),
                   tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),

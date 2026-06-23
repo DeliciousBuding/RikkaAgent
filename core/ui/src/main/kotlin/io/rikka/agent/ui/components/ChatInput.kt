@@ -28,8 +28,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Send
 import io.rikka.agent.ui.R
 
 @Composable
@@ -99,7 +100,7 @@ fun ChatInput(
       modifier = Modifier.padding(start = 8.dp),
     ) {
       Icon(
-        painter = painterResource(id = R.drawable.ic_send),
+        imageVector = Lucide.Send,
         contentDescription = stringResource(R.string.cd_send),
         tint = MaterialTheme.colorScheme.primary,
       )

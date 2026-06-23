@@ -28,6 +28,7 @@ dependencies {
   implementation(libs.material3)
   implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.activity.compose)
+  implementation(libs.lucide.icons)
   implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.coil.compose)
   implementation(libs.commonmark)
