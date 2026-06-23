@@ -34,6 +34,7 @@ slf4j = "2.0.13"
 bcprov = "1.78.1"
 commonmark = "0.22.0"
 security-crypto = "1.1.0-alpha06"
+lucide-icons = "1.1.0"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -90,3 +91,4 @@ commonmark = { module = "org.commonmark:commonmark", version.ref = "commonmark" 
 commonmark-ext-gfm-tables = { module = "org.commonmark:commonmark-ext-gfm-tables", version.ref = "commonmark" }
 commonmark-ext-gfm-strikethrough = { module = "org.commonmark:commonmark-ext-gfm-strikethrough", version.ref = "commonmark" }
 security-crypto = { module = "androidx.security:security-crypto", version.ref = "security-crypto" }
+lucide-icons = { group = "com.composables", name = "icons-lucide", version.ref = "lucide-icons" }
