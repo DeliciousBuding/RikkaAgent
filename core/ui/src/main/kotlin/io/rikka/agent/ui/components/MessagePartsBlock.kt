@@ -11,11 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.CircleCheck
+import com.composables.icons.lucide.X
+import com.composables.icons.lucide.TriangleAlert
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -90,9 +90,9 @@ private fun CommandPartView(part: MessagePart.Command) {
         if (part.isFinished) {
             Spacer(modifier = Modifier.width(8.dp))
             val (icon, color) = if (part.isSuccess) {
-                Icons.Filled.CheckCircle to Color(0xFF00B42A)
+                Lucide.CircleCheck to Color(0xFF00B42A)
             } else {
-                Icons.Filled.Close to MaterialTheme.colorScheme.error
+                Lucide.X to MaterialTheme.colorScheme.error
             }
             Icon(
                 imageVector = icon,
@@ -187,7 +187,7 @@ private fun ErrorPartView(part: MessagePart.Error) {
         verticalAlignment = Alignment.Top,
     ) {
         Icon(
-            imageVector = Icons.Filled.Warning,
+            imageVector = Lucide.TriangleAlert,
             contentDescription = "Error",
             tint = MaterialTheme.colorScheme.error,
             modifier = Modifier.size(16.dp),
