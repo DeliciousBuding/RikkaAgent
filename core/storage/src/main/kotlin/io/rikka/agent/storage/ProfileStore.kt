@@ -1,9 +1,13 @@
 package io.rikka.agent.storage
 
+import io.rikka.agent.model.ProfileSearchFilter
 import io.rikka.agent.model.SshProfile
+import kotlinx.coroutines.flow.Flow
 
 /**
- * Storage is defined early so UI can be built against it with fake implementations.
+ * Storage interface for SSH profiles.
+ *
+ * Provides CRUD operations plus search/filter capabilities.
  *
  * v1 plan:
  * - DataStore for preferences
@@ -15,4 +19,24 @@ interface ProfileStore {
   suspend fun getById(id: String): SshProfile?
   suspend fun upsert(profile: SshProfile)
   suspend fun delete(profileId: String)
+
+  /**
+   * Observe profiles matching the given [filter].
+   *
+   * Combines server-side text search (via DAO) with client-side
+   * group/tag filtering and sorting.
+   */
+  fun observeFiltered(filter: ProfileSearchFilter): Flow<List<SshProfile>>
+
+  /**
+   * Observe profiles belonging to a specific group.
+   */
+  fun observeByGroup(group: String): Flow<List<SshProfile>>
+
+  /**
+   * Get all profile IDs currently in the store.
+   *
+   * Used during import to detect ID conflicts.
+   */
+  suspend fun allIds(): Set<String>
 }

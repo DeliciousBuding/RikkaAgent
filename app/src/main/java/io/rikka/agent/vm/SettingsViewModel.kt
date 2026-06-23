@@ -3,6 +3,7 @@ package io.rikka.agent.vm
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.rikka.agent.storage.AppPreferences
+import io.rikka.agent.storage.QuickMessage
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -108,6 +109,13 @@ class SettingsViewModel(
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
 
   /**
+   * Observable list of user-configurable quick messages.
+   * Used by the chat input's long-press quick message picker.
+   */
+  val quickMessages: StateFlow<List<QuickMessage>> = prefs.quickMessages
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppPreferences.DEFAULT_QUICK_MESSAGES)
+
+  /**
    * Persist a new theme value.
    *
    * @param value The theme string: `"system"`, `"light"`, or `"dark"`.
@@ -198,5 +206,55 @@ class SettingsViewModel(
 
   fun setShowTimestamp(value: Boolean) {
     viewModelScope.launch { prefs.setShowTimestamp(value) }
+  }
+
+  /**
+   * Persist the full list of quick messages.
+   *
+   * @param messages The complete list of quick messages to store.
+   */
+  fun setQuickMessages(messages: List<QuickMessage>) {
+    viewModelScope.launch { prefs.setQuickMessages(messages) }
+  }
+
+  /**
+   * Add a new quick message.
+   *
+   * @param label Short display label.
+   * @param command The command text to insert/send.
+   */
+  fun addQuickMessage(label: String, command: String) {
+    viewModelScope.launch {
+      val current = quickMessages.value
+      prefs.setQuickMessages(current + QuickMessage(label = label, command = command))
+    }
+  }
+
+  /**
+   * Remove a quick message by its id.
+   *
+   * @param id The unique identifier of the quick message to remove.
+   */
+  fun removeQuickMessage(id: String) {
+    viewModelScope.launch {
+      val current = quickMessages.value
+      prefs.setQuickMessages(current.filter { it.id != id })
+    }
+  }
+
+  /**
+   * Update an existing quick message.
+   *
+   * @param id The unique identifier of the quick message to update.
+   * @param label New display label.
+   * @param command New command text.
+   */
+  fun updateQuickMessage(id: String, label: String, command: String) {
+    viewModelScope.launch {
+      val current = quickMessages.value
+      prefs.setQuickMessages(current.map {
+        if (it.id == id) it.copy(label = label, command = command) else it
+      })
+    }
   }
 }

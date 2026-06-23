@@ -70,6 +70,9 @@ private class HostKeyDecisionRequest(
  * - Known-host fingerprint and passphrase are pre-loaded before blocking sshj
  *   calls so that no suspend functions are invoked via [runBlocking].
  * - Call [close] to release pooled connections when done.
+ * - Call [isConnectionAlive] to check if the underlying SSH connection is healthy.
+ * - Call [connect] to pre-establish a connection without running a command.
+ * - Call [reconnect] to tear down and re-establish the connection with a new profile.
  */
 class SshjExecRunner(
   private val knownHostsStore: KnownHostsStore,
@@ -319,6 +322,114 @@ class SshjExecRunner(
     }
     cachedClient = null
     cachedProfileKey = null
+  }
+
+  /**
+   * Check if the underlying SSH connection is alive and usable.
+   *
+   * Returns `true` if:
+   * - A cached client exists (when [reuseConnections] is true), OR
+   * - No cached client exists but the runner is not configured for reuse (stateless mode).
+   *
+   * Returns `false` if:
+   * - The cached client is disconnected or its transport is inactive.
+   *
+   * Used by [SshConnectionPool] for periodic health checks.
+   */
+  fun isConnectionAlive(): Boolean {
+    if (!reuseConnections) return true // Stateless runners are always "alive" — they create per-run.
+    val client = cachedClient ?: return false
+    if (!client.isConnected) return false
+    return try {
+      // Access the connection object to verify the transport is still active.
+      // This will throw if the underlying socket is broken.
+      client.connection.keepAlive
+      true
+    } catch (_: Exception) {
+      false
+    }
+  }
+
+  /**
+   * Pre-establish an SSH connection for [profile] without running a command.
+   *
+   * This is used by [SshConnectionPool] to eagerly connect during pool entry creation,
+   * so that the first command execution does not bear the connection overhead.
+   *
+   * If a connection already exists for this profile (when [reuseConnections] is true),
+   * this is a no-op.
+   *
+   * @throws SshHostKeyRejectedException if host key verification is rejected.
+   * @throws Exception on connection or authentication failure.
+   */
+  suspend fun connect(profile: SshProfile) {
+    if (reuseConnections) {
+      val profileKey = "[${profile.host}]:${profile.port}:${profile.username}"
+      val existing = cachedClient
+      if (existing != null && existing.isConnected && cachedProfileKey == profileKey) {
+        return // Already connected.
+      }
+      evictCachedClient()
+    }
+    // Create and authenticate the connection.
+    // We use a throwaway channel for host key decisions during pre-connect.
+    val hostKeyChannel = Channel<HostKeyDecisionRequest>(capacity = 8)
+    val hostKeyJob = kotlinx.coroutines.GlobalScope.launch {
+      try {
+        for (request in hostKeyChannel) {
+          try {
+            val accepted = if (request.isMismatch) {
+              hostKeyCallback.onHostKeyMismatch(
+                request.host, request.port,
+                request.expectedFingerprint!!, request.fingerprint, request.keyType,
+              )
+            } else {
+              hostKeyCallback.onUnknownHost(
+                request.host, request.port, request.fingerprint, request.keyType,
+              )
+            }
+            request.decision.complete(accepted)
+            if (accepted && request.needsStore) {
+              knownHostsStore.store(
+                request.host, request.port,
+                StoredHostKey(request.fingerprint, request.keyType),
+              )
+            }
+          } catch (e: Exception) {
+            request.decision.complete(false)
+            if (e !is CancellationException) throw e
+          }
+        }
+      } catch (_: ClosedReceiveChannelException) { }
+    }
+
+    try {
+      val client = createClient(profile, hostKeyChannel)
+      if (reuseConnections) {
+        cachedClient = client
+        cachedProfileKey = "[${profile.host}]:${profile.port}:${profile.username}"
+      } else {
+        // For non-reuse mode, we created a client just to verify connectivity.
+        // Disconnect it immediately since each run() call creates its own.
+        client.disconnect()
+      }
+    } finally {
+      hostKeyChannel.close()
+      hostKeyJob.cancel()
+      hostKeyJob.join()
+    }
+  }
+
+  /**
+   * Tear down the current cached connection and re-establish a new one for [profile].
+   *
+   * Used by [SshConnectionPool] during reconnection after a connection failure.
+   * Equivalent to calling [close] followed by [connect], but preserves the
+   * [reuseConnections] semantics.
+   */
+  suspend fun reconnect(profile: SshProfile) {
+    evictCachedClient()
+    connect(profile)
   }
 
   /** Release any cached connection. Call when this runner is no longer needed. */

@@ -196,7 +196,7 @@ fun ErrorCard(
 
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = ErrorCardShape,
         color = MaterialTheme.colorScheme.errorContainer,
         shadowElevation = 4.dp,
     ) {
@@ -251,7 +251,7 @@ fun ErrorCard(
                         )
                     }
                 },
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier.size(48.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.ContentCopy,
@@ -262,7 +262,7 @@ fun ErrorCard(
             }
             IconButton(
                 onClick = onDismiss,
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier.size(48.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,

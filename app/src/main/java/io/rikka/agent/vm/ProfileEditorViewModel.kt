@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.rikka.agent.R
 import io.rikka.agent.model.AuthType
+import io.rikka.agent.model.ProfileGroup
 import io.rikka.agent.model.SshProfile
 import io.rikka.agent.storage.ProfileStore
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +34,8 @@ import java.util.UUID
  * @property codexMode     Whether to enable Codex JSONL mode for this profile.
  * @property codexWorkDir  Working directory for Codex execution, nullable.
  * @property codexApiKey   API key for Codex mode, nullable.
+ * @property group         Purpose-based grouping for organizational filtering.
+ * @property tags          Comma-separated tag string for freeform categorization.
  */
 data class ProfileForm(
   val name: String = "",
@@ -44,6 +47,8 @@ data class ProfileForm(
   val codexMode: Boolean = false,
   val codexWorkDir: String = "",
   val codexApiKey: String = "",
+  val group: ProfileGroup = ProfileGroup.None,
+  val tags: String = "",
 )
 
 /**
@@ -114,6 +119,8 @@ class ProfileEditorViewModel(
             codexMode = p.codexMode,
             codexWorkDir = p.codexWorkDir ?: "",
             codexApiKey = p.codexApiKey ?: "",
+            group = p.group,
+            tags = p.tags.joinToString(", "),
           )
         }
       }
@@ -145,6 +152,9 @@ class ProfileEditorViewModel(
         val portSuffix = if ((f.port.toIntOrNull() ?: 22) != 22) ":${f.port}" else ""
         "${f.username.trim()}@${f.host.trim()}$portSuffix"
       }
+      val parsedTags = f.tags.split(",")
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
       val profile = SshProfile(
         id = profileId ?: UUID.randomUUID().toString(),
         name = autoName,
@@ -156,6 +166,8 @@ class ProfileEditorViewModel(
         codexMode = f.codexMode,
         codexWorkDir = f.codexWorkDir.trim().ifBlank { null },
         codexApiKey = f.codexApiKey.trim().ifBlank { null },
+        group = f.group,
+        tags = parsedTags,
       )
       store.upsert(profile)
       _saved.value = true

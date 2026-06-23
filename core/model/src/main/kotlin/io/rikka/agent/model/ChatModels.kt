@@ -303,6 +303,45 @@ data class ChatMessage(
 }
 
 /**
+ * Aggregated statistics for a chat thread.
+ *
+ * Computed from the thread's messages. All fields default to zero for
+ * backward compatibility with threads that have no stats computed yet.
+ *
+ * ## Thread safety
+ *
+ * Immutable data class -- safe to share across threads.
+ *
+ * @property commandCount Number of user messages (commands executed).
+ * @property totalExecutionTimeMs Total wall-clock time between user commands
+ *   and their corresponding assistant responses, in milliseconds.
+ * @property outputLineCount Total number of lines across all assistant
+ *   message content.
+ */
+@Serializable
+data class SessionStats(
+    val commandCount: Int = 0,
+    val totalExecutionTimeMs: Long = 0,
+    val outputLineCount: Int = 0,
+) {
+    /**
+     * Human-readable execution time (e.g. "1m 23s", "45s", "2h 5m").
+     */
+    val formattedDuration: String
+        get() {
+            val totalSec = totalExecutionTimeMs / 1000
+            val hours = totalSec / 3600
+            val minutes = (totalSec % 3600) / 60
+            val seconds = totalSec % 60
+            return when {
+                hours > 0 -> "${hours}h ${minutes}m"
+                minutes > 0 -> "${minutes}m ${seconds}s"
+                else -> "${seconds}s"
+            }
+        }
+}
+
+/**
  * A chat thread containing an ordered list of messages.
  *
  * Represents a single conversation between a user and the AI assistant.
@@ -317,12 +356,21 @@ data class ChatMessage(
  * @property title Human-readable title for the thread, typically set by the
  *   user or auto-generated from the first message.
  * @property messages Ordered list of messages in this thread (oldest first).
+ * @property isPinned Whether this thread is pinned to the top of the list.
+ * @property isArchived Whether this thread has been archived (hidden from
+ *   the default view).
+ * @property tags User-assigned tags for categorization.
+ * @property stats Aggregated execution statistics.
  */
 @Serializable
 data class ChatThread(
     val id: String,
     val title: String,
     val messages: List<ChatMessage>,
+    val isPinned: Boolean = false,
+    val isArchived: Boolean = false,
+    val tags: List<String> = emptyList(),
+    val stats: SessionStats = SessionStats(),
 )
 
 // ── Backward-compatible deserialization ───────────────────────────────────────

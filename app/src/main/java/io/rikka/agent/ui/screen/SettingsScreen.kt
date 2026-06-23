@@ -46,12 +46,16 @@ import io.rikka.agent.vm.SettingsViewModel
 import lucide.icons.Lucide
 import org.koin.androidx.compose.koinViewModel
 
+private val ThemeOptions = listOf("system", "light", "dark", "amoled")
+private val ShellOptions = listOf("/bin/bash", "/bin/sh", "/bin/zsh", "/bin/fish")
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
   onBack: () -> Unit,
   onOpenKnownHosts: () -> Unit = {},
   onOpenAbout: () -> Unit = {},
+  onOpenDisplaySettings: () -> Unit = {},
 ) {
   val vm: SettingsViewModel = koinViewModel()
   val theme by vm.theme.collectAsStateWithLifecycle()
@@ -63,6 +67,7 @@ fun SettingsScreen(
   val showModelIcon by vm.showModelIcon.collectAsStateWithLifecycle()
   val chatFontId by vm.chatFont.collectAsStateWithLifecycle()
   val fontSizeRatio by vm.fontSizeRatio.collectAsStateWithLifecycle()
+  val bubbleOpacity by vm.bubbleOpacity.collectAsStateWithLifecycle()
   var showThemePicker by remember { mutableStateOf(false) }
   var showPresetThemePicker by remember { mutableStateOf(false) }
   var showShellPicker by remember { mutableStateOf(false) }
@@ -148,6 +153,11 @@ fun SettingsScreen(
         checked = enableMermaid,
         onCheckedChange = vm::setEnableMermaid,
       )
+      SettingsItem(
+        title = stringResource(R.string.display_settings),
+        subtitle = stringResource(R.string.section_display),
+        onClick = onOpenDisplaySettings,
+      )
       SettingsSwitchItem(
         title = stringResource(R.string.show_user_avatar),
         subtitle = stringResource(R.string.show_user_avatar_subtitle),
@@ -170,6 +180,10 @@ fun SettingsScreen(
       FontSizeRatioItem(
         ratio = fontSizeRatio,
         onRatioChange = vm::setFontSizeRatio,
+      )
+      BubbleOpacityItem(
+        opacity = bubbleOpacity,
+        onOpacityChange = vm::setBubbleOpacity,
       )
 
       SectionHeader(stringResource(R.string.section_security))
@@ -200,7 +214,7 @@ private fun ThemePickerDialog(
   onSelect: (String) -> Unit,
   onDismiss: () -> Unit,
 ) {
-  val options = listOf("system", "light", "dark", "amoled")
+  val options = ThemeOptions
   AlertDialog(
     onDismissRequest = onDismiss,
     title = { Text(stringResource(R.string.theme)) },
@@ -293,7 +307,7 @@ private fun ShellPickerDialog(
   onSelect: (String) -> Unit,
   onDismiss: () -> Unit,
 ) {
-  val options = listOf("/bin/bash", "/bin/sh", "/bin/zsh", "/bin/fish")
+  val options = ShellOptions
   AlertDialog(
     onDismissRequest = onDismiss,
     title = { Text(stringResource(R.string.default_shell_title)) },
