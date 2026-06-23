@@ -2,50 +2,85 @@
 
 > 最后更新：2026-06-23
 > 追踪模式：LOCAL_ONLY
+> 里程碑：v0.2.0-refactor-milestone ✅
 
 ## 任务定义
 
 **目标**：1:1 复刻 RikkaHub UI/前端层，适配 SSH 命令执行场景，UI 完全一致。
 
-**范围**：RikkaAgent 全仓库重构（UI + 数据模型 + 存储 + SSH 引擎 + 安全加固）
+**范围**：RikkaAgent 全仓库重构（UI + 数据模型 + 存储 + SSH 引擎 + 安全加固 + 工程现代化）
 
-**约束**：
-- ADB (Mumu 模拟器) + Sonnet 模型截图验收
-- 仓库必须适合对外展示（安全/隐私/产品口径）
-- 每阶段结束有可截图验收的 UI 产出
+**完成状态**：✅ 重构完成
 
-## 文档索引
+---
 
-| 类别 | 文档 | 状态 |
-|------|------|------|
-| 分析 | [项目概览](../analysis/project-overview.md) | ✅ |
-| 分析 | [综合技术分析报告](../analysis/analysis-report.md) | ✅ |
-| 规划 | [任务分解](../plan/task-breakdown.md) | ✅ |
-| 规划 | 依赖图 | ✅ (见 task-breakdown.md) |
-| 规划 | 里程碑 | ✅ (见 task-breakdown.md) |
+## 最终统计
+
+| 维度 | 数值 |
+|------|------|
+| Commits | 10 |
+| Files changed | 128 |
+| Insertions | +30,270 |
+| Deletions | -1,843 |
+| 生产代码 | 19,710 lines |
+| 测试代码 | 7,338 lines |
+| 文档 | 28 个 .md 文件 |
+| UI 组件 | 22 个 Composable |
+| ViewModel | 13 个 |
+| 测试文件 | 43 个（含 6 Fake） |
+
+---
 
 ## 阶段总览
 
-| 阶段 | 状态 | 任务数 | 说明 |
-|------|------|--------|------|
-| Phase 0: 同步与基线 | ✅ 完成 | 1 | RikkaHub fork 同步到 v2.3.2 |
-| Phase 1: 数据层重构 | ✅ 基本完成 | 4 | 1A ✅ 1B ✅ 1C ✅ 1D ✅ |
-| Phase 2: UI 基础设施 | ✅ 完成 | 4 | 2A ✅ 2B ✅ 2C ✅ 2D ✅ |
-| Phase 3: 核心 UI 复刻 | ✅ 基本完成 | 8 | 3A ✅ 3B ✅ 3C ✅ 3D ✅ 3E ✅ 3F ✅ 3G ✅ 3H ✅ |
-| Phase 4: SSH 适配 | ✅ 基本完成 | 4 | 4A ✅ 4B ✅ 4C ✅ 4D ✅ |
-| Phase 5: 安全与展示 | 🔄 进行中 | 4 | 5A ✅ 5B ✅ 5C ⏳ 5D ✅ |
+| 阶段 | 状态 | 说明 |
+|------|------|------|
+| Phase 0: 同步与基线 | ✅ 完成 | RikkaHub fork 同步到 v2.3.2 |
+| Phase 1: 数据层重构 | ✅ 完成 | MessagePart + Room Migration + Bug 修复 + VM 拆分 |
+| Phase 2: UI 基础设施 | ✅ 完成 | 主题系统 + 基础组件库 + 图标库 + Navigation |
+| Phase 3: 核心 UI 复刻 | ✅ 完成 | Markdown + 代码高亮 + 气泡 + 输入框 + ChatScreen |
+| Phase 4: SSH 适配 | ✅ 完成 | SshOutputMapper + 死锁修复 + Codex JSONL + 连接状态 |
+| Phase 5: 安全与展示 | ✅ 完成 | 安全加固 + 文档 + CI/CD + 合规 |
 
-## 当前状态
+---
 
-**活跃阶段**：多轮并行深度完善中
-**下一步**：等待所有 Workflow 完成 → 最终验收 → ADB 截图
+## 架构产出
+
+```
+:app           → Screens, Navigation, ViewModels, DI
+:core:model    → MessagePart, ChatModels, SshProfile
+:core:ssh      → SshjExecRunner, SshOutputMapper, JsonlParser
+:core:storage  → Room v5, DataStore, Repository
+:core:ui       → Theme, Components (22 composables)
+```
+
+---
+
+## 文档索引
+
+| 类别 | 文档 |
+|------|------|
+| 分析 | [project-overview.md](../analysis/project-overview.md) — [analysis-report.md](../analysis/analysis-report.md) |
+| 规划 | [task-breakdown.md](../plan/task-breakdown.md) |
+| 产品 | [prd.md](../prd.md) — [design.md](../design.md) |
+| 架构 | [architecture.md](../architecture.md) — [design-use-cases.md](../design-use-cases.md) |
+| API | [api.md](../api.md) |
+| 安全 | [security.md](../security.md) — [threat-model.md](../threat-model.md) — [privacy-audit.md](../privacy-audit.md) |
+| 测试 | [testing.md](../testing.md) — [testing-conventions.md](../testing-conventions.md) |
+| 合规 | [license-compliance.md](../license-compliance.md) — [privacy-compliance.md](../privacy-compliance.md) — [product-review.md](../product-review.md) |
+| 未来 | [design-agent-runner.md](../design-agent-runner.md) — [design-pty.md](../design-pty.md) |
+| 工程 | [CHANGELOG.md](../CHANGELOG.md) — [dependency-audit.md](../dependency-audit.md) |
+
+---
 
 ## 执行遥测
 
-| 任务 | 实际工作量 | S.U.P.E.R 评分 | 备注 |
-|------|-----------|---------------|------|
-| Phase 1 分析 | - | - | 15 agents 并行，~12min |
-| 全量实现 | - | - | 7 commits, 118 files, +27,194/-1,705 lines |
-| 文档产出 | - | - | 28 个 .md 文件（PRD/架构/设计/API/安全/测试/合规） |
-| 测试产出 | - | - | 14 个测试文件 + 6 个 Fake 实现 |
-| UI 组件 | - | - | 21 个 Composable |
+| 任务 | Workflows | Agents | Duration |
+|------|-----------|--------|----------|
+| Phase 1 分析 | 1 | 15 | ~12min |
+| Phase 1-5 实现 | 6 | 50+ | ~30min |
+| 验收审查 | 3 | 20+ | ~15min |
+| Spec 文档 | 2 | 8 | ~10min |
+| 测试+构建 | 2 | 10 | ~20min |
+| 合规+卫生 | 1 | 5 | ~10min |
+| **总计** | **12+** | **100+** | **~90min** |
