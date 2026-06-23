@@ -45,7 +45,7 @@
   <string name="snackbar_key_generated">Ed25519 密钥对已生成</string>
   <string name="snackbar_key_gen_failed">密钥生成失败：%s</string>
   <string name="snackbar_key_save_failed">密钥保存失败：%s</string>
-  <string name="snackbar_key_permission_not_persisted">密钥权限未持久化，访问失败请重新选择</string>
+  <string name="snackbar_key_permission_not_persisted">密钥权限未持久化，访问失败重新选择</string>
   <string name="snackbar_key_selection_failed">密钥选择失败</string>
   <string name="snackbar_pubkey_copied">公钥已复制</string>
   <string name="btn_copy_pubkey">复制公钥</string>
@@ -124,9 +124,9 @@
 
   <!-- ChatViewModel messages -->
   <string name="msg_profile_ready">就绪。配置：%1$s（%2$s@%3$s）</string>
-  <string name="msg_profile_not_found">错误：未找到配置。</string>
+  <string name="msg_profile_not_found">错误：未找到配置</string>
   <string name="msg_new_session">新会话。配置：%1$s（%2$s@%3$s）</string>
-  <string name="msg_not_connected">未连接。未加载配置。</string>
+  <string name="msg_not_connected">未连接。未加载配置</string>
   <string name="label_stderr">[标准错误]</string>
     <string name="msg_codex_status_prefix">Codex 状态：%1$s</string>
     <string name="msg_codex_progress_thread">线程</string>
@@ -135,12 +135,12 @@
   <string name="msg_no_output">（无输出）</string>
   <string name="msg_no_output_failed">（无输出，执行失败）</string>
   <string name="msg_exit_code">退出码：%d</string>
-  <string name="msg_output_truncated">⚠ 输出过大已截断，为保证性能仅显示部分内容。请使用导出保存完整输出。</string>
+  <string name="msg_output_truncated">⚠ 输出过大已截断，为保证性能仅显示部分内容。使用导出保存完整输出</string>
   <string name="msg_command_canceled">[用户已取消]</string>
   <string name="err_connection_refused">连接被拒绝 — SSH 服务是否在目标主机上运行？</string>
-  <string name="err_timeout">连接超时 — 请检查主机地址和网络连通性。</string>
-  <string name="err_unknown_host">找不到主机 — 请确认主机名或 IP 地址。</string>
-  <string name="err_auth_failed">认证失败 — 请检查凭据或密钥文件。</string>
+  <string name="err_timeout">连接超时 — 检查主机地址和网络连通性</string>
+  <string name="err_unknown_host">找不到主机 — 确认主机名或 IP 地址</string>
+  <string name="err_auth_failed">认证失败 — 检查凭据或密钥文件</string>
   <string name="err_ssh_generic">SSH 错误：%s</string>
 
   <!-- ProfileEditorViewModel test messages -->
@@ -148,8 +148,8 @@
   <string name="test_no_banner">已连接（无横幅）</string>
   <string name="test_ok">正常 — %s</string>
   <string name="test_refused">连接被拒绝 — %1$s:%2$d 上是否运行了 SSH？</string>
-  <string name="test_timeout">超时 — 主机 %s 可能不可达。</string>
-  <string name="test_host_not_found">找不到主机 — 请检查主机名。</string>
+  <string name="test_timeout">超时 — 主机 %s 可能不可达</string>
+  <string name="test_host_not_found">找不到主机 — 检查主机名</string>
   <string name="test_failed">失败：%s</string>
 
   <!-- SettingsScreen -->

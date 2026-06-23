@@ -149,7 +149,7 @@ fun ProfileEditorScreen(
         ),
       ) {
         Column(
-          modifier = Modifier.padding(16.dp),
+          modifier = Modifier.padding(24.dp),
           verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
           OutlinedTextField(
@@ -247,7 +247,7 @@ fun ProfileEditorScreen(
         ),
       ) {
         Column(
-          modifier = Modifier.padding(16.dp),
+          modifier = Modifier.padding(24.dp),
           verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
           AuthTypeDropdown(
@@ -395,7 +395,7 @@ fun ProfileEditorScreen(
         ),
       ) {
         Column(
-          modifier = Modifier.padding(16.dp),
+          modifier = Modifier.padding(24.dp),
           verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
           Row(

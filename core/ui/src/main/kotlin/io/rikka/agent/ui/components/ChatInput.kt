@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -38,7 +39,7 @@ fun ChatInput(
   onSend: (String) -> Unit,
 ) {
   var text by remember { mutableStateOf("") }
-  val shape = RoundedCornerShape(24.dp)
+  val shape = RoundedCornerShape(6.dp)
   val haptic = LocalHapticFeedback.current
 
   fun doSend() {
@@ -57,6 +58,7 @@ fun ChatInput(
     Box(
       modifier = Modifier
         .weight(1f)
+        .heightIn(min = 40.dp)
         .background(MaterialTheme.colorScheme.surfaceVariant, shape)
         .padding(horizontal = 6.dp, vertical = 2.dp)
     ) {
