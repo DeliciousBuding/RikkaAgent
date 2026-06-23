@@ -16,14 +16,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Card
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.ArrowLeft
 import com.composables.icons.lucide.Check
 import com.composables.icons.lucide.X
+import com.composables.icons.lucide.Eye
+import com.composables.icons.lucide.EyeOff
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
@@ -438,7 +437,7 @@ fun ProfileEditorScreen(
               trailingIcon = {
                 IconButton(onClick = { apiKeyVisible = !apiKeyVisible }) {
                   Icon(
-                    imageVector = if (apiKeyVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                    imageVector = if (apiKeyVisible) Lucide.EyeOff else Lucide.Eye,
                     contentDescription = stringResource(R.string.cd_toggle_api_key),
                   )
                 }
