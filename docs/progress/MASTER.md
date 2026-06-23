@@ -29,16 +29,16 @@
 | 阶段 | 状态 | 任务数 | 说明 |
 |------|------|--------|------|
 | Phase 0: 同步与基线 | ✅ 完成 | 1 | RikkaHub fork 同步到 v2.3.2 |
-| Phase 1: 数据层重构 | 🔄 进行中 | 4 | 1A ✅ 1B ✅ 1C ⏳ 1D ⏳ |
-| Phase 2: UI 基础设施 | 🔄 进行中 | 4 | 2A ✅ 2B ⏳ 2C ⏳ 2D ⏳ |
-| Phase 3: 核心 UI 复刻 | ⏳ 待开始 | - | ChatScreen/ChatInput/侧边栏 1:1 复刻 |
+| Phase 1: 数据层重构 | 🔄 进行中 | 4 | 1A ✅ 1B ✅ 1C ⏳ 1D ✅ |
+| Phase 2: UI 基础设施 | ✅ 基本完成 | 4 | 2A ✅ 2B ✅ 2C ✅ 2D ⏳ |
+| Phase 3: 核心 UI 复刻 | 🔄 进行中 | 8 | 3A ⏳ 3B ⏳ 3C ✅ 3D ⏳ 3E ⏳ 3F ✅ 3G ✅ 3H ✅ |
 | Phase 4: SSH 适配 | ⏳ 待开始 | - | SSH exec 流式输出适配 |
 | Phase 5: 安全与展示 | ⏳ 待开始 | - | 安全加固 + 对外展示准备 |
 
 ## 当前状态
 
-**活跃阶段**：Phase 3 规划中
-**下一步**：等待任务分解完成，确认规划后开始执行
+**活跃阶段**：Phase 3-4 并行实现中
+**下一步**：MarkdownBlock + HighlightCodeBlock + SshOutputMapper + 剩余 UI 组件
 
 ## 执行遥测
 

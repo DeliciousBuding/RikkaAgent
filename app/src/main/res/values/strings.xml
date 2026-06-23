@@ -146,6 +146,14 @@
   <string name="err_auth_failed">Authentication failed — check your credentials or key file.</string>
   <string name="err_ssh_generic">SSH error: %s</string>
 
+  <!-- Connection error banner categories -->
+  <string name="err_banner_connection_refused">Connection Refused</string>
+  <string name="err_banner_timeout">Connection Timeout</string>
+  <string name="err_banner_unknown_host">Host Not Found</string>
+  <string name="err_banner_auth_failed">Authentication Failed</string>
+  <string name="err_banner_key_mismatch">Host Key Changed</string>
+  <string name="err_banner_generic">Connection Error</string>
+
   <!-- ProfileEditorViewModel test messages -->
   <string name="test_host_empty">Host is empty</string>
   <string name="test_no_banner">Connected (no banner)</string>

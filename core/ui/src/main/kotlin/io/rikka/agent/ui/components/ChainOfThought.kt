@@ -48,12 +48,43 @@ private val LocalCardColor = staticCompositionLocalOf { Color.White }
  * Supports auto-collapsing when the step count exceeds [collapsedVisibleCount],
  * with an expand/collapse control bar at the top.
  *
+ * Each step is rendered inside a [ChainOfThoughtScope], which provides
+ * [ChainOfThoughtScope.ChainOfThoughtStep] (uncontrolled) and
+ * [ChainOfThoughtScope.ControlledChainOfThoughtStep] (controlled) for declaring steps.
+ *
+ * @param T The type of step data.
  * @param modifier Modifier applied to the outer card.
  * @param cardColors Card color configuration.
  * @param steps The list of step data to render.
  * @param collapsedVisibleCount Number of trailing steps visible when collapsed.
+ *   Defaults to `2`. When [steps] size exceeds this value, a toggle bar appears.
  * @param collapsedAdaptiveWidth Whether the collapsed state uses content-adaptive width.
+ *   When `true`, the card shrinks to fit content; when `false`, it fills max width.
  * @param content Composable lambda that renders each step via [ChainOfThoughtScope].
+ *
+ * ```
+ * data class ReasoningStep(val title: String, val detail: String)
+ *
+ * ChainOfThought(
+ *     steps = reasoningSteps,
+ *     collapsedVisibleCount = 3,
+ * ) { step ->
+ *     ChainOfThoughtStep(
+ *         label = { Text(step.title) },
+ *         content = { Text(step.detail) },
+ *     )
+ * }
+ *
+ * // Controlled variant for external state sync
+ * ChainOfThought(steps = steps) { step ->
+ *     ControlledChainOfThoughtStep(
+ *         expanded = isExpanded,
+ *         onExpandedChange = { isExpanded = it },
+ *         label = { Text(step.title) },
+ *         content = { Text(step.detail) },
+ *     )
+ * }
+ * ```
  */
 @Composable
 fun <T> ChainOfThought(
@@ -164,17 +195,37 @@ fun <T> ChainOfThought(
  *
  * Provides both uncontrolled and controlled step declarations with
  * unified timeline layout and interaction behavior.
+ *
+ * Steps are rendered with:
+ * - A timeline dot or custom icon on the left
+ * - A label row in the center
+ * - Optional extra content on the right
+ * - An expand/collapse indicator or a navigation arrow
+ * - Expandable content area indented beneath the label
  */
 interface ChainOfThoughtScope {
     /**
      * Declares an uncontrolled step (expand/collapse managed internally).
      *
-     * @param icon Step icon composable.
-     * @param label Step title area.
+     * The step manages its own expanded state via [remember]. If you need
+     * external control over expand/collapse, use [ControlledChainOfThoughtStep] instead.
+     *
+     * @param icon Step icon composable. When `null`, a small filled circle is rendered.
+     * @param label Step title area. Always visible.
      * @param extra Additional info displayed to the right of the title.
      * @param onClick Custom click handler; takes priority over expand/collapse when set.
+     *   Shows a right-arrow indicator instead of an expand/collapse arrow.
      * @param collapsedAdaptiveWidth Whether to use content-adaptive width when collapsed and content is hidden.
      * @param content Expandable content; `null` makes the step non-expandable.
+     *
+     * ```
+     * ChainOfThoughtStep(
+     *     icon = { Icon(Icons.Default.Search, contentDescription = null) },
+     *     label = { Text("Searching files") },
+     *     extra = { Text("2s", style = MaterialTheme.typography.labelSmall) },
+     *     content = { Text("Found 3 matching files in src/") },
+     * )
+     * ```
      */
     @Composable
     fun ChainOfThoughtStep(
@@ -194,13 +245,27 @@ interface ChainOfThoughtScope {
      *
      * @param expanded Current expand state.
      * @param onExpandedChange Expand state change callback.
-     * @param icon Step icon composable.
-     * @param label Step title area.
+     * @param icon Step icon composable. When `null`, a small filled circle is rendered.
+     * @param label Step title area. Always visible.
      * @param extra Additional info displayed to the right of the title.
      * @param onClick Custom click handler; takes priority over expand/collapse when set.
+     *   Shows a right-arrow indicator instead of an expand/collapse arrow.
      * @param collapsedAdaptiveWidth Whether to use content-adaptive width when collapsed and content is hidden.
      * @param contentVisible Whether content area is visible; can be decoupled from [expanded].
+     *   Useful for hiding content during streaming while keeping expanded state.
      * @param content Step content; `null` makes the step non-expandable.
+     *
+     * ```
+     * var isExpanded by remember { mutableStateOf(true) }
+     *
+     * ControlledChainOfThoughtStep(
+     *     expanded = isExpanded,
+     *     onExpandedChange = { isExpanded = it },
+     *     label = { Text("Code generation") },
+     *     contentVisible = isExpanded && !isStreaming,
+     *     content = { CodeBlock(generatedCode) },
+     * )
+     * ```
      */
     @Composable
     fun ControlledChainOfThoughtStep(

@@ -5,6 +5,7 @@ plugins {
   alias(libs.plugins.kotlin.android)
   alias(libs.plugins.kotlin.compose)
   alias(libs.plugins.kotlin.serialization)
+  jacoco
 }
 
 android {
@@ -67,6 +68,38 @@ android {
   }
 
   kotlinOptions { jvmTarget = "17" }
+}
+
+tasks.withType<JacocoReport> {
+  dependsOn("testDevDebugUnitTest")
+}
+
+tasks.register<JacocoReport>("jacocoTestReportDevDebugUnitTest") {
+  dependsOn("testDevDebugUnitTest")
+  group = "verification"
+  description = "Generate JaCoCo coverage report for devDebug unit tests."
+
+  reports {
+    xml.required.set(true)
+    csv.required.set(true)
+    html.required.set(true)
+    xml.outputLocation.set(layout.buildDirectory.file("reports/jacoco/jacocoTestReportDevDebugUnitTest/jacocoTestReportDevDebugUnitTest.xml"))
+    csv.outputLocation.set(layout.buildDirectory.file("reports/jacoco/jacocoTestReportDevDebugUnitTest/jacocoTestReportDevDebugUnitTest.csv"))
+    html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/jacocoTestReportDevDebugUnitTest"))
+  }
+
+  val mainSrc = file("src/main/java")
+  val debugClasses = fileTree("build/tmp/kotlin-classes/devDebug") {
+    include("**/*.class")
+    exclude("**/R.class", "**/R\$*.class", "**/BuildConfig.class", "**/Manifest*.*")
+  }
+  val debugExecData = fileTree("build") {
+    include("jacoco/testDevDebugUnitTest.exec")
+  }
+
+  sourceDirectories.setFrom(mainSrc)
+  classDirectories.setFrom(debugClasses)
+  executionData.setFrom(debugExecData)
 }
 
 dependencies {

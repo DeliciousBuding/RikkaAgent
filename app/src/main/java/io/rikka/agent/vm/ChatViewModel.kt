@@ -23,10 +23,42 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 /**
- * Thin orchestrator that composes [ChatSessionManager], [CommandExecutor],
- * and [AuthCallbackBroker] to drive the chat UI.
+ * Top-level ViewModel for the chat screen.
  *
- * Owns the message list and delegates all domain logic to sub-components.
+ * ## Responsibilities
+ * - Orchestrates [ChatSessionManager] (thread lifecycle), [CommandExecutor] (SSH execution),
+ *   and [AuthCallbackBroker] (authentication callbacks) to drive the chat UI.
+ * - Owns the observable message list and exposes it as a [StateFlow] for Compose collection.
+ * - Delegates all domain logic (SSH connection, command execution, persistence) to sub-components,
+ *   keeping itself as a thin coordination layer.
+ *
+ * ## Thread Safety
+ * - All mutable state is held in [MutableStateFlow] instances, which are safe for concurrent
+ *   emission and collection.
+ * - The [viewModelScope] is used for all coroutines; mutations to [_messages] happen on the
+ *   Main dispatcher via [MutableStateFlow.update].
+ * - [CommandExecutor] launches its own coroutine in the provided scope for SSH streaming;
+ *   its callbacks (`updateContent`, `updateMessage`) are invoked from that coroutine and
+ *   must be thread-safe (they are, via `StateFlow.update`).
+ *
+ * ## Exposed State
+ * | StateFlow / SharedFlow       | Type                          | Description                                      |
+ * |------------------------------|-------------------------------|--------------------------------------------------|
+ * | [messages]                   | `StateFlow<List<ChatMessage>>`| Full message list for the current thread.        |
+ * | [profileLabel]               | `StateFlow<String>`           | Display label for the loaded SSH profile.        |
+ * | [threads]                    | `StateFlow<List<ChatThread>>` | Past thread list for thread-switcher UI.         |
+ * | [connectionState]            | `StateFlow<ConnectionState>`  | IDLE / READY / EXECUTING / ERROR.                |
+ * | [lastConnectionError]        | `StateFlow<ConnectionError?>` | Most recent connection-level error, dismissable. |
+ *
+ * ## Exposed Events (SharedFlows)
+ * | SharedFlow                   | Type                          | Description                                      |
+ * |------------------------------|-------------------------------|--------------------------------------------------|
+ * | [hostKeyEvent]               | `SharedFlow<HostKeyEvent>`    | Unknown-host or host-key-mismatch prompt.        |
+ * | [passwordRequest]            | `SharedFlow<String>`          | Password auth prompt (description string).       |
+ * | [passphraseRequest]          | `SharedFlow<String>`          | Key passphrase prompt (description string).      |
+ *
+ * @param profileId  The SSH profile ID this session is bound to.
+ * @param app        Android [Application] for string resource access.
  */
 class ChatViewModel(
   private val profileId: String,
@@ -41,14 +73,17 @@ class ChatViewModel(
 
   // ── Sub-components ─────────────────────────────────────────────────────
 
+  /** Broker that bridges SSH authentication callbacks to UI-side SharedFlows. */
   private val authBroker = AuthCallbackBroker()
 
+  /** Manages thread CRUD, title generation, and message persistence. */
   private val sessionManager = ChatSessionManager(
     profileId = profileId,
     chatRepository = chatRepository,
     scope = viewModelScope,
   )
 
+  /** Handles SSH connection lifecycle, command execution, and output streaming. */
   private val commandExecutor = CommandExecutor(
     profileStore = profileStore,
     knownHostsStore = knownHostsStore,
@@ -62,25 +97,43 @@ class ChatViewModel(
 
   // ── UI State ───────────────────────────────────────────────────────────
 
+  /** Backing list of messages for the current thread. Mutated via [MutableStateFlow.update]. */
   private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
+  /** Observable message list for the chat UI. */
   val messages: StateFlow<List<ChatMessage>> = _messages
 
+  /** Backing field for the profile display label. */
   private val _profileLabel = MutableStateFlow("")
+  /** Human-readable label for the loaded SSH profile (e.g. "root@host"). */
   val profileLabel: StateFlow<String> = _profileLabel
 
+  /** Observable list of past chat threads for the thread-switcher drawer. */
   val threads: StateFlow<List<ChatThread>> = sessionManager.threads
+  /** Current SSH connection lifecycle state. */
   val connectionState: StateFlow<ConnectionState> = commandExecutor.connectionState
+  /** Most recent connection-level error, or null if none / dismissed. */
+  val lastConnectionError: StateFlow<ConnectionError?> = commandExecutor.lastConnectionError
+
+  /** Dismiss the current [lastConnectionError]. */
+  fun dismissConnectionError() = commandExecutor.dismissConnectionError()
 
   // ── Auth flows (forwarded from broker) ─────────────────────────────────
 
+  /** Emits [HostKeyEvent] when the SSH host is unknown or its key has changed. */
   val hostKeyEvent: SharedFlow<HostKeyEvent> = authBroker.hostKeyEvent
+  /** Emits a description string when password authentication is requested. */
   val passwordRequest: SharedFlow<String> = authBroker.passwordRequest
+  /** Emits a description string when a private-key passphrase is requested. */
   val passphraseRequest: SharedFlow<String> = authBroker.passphraseRequest
 
   init {
     loadProfile()
   }
 
+  /**
+   * Load the SSH profile for [profileId] and emit a system message with the result.
+   * Runs on [viewModelScope]; updates [_profileLabel] and appends a system [ChatMessage].
+   */
   private fun loadProfile() {
     viewModelScope.launch {
       val result = commandExecutor.loadProfile(profileId)
@@ -98,13 +151,21 @@ class ChatViewModel(
 
   // ── Auth responses (forwarded to broker) ───────────────────────────────
 
+  /** Respond to a host-key verification prompt. [accepted] = true to trust. */
   fun respondToHostKey(accepted: Boolean) = authBroker.respondToHostKey(accepted)
+  /** Respond to a password prompt. Pass null to cancel authentication. */
   fun respondToPassword(password: String?) = authBroker.respondToPassword(password)
+  /** Respond to a passphrase prompt. Pass null to cancel authentication. */
   fun respondToPassphrase(passphrase: String?) = authBroker.respondToPassphrase(passphrase)
 
   // ── Session management ─────────────────────────────────────────────────
 
-  /** Start a fresh session (new thread). */
+  /**
+   * Start a fresh session (new thread).
+   *
+   * Cancels any running command, resets the session manager and connection state,
+   * clears the message list, and appends a system message with the current profile info.
+   */
   fun newSession() {
     commandExecutor.cancel()
     sessionManager.newSession()
@@ -117,7 +178,14 @@ class ChatViewModel(
     )
   }
 
-  /** Switch to an existing thread and load its messages. */
+  /**
+   * Switch to an existing thread and load its messages.
+   *
+   * Cancels any running command, switches the session manager's active thread,
+   * resets connection state, and loads messages from the repository into [_messages].
+   *
+   * @param targetThreadId The ID of the thread to switch to.
+   */
   fun switchThread(targetThreadId: String) {
     commandExecutor.cancel()
     sessionManager.switchThread(targetThreadId)
@@ -127,7 +195,13 @@ class ChatViewModel(
     }
   }
 
-  /** Delete a thread and clear UI if it was the current one. */
+  /**
+   * Delete a thread and clear UI if it was the current one.
+   *
+   * If the deleted thread was the active session, automatically starts a new session.
+   *
+   * @param targetThreadId The ID of the thread to delete.
+   */
   fun deleteThread(targetThreadId: String) {
     viewModelScope.launch {
       val wasActive = sessionManager.deleteThread(targetThreadId)

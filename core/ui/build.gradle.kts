@@ -33,6 +33,8 @@ dependencies {
   implementation(libs.commonmark)
   implementation(libs.commonmark.ext.gfm.tables)
   implementation(libs.commonmark.ext.gfm.strikethrough)
+  implementation(libs.intellij.markdown)
+  implementation(libs.kotlinx.coroutines.core)
   implementation(projects.core.model)
 
   testImplementation(libs.junit4)

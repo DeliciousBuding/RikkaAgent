@@ -1,54 +1,99 @@
-# STATE — rikka-agent 基础事实
+# STATE -- rikka-agent
 
-> 用途：集中记录项目和基础设施的**静态事实**（地址、配置、架构、决策）。不含进度和历史。
+> Static facts, architecture, and infrastructure. No progress or history.
 >
-> 进度 → `ROADMAP.md` ｜ 历史 → `ARCHIVE.md`
+> Progress -> `ROADMAP.md` | History -> `ARCHIVE.md`
 
 ---
 
-## 1. rikka-agent 关键决策（SSOT）
+## 1. Key Decisions (SSOT)
 
-| 决策项 | 值 |
-|--------|-----|
-| 产品形态 | Android App（Kotlin + Jetpack Compose） |
-| 交互模式 | Mode A（非交互 exec channel；不做 PTY/ANSI 渲染） |
-| 连接方式 | Android 原生 SSH 直连；不引入"服务端 HTTP 远程执行中转" |
-| 安全原则 | Known-hosts 默认开启；host key mismatch 默认阻断；密钥加密存储 |
-| 开源协议 | Apache-2.0 |
-| Clean-room | 参考 UI "感觉"，不拷贝参考项目代码 |
-| SSH 库 | sshj 0.39.0 (BSD-2-Clause)，支持 Ed25519/RSA/ECDSA |
-| 私钥格式 | OpenSSH PEM + PuTTY `.ppk` |
-| Markdown 解析 | commonmark-java 0.22.0 (BSD-2-Clause) + GFM tables/strikethrough |
-| 密钥存储 | EncryptedFile (AES-256-GCM via AndroidX Security Crypto) |
-| Codex 集成 | `codex exec --full-auto` via SSH (exec channel) |
-| 输出策略 | 截断显示 + 消息级完整查看/完整分享（complete output） |
-| 国际化 | 中英双语 (values/strings.xml + values-zh/strings.xml)，中文优先 |
-| 持久化 | Room DB v3 (聊天/配置/Codex字段) + DataStore (偏好) |
+| Decision | Value |
+|----------|-------|
+| Product form | Android App (Kotlin + Jetpack Compose) |
+| Product positioning | SSH command executor (not an AI chat client) |
+| Interaction mode | Mode A (non-interactive exec channel; no PTY/ANSI rendering) |
+| Connection | Android native SSH direct; no server-side HTTP relay |
+| Security | Known-hosts enabled by default; host key mismatch blocks; encrypted key storage |
+| License | Apache-2.0 |
+| Clean-room | UX inspiration only; no code copied from reference projects |
+| SSH library | sshj 0.39.0 (BSD-2-Clause), Ed25519/RSA/ECDSA |
+| Private key format | OpenSSH PEM + PuTTY `.ppk` |
+| Markdown rendering | IntelliJ MarkdownParser 0.7.3 (AST-based, syntax highlighting) + commonmark-java 0.22.0 (GFM tables/strikethrough) |
+| Icon system | Lucide Icons 1.1.0 (`composables:icons-lucide`) |
+| Theme | MaterialExpressiveTheme + AMOLED + dynamic color + extend colors |
+| Message model | `MessagePart` sealed class (Command/Stdout/Stderr/Text/Code/Reasoning/Error/Mermaid) |
+| Key storage | EncryptedFile (AES-256-GCM via AndroidX Security Crypto) |
+| Codex integration | `codex exec --full-auto` via SSH (exec channel) |
+| Output strategy | Truncation display + message-level complete output view/share |
+| i18n | Chinese + English (values/strings.xml + values-zh/strings.xml), Chinese-first |
+| Persistence | Room DB v5 (chat/config/Codex fields/partsJson) + DataStore (preferences) |
 | DI | Koin |
 | CI | GitHub Actions: test + lint + assemble + artifacts + step summary |
-| Spec 索引 | `docs/spec/00-index.md` |
+| Spec index | `docs/spec/00-index.md` |
 
 ---
 
-## 2. 代码模块状态
+## 2. Module Status
 
-| 模块 | 完成度 | 说明 |
-|------|--------|------|
-| `:app` | 高完成度 | Navigation、ViewModel、Codex 模式、完整输出展开/分享、i18n |
-| `:core:model` | 稳定 | SshProfile、Chat models、状态枚举 |
-| `:core:ssh` | 稳定 | SSH exec、JSONL parser、HostKey 验证、`.ppk` 支持 |
-| `:core:storage` | 稳定 | Room v3、DataStore、Profile/Chat 持久化 |
-| `:core:ui` | 高完成度 | Theme、ChatBubble、CodeCard、MarkdownText、ChatInput |
+| Module | Status | Notes |
+|--------|--------|-------|
+| `:app` | High completion | Navigation, ViewModel decomposition (6 sub-components), Codex mode, i18n, Lucide icons throughout |
+| `:core:model` | Stable | `MessagePart` sealed class (8 types), `ChatMessage` with parts + backward compat, `ChatThread`, `SshProfile`, Room MIGRATION_4_5 |
+| `:core:ssh` | Stable | SSH exec, JSONL parser, HostKey verification, `.ppk` support, `SshConnectionPool`, `SshOutputMapper` |
+| `:core:storage` | Stable | Room v5, DataStore, Profile/Chat persistence, `MessagePartConverter`, proper Migrations |
+| `:core:ui` | High completion | MaterialExpressiveTheme, `MessagePartsBlock`, `HighlightCodeBlock`, `MarkdownBlock`, `ReasoningCard`, `ChainOfThought`, `CodeCard`, `CommandCard`, `StreamOutputCard`, `ErrorCard`, `DataTable`, `DotLoading`, `MermaidDiagramCard` |
 
 ---
 
-## 3. 本地构建前置（Windows）
+## 3. ViewModel Decomposition
 
-- 若终端未预置 JDK，请先设置：
-	- `JAVA_HOME=d:\Code\Projects\rikka-agent\tmp\jdk17\jdk-17.0.18+8`
-	- 将 `%JAVA_HOME%\\bin` 加入 `Path`
-- 上述路径已在本仓库当前环境中验证可用于 Gradle 测试、lint 与打包。
+The original monolithic `ChatViewModel` (529 lines, 8 parameters) has been split into focused collaborators:
 
-常见环境问题排查：
+| Component | Responsibility |
+|-----------|---------------|
+| `ChatViewModel` | Thin orchestrator: message list state, composes sub-components |
+| `ChatSessionManager` | Thread CRUD, message persistence, title auto-generation |
+| `CommandExecutor` | SSH connection lifecycle, command execution, output formatting, Codex JSONL processing |
+| `AuthCallbackBroker` | Bridges sshj synchronous callbacks (host key / password / passphrase) to Compose SharedFlows |
+| `SessionExporter` | Session export to file |
+| `CancelMessageHelper` | Cancellation message assembly |
+| `OutputFormatter` | Truncation, exit code, stderr formatting |
+| `CommandComposer` | Shell wrapping, Codex env injection |
+| `CodexProgressFormatter` | thread/turn/item progress rendering |
+| `ErrorMessageMapper` | SSH error category to user-friendly string |
+| `CodexEventMapper` | Maps Codex JSONL events to `MessagePart` subtypes |
+
+---
+
+## 4. MessagePart Model
+
+`ChatMessage.parts: List<MessagePart>` replaces the flat `content: String` field.
+
+| Part Type | SerialName | Purpose |
+|-----------|-----------|---------|
+| `MessagePart.Command` | `"command"` | Executed command with exit code and timestamp |
+| `MessagePart.Stdout` | `"stdout"` | Stdout chunk (streaming-friendly) |
+| `MessagePart.Stderr` | `"stderr"` | Stderr chunk |
+| `MessagePart.Text` | `"text"` | Plain text / Markdown content |
+| `MessagePart.Code` | `"code"` | Fenced code block with language tag |
+| `MessagePart.Reasoning` | `"reasoning"` | AI reasoning step (ChainOfThought) |
+| `MessagePart.Error` | `"error"` | Structured error with cause chain |
+| `MessagePart.Mermaid` | `"mermaid"` | Mermaid diagram definition |
+
+Serialization: kotlinx.serialization polymorphism with `"type"` discriminator. Forward-compatible (`ignoreUnknownKeys = true`).
+
+Backward compatibility: old `content`-only messages auto-migrate to `parts = listOf(Text(content))` on deserialization.
+
+---
+
+## 5. Local Build Prerequisites (Windows)
+
+- If terminal lacks JDK, set first:
+  - `JAVA_HOME=d:\Code\Projects\rikka-agent\tmp\jdk17\jdk-17.0.18+8`
+  - Add `%JAVA_HOME%\bin` to `Path`
+- The above path is verified for Gradle test, lint, and assemble in the current environment.
+
+Common environment troubleshooting:
 
 - `docs/troubleshooting.md`
