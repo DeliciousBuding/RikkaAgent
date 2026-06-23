@@ -8,9 +8,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.ArrowLeft
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -87,7 +88,7 @@ fun KnownHostsScreen(
         title = { Text(stringResource(R.string.known_hosts_title)) },
         navigationIcon = {
           IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+            Icon(Lucide.ArrowLeft, contentDescription = stringResource(R.string.back))
           }
         },
       )

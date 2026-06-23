@@ -3,9 +3,9 @@
 
   <!-- Navigation -->
   <string name="back">Back</string>
-  <string name="save">Save</string>
+  <string name="save">Save Profile</string>
   <string name="cancel">Cancel</string>
-  <string name="delete">Delete</string>
+  <string name="delete">Delete Profile</string>
   <string name="edit">Edit</string>
   <string name="copy">Copy</string>
   <string name="share">Share</string>
@@ -70,7 +70,7 @@
   <string name="status_running">Running… %ds</string>
   <string name="status_error">Error</string>
   <string name="sessions">Sessions</string>
-  <string name="export_session">Export session</string>
+  <string name="export_session">Export Session</string>
   <string name="new_session">New session</string>
   <string name="scroll_to_bottom">Scroll to bottom</string>
   <string name="delete_session_title">Delete session?</string>
@@ -89,9 +89,9 @@
   <string name="host_key_replace_confirm_title">Confirm host key replacement</string>
   <string name="host_key_replace_confirm_msg">You are about to replace the trusted host key for %1$s:%2$d. Continue only if you have verified this key out of band.</string>
   <string name="host_key_replace_confirm_action">Yes, replace and trust</string>
-  <string name="btn_trust">Trust</string>
+  <string name="btn_trust">Trust Host</string>
   <string name="btn_replace_trust">Replace &amp; Trust</string>
-  <string name="btn_reject">Reject</string>
+  <string name="btn_reject">Reject Host</string>
 
   <!-- Passphrase dialog -->
   <string name="key_passphrase">Key Passphrase</string>
@@ -101,7 +101,7 @@
   <string name="ssh_password">SSH Password</string>
   <string name="label_password">Password</string>
   <string name="password_prompt">Enter %1$s for %2$s</string>
-  <string name="btn_connect">Connect</string>
+  <string name="btn_connect">Connect to Server</string>
 
   <!-- Share -->
   <string name="share_output">Share output</string>

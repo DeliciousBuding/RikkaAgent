@@ -18,11 +18,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Settings
+import com.composables.icons.lucide.Plus
+import com.composables.icons.lucide.Trash2
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -76,7 +76,7 @@ fun ProfilesScreen(
         title = { Text(stringResource(R.string.app_name)) },
         actions = {
           IconButton(onClick = onOpenSettings) {
-            Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.settings))
+            Icon(Lucide.Settings, contentDescription = stringResource(R.string.settings))
           }
         },
         scrollBehavior = scrollBehavior,
@@ -84,7 +84,7 @@ fun ProfilesScreen(
     },
     floatingActionButton = {
       FloatingActionButton(onClick = { onEditProfile(null) }) {
-        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.new_profile))
+        Icon(Lucide.Plus, contentDescription = stringResource(R.string.new_profile))
       }
     },
   ) { innerPadding ->
@@ -120,7 +120,7 @@ fun ProfilesScreen(
                 contentAlignment = Alignment.CenterEnd,
               ) {
                 Icon(
-                  Icons.Default.Delete,
+                  Lucide.Trash2,
                   contentDescription = stringResource(R.string.delete),
                   tint = MaterialTheme.colorScheme.error,
                 )
@@ -195,7 +195,7 @@ private fun ProfileCard(
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
         )
-        Spacer(modifier = Modifier.height(2.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
           text = "${profile.username}@${profile.host}:${profile.port}",
           style = MaterialTheme.typography.bodyMedium,
