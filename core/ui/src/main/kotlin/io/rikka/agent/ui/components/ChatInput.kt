@@ -65,13 +65,13 @@ fun ChatInput(
     modifier = modifier
       .imePadding()
       .navigationBarsPadding()
-      .padding(horizontal = 12.dp, vertical = 8.dp),
+      .padding(horizontal = 8.dp, vertical = 4.dp),
     shape = containerShape,
     color = containerColor,
     border = BorderStroke(1.dp, borderColor),
   ) {
     Column(
-      modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+      modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
       verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
       // Text input
@@ -117,7 +117,7 @@ fun ChatInput(
         // Right side: send / stop button
         IconButton(
           onClick = { doSend() },
-          modifier = Modifier.size(36.dp),
+          modifier = Modifier.size(30.dp),
         ) {
           Icon(
             imageVector = Lucide.Send,

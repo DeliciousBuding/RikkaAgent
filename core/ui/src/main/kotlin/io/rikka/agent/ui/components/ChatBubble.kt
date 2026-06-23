@@ -66,7 +66,7 @@ fun ChatBubble(
   val isError = message.status == MessageStatus.Error
   val isCanceled = message.status == MessageStatus.Canceled
   val isStreaming = message.status == MessageStatus.Streaming
-  val bubbleShape = RoundedCornerShape(12.dp)
+  val bubbleShape = RoundedCornerShape(16.dp)
 
   val bubbleColor = when {
     isUser -> MaterialTheme.colorScheme.primaryContainer

@@ -173,7 +173,7 @@ private fun ProfileCard(
     Row(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(24.dp),
+        .padding(16.dp),
       verticalAlignment = Alignment.CenterVertically,
     ) {
       // Letter avatar
@@ -254,7 +254,7 @@ private fun EmptyState(
     Icon(
       imageVector = Lucide.Server,
       contentDescription = null,
-      modifier = Modifier.size(64.dp),
+      modifier = Modifier.size(48.dp),
       tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
     )
     Spacer(modifier = Modifier.height(16.dp))
