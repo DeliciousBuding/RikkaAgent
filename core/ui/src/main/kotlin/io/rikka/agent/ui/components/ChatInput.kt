@@ -113,6 +113,7 @@ fun ChatInput(
         Row(
           horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
+          // TODO: Implement action buttons — Globe (remote file browser), Search (output search), Lightbulb (quick commands)
           IconButton(onClick = { }, modifier = Modifier.size(30.dp)) {
             Icon(Lucide.Globe, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
           }

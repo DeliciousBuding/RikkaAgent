@@ -124,9 +124,6 @@ private fun MermaidWebView(
     update = { webView ->
       val html = MermaidRenderSupport.buildHtml(source, mermaidTheme)
       webView.loadDataWithBaseURL("about:blank", html, "text/html", "utf-8", null)
-      if (mermaidTheme.isBlank() || !html.contains("window.mermaid")) {
-        onRenderError()
-      }
     },
   )
 }
