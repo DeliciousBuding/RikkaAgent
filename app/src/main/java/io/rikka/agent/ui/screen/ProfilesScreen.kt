@@ -165,7 +165,7 @@ private fun ProfileCard(
     Row(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(16.dp),
+        .padding(24.dp),
       verticalAlignment = Alignment.CenterVertically,
     ) {
       // Letter avatar

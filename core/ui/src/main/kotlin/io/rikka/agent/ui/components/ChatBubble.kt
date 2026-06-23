@@ -59,7 +59,7 @@ fun ChatBubble(
   message: ChatMessage,
   enableMermaid: Boolean = false,
   modifier: Modifier = Modifier,
-  contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+  contentPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
   onRerun: ((String) -> Unit)? = null,
   onShare: ((String) -> Unit)? = null,
   showExpand: Boolean = false,
@@ -70,22 +70,17 @@ fun ChatBubble(
   val isError = message.status == MessageStatus.Error
   val isCanceled = message.status == MessageStatus.Canceled
   val isStreaming = message.status == MessageStatus.Streaming
-  val bubbleShape = RoundedCornerShape(
-    topStart = 18.dp,
-    topEnd = 18.dp,
-    bottomEnd = if (isUser) 6.dp else 18.dp,
-    bottomStart = if (isUser) 18.dp else 6.dp,
-  )
+  val bubbleShape = RoundedCornerShape(12.dp)
 
   val bubbleColor = when {
-    isUser -> MaterialTheme.colorScheme.primary
+    isUser -> MaterialTheme.colorScheme.primaryContainer
     isError -> MaterialTheme.colorScheme.errorContainer
     isCanceled -> MaterialTheme.colorScheme.surfaceVariant
-    else -> MaterialTheme.colorScheme.surface
+    else -> MaterialTheme.colorScheme.surfaceContainerHigh
   }
 
   val contentColor = when {
-    isUser -> MaterialTheme.colorScheme.onPrimary
+    isUser -> MaterialTheme.colorScheme.onPrimaryContainer
     isError -> MaterialTheme.colorScheme.onErrorContainer
     isCanceled -> MaterialTheme.colorScheme.onSurfaceVariant
     else -> MaterialTheme.colorScheme.onSurface
