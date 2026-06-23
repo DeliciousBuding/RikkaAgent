@@ -170,11 +170,6 @@ fun ChatScreen(
       onSelect = { format ->
         showExportFormatDialog = false
         val text = vm.exportSession(format)
-        val mimeType = when (format) {
-          ExportFormat.HTML -> "text/html"
-          ExportFormat.JSON -> "application/json"
-          else -> "text/plain"
-        }
         startActivity(
           ShareIntents.sessionExport(
             text = text,
