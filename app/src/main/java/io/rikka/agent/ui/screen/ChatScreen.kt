@@ -1411,6 +1411,127 @@ internal fun HostKeyReplacementConfirmDialog(
   )
 }
 
+// ── Export Format Dialog ─────────────────────────────────────────────────────
+
+@Composable
+private fun ExportFormatDialog(
+  onSelect: (ExportFormat) -> Unit,
+  onDismiss: () -> Unit,
+) {
+  AlertDialog(
+    onDismissRequest = onDismiss,
+    title = {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+      ) {
+        Icon(
+          Lucide.Download,
+          contentDescription = null,
+          modifier = Modifier.size(20.dp),
+          tint = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+          text = stringResource(R.string.export_format_title),
+          style = MaterialTheme.typography.titleMedium,
+        )
+      }
+    },
+    text = {
+      Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        ExportFormat.entries.forEach { format ->
+          val (label, description) = when (format) {
+            ExportFormat.PLAIN -> stringResource(R.string.export_format_plain) to "Plain text with $ prefix"
+            ExportFormat.MARKDOWN -> stringResource(R.string.export_format_markdown) to "Structured Markdown with code blocks"
+            ExportFormat.JSON -> stringResource(R.string.export_format_json) to "Machine-readable JSON"
+            ExportFormat.HTML -> stringResource(R.string.export_format_html) to "Standalone HTML page"
+          }
+          Surface(
+            modifier = Modifier
+              .fillMaxWidth()
+              .clip(RoundedCornerShape(8.dp))
+              .clickable { onSelect(format) },
+            shape = RoundedCornerShape(8.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+          ) {
+            Column(
+              modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            ) {
+              Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+              )
+              Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+              )
+            }
+          }
+        }
+      }
+    },
+    confirmButton = {},
+    dismissButton = {
+      TextButton(onClick = onDismiss) {
+        Text(stringResource(R.string.cancel))
+      }
+    },
+  )
+}
+
+// ── Tag Input Dialog ─────────────────────────────────────────────────────────
+
+@Composable
+private fun TagInputDialog(
+  onAdd: (String) -> Unit,
+  onDismiss: () -> Unit,
+) {
+  var tagName by remember { mutableStateOf("") }
+
+  AlertDialog(
+    onDismissRequest = onDismiss,
+    title = {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+      ) {
+        Icon(
+          Lucide.Tag,
+          contentDescription = null,
+          modifier = Modifier.size(20.dp),
+          tint = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+          text = stringResource(R.string.tag_input_title),
+          style = MaterialTheme.typography.titleMedium,
+        )
+      }
+    },
+    text = {
+      androidx.compose.material3.OutlinedTextField(
+        value = tagName,
+        onValueChange = { tagName = it },
+        label = { Text(stringResource(R.string.tag_input_label)) },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+      )
+    },
+    confirmButton = {
+      TextButton(
+        onClick = { onAdd(tagName.trim()) },
+        enabled = tagName.isNotBlank(),
+      ) {
+        Text(stringResource(R.string.save))
+      }
+    },
+    dismissButton = {
+      TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+    },
+  )
+}
+
 @Composable
 internal fun FullOutputDialog(
   fullText: String,
