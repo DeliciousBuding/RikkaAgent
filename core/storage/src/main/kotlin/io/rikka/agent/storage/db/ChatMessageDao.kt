@@ -38,6 +38,9 @@ interface ChatMessageDao {
   @Query("DELETE FROM chat_threads WHERE id = :threadId")
   suspend fun deleteThread(threadId: String)
 
+  @Query("DELETE FROM chat_messages WHERE id = :messageId")
+  suspend fun deleteMessage(messageId: String)
+
   // ── Full-text search ────────────────────────────────────────────────────
 
   /**

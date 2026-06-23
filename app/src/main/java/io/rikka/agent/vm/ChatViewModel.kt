@@ -405,6 +405,75 @@ class ChatViewModel(
   }
 
   /**
+   * Edit a user message and re-send the updated command.
+   *
+   * Updates the content of the user message identified by [messageId],
+   * removes all subsequent messages (old assistant response), and
+   * re-executes the updated command.
+   *
+   * @param messageId The ID of the user message to edit.
+   * @param newContent The new command text.
+   */
+  fun editAndResend(messageId: String, newContent: String) {
+    val trimmed = newContent.trim()
+    if (trimmed.isEmpty()) return
+
+    if (commandExecutor.currentProfile == null) {
+      appendSystemMessage(app.getString(R.string.msg_not_connected))
+      return
+    }
+
+    // Update the user message content in memory
+    _messages.update { list ->
+      list.map { msg ->
+        if (msg.id == messageId) {
+          msg.copy(
+            parts = listOf(MessagePart.Text(trimmed)),
+            timestampMs = System.currentTimeMillis(),
+          )
+        } else msg
+      }
+    }
+
+    // Persist the updated user message
+    sessionManager.persistUpdate(messageId, trimmed, MessageStatus.Final)
+
+    // Remove all messages after the edited user message (old assistant response)
+    _messages.update { list ->
+      val editIndex = list.indexOfFirst { it.id == messageId }
+      if (editIndex >= 0) list.take(editIndex + 1) else list
+    }
+
+    // Delete orphaned messages from the repository (messages after the edited one)
+    sessionManager.deleteMessagesAfter(messageId)
+
+    // Assistant seed
+    val assistantId = "a-${UUID.randomUUID()}"
+    val assistantSeed = ChatMessage(
+      id = assistantId,
+      role = ChatRole.Assistant,
+      content = "",
+      timestampMs = System.currentTimeMillis(),
+      status = MessageStatus.Streaming,
+    )
+    _messages.update { it + assistantSeed }
+    sessionManager.persistMessage(assistantSeed)
+
+    val profile = commandExecutor.currentProfile!!
+    commandExecutor.execute(
+      command = trimmed,
+      assistantId = assistantId,
+      isCodex = profile.codexMode,
+      updateContent = ::updateAssistantContent,
+      updateMessage = { id, content, status ->
+        updateAssistantMessage(id, content, status)
+        sessionManager.persistUpdate(id, content, status)
+      },
+      getAssistantContent = ::getAssistantContent,
+    )
+  }
+
+  /**
    * Cancel the currently running command.
    *
    * If a command was running, marks its assistant message as [MessageStatus.Canceled],

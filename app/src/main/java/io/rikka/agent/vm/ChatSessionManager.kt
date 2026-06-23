@@ -281,4 +281,20 @@ class ChatSessionManager(
       chatRepository.updateMessage(id, parts, status)
     }
   }
+
+  /**
+   * Delete all messages that appear after the given message in the current thread.
+   *
+   * Used during message editing: when a user edits a command, the old assistant
+   * response (and any subsequent messages) are removed so the new response can
+   * take its place.
+   *
+   * @param messageId The ID of the message after which all messages should be deleted.
+   */
+  fun deleteMessagesAfter(messageId: String) {
+    val tid = currentThreadId ?: return
+    scope.launch {
+      chatRepository.deleteMessagesAfter(tid, messageId)
+    }
+  }
 }
