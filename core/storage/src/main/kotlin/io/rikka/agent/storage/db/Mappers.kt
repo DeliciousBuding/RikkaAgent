@@ -1,8 +1,13 @@
 package io.rikka.agent.storage.db
 
 import io.rikka.agent.model.AuthType
+import io.rikka.agent.model.ChatMessage
+import io.rikka.agent.model.ChatRole
 import io.rikka.agent.model.HostKeyPolicy
+import io.rikka.agent.model.MessagePart
+import io.rikka.agent.model.MessageStatus
 import io.rikka.agent.model.SshProfile
+import kotlinx.serialization.encodeToString
 
 fun SshProfileEntity.toModel(): SshProfile = SshProfile(
   id = id,
@@ -33,3 +38,52 @@ fun SshProfile.toEntity(): SshProfileEntity = SshProfileEntity(
   codexWorkDir = codexWorkDir,
   codexApiKey = codexApiKey,
 )
+
+// ── ChatMessage ↔ Entity ──────────────────────────────────────────────────────
+
+/**
+ * Convert [ChatMessageEntity] to domain [ChatMessage].
+ *
+ * Prefers [ChatMessageEntity.partsJson] for structured parts.
+ * Falls back to wrapping [ChatMessageEntity.content] in [MessagePart.Text]
+ * for rows migrated from older schemas where partsJson is '[]'.
+ */
+fun ChatMessageEntity.toModel(): ChatMessage {
+  val parsedParts: List<MessagePart> = if (partsJson.isNotBlank() && partsJson != "[]") {
+    ChatMessage.json.decodeFromString(partsJson)
+  } else {
+    emptyList()
+  }
+
+  val finalParts = if (parsedParts.isEmpty() && content.isNotEmpty()) {
+    listOf(MessagePart.Text(content))
+  } else {
+    parsedParts
+  }
+
+  return ChatMessage(
+    id = id,
+    role = ChatRole.valueOf(role),
+    parts = finalParts,
+    timestampMs = timestampMs,
+    status = MessageStatus.valueOf(status),
+  )
+}
+
+/**
+ * Convert domain [ChatMessage] to [ChatMessageEntity] for persistence.
+ *
+ * @param threadId The thread this message belongs to.
+ */
+fun ChatMessage.toEntity(threadId: String): ChatMessageEntity {
+  val partsList = parts.ifEmpty { listOf(MessagePart.Text(content)) }
+  return ChatMessageEntity(
+    id = id,
+    threadId = threadId,
+    role = role.name,
+    content = content,
+    partsJson = ChatMessage.json.encodeToString(partsList),
+    timestampMs = timestampMs,
+    status = status.name,
+  )
+}

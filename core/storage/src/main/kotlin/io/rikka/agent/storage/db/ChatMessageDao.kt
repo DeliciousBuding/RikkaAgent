@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -22,8 +21,21 @@ interface ChatMessageDao {
   @Query("DELETE FROM chat_threads WHERE id = :threadId")
   suspend fun deleteThread(threadId: String)
 
-  @Insert(onConflict = OnConflictStrategy.REPLACE)
-  suspend fun insertMessage(message: ChatMessageEntity)
+  /**
+   * Insert a message. IGNORE strategy prevents overwriting existing messages
+   * (which would clear fields not present in the new entity).
+   * Use [updateMessageParts] to update an existing message.
+   */
+  @Insert(onConflict = OnConflictStrategy.IGNORE)
+  suspend fun insertMessage(message: ChatMessageEntity): Long
+
+  /**
+   * Update message content, partsJson, and status.
+   *
+   * @return number of rows affected (0 means message doesn't exist).
+   */
+  @Query("UPDATE chat_messages SET content = :content, partsJson = :partsJson, status = :status WHERE id = :id")
+  suspend fun updateMessageParts(id: String, content: String, partsJson: String, status: String): Int
 
   @Query("SELECT * FROM chat_messages WHERE threadId = :threadId ORDER BY timestampMs ASC")
   fun observeMessages(threadId: String): Flow<List<ChatMessageEntity>>
@@ -31,9 +43,11 @@ interface ChatMessageDao {
   @Query("SELECT * FROM chat_messages WHERE threadId = :threadId ORDER BY timestampMs ASC")
   suspend fun getMessages(threadId: String): List<ChatMessageEntity>
 
-  @Query("UPDATE chat_messages SET content = :content, status = :status WHERE id = :id")
-  suspend fun updateMessageContent(id: String, content: String, status: String)
+  /** Update only the thread's last-activity timestamp. */
+  @Query("UPDATE chat_threads SET updatedAtMs = :updatedAtMs WHERE id = :id")
+  suspend fun updateThreadTimestamp(id: String, updatedAtMs: Long)
 
-  @Query("UPDATE chat_threads SET updatedAtMs = :updatedAtMs, title = :title WHERE id = :id")
-  suspend fun updateThread(id: String, title: String, updatedAtMs: Long)
+  /** Update thread title and last-activity timestamp. */
+  @Query("UPDATE chat_threads SET title = :title, updatedAtMs = :updatedAtMs WHERE id = :id")
+  suspend fun updateThreadTitle(id: String, title: String, updatedAtMs: Long)
 }

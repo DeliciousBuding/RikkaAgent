@@ -7,6 +7,7 @@ import io.rikka.agent.R
 import io.rikka.agent.model.ChatMessage
 import io.rikka.agent.model.ChatRole
 import io.rikka.agent.model.ChatThread
+import io.rikka.agent.model.MessagePart
 import io.rikka.agent.model.MessageStatus
 import io.rikka.agent.model.SshProfile
 import io.rikka.agent.ssh.ExecEvent
@@ -491,7 +492,8 @@ class ChatViewModel(
 
   private fun persistUpdate(id: String, content: String, status: MessageStatus) {
     viewModelScope.launch {
-      chatRepository.updateMessage(id, content, status)
+      val parts = if (content.isNotEmpty()) listOf(MessagePart.Text(content)) else emptyList()
+      chatRepository.updateMessage(id, parts, status)
     }
   }
 

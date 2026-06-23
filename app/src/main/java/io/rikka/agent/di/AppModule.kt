@@ -13,6 +13,7 @@ import io.rikka.agent.storage.ProfileStore
 import io.rikka.agent.storage.RoomChatRepository
 import io.rikka.agent.storage.RoomProfileStore
 import io.rikka.agent.storage.db.AppDatabase
+import io.rikka.agent.storage.db.Migrations
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -22,7 +23,9 @@ val appModule = module {
       androidContext(),
       AppDatabase::class.java,
       "rikka_agent.db",
-    ).fallbackToDestructiveMigration().build()
+    ).addMigrations(*Migrations.ALL)
+     .fallbackToDestructiveMigration()
+     .build()
   }
 
   single { get<AppDatabase>().sshProfileDao() }

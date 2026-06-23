@@ -12,6 +12,7 @@ import io.rikka.agent.R
 import io.rikka.agent.model.ChatMessage
 import io.rikka.agent.model.ChatRole
 import io.rikka.agent.model.ChatThread
+import io.rikka.agent.model.MessagePart
 import io.rikka.agent.model.MessageStatus
 import io.rikka.agent.model.SshProfile
 import io.rikka.agent.ssh.ClosableSshExecRunner
@@ -292,11 +293,11 @@ class ChatScreenShareDispatchTest {
       messageFlow(threadId).value = list.toList()
     }
 
-    override suspend fun updateMessage(id: String, content: String, status: MessageStatus) {
+    override suspend fun updateMessage(id: String, parts: List<MessagePart>, status: MessageStatus) {
       messagesByThread.values.forEach { list ->
         val index = list.indexOfFirst { it.id == id }
         if (index >= 0) {
-          list[index] = list[index].copy(content = content, status = status)
+          list[index] = list[index].copy(parts = parts, status = status)
           messageFlowForList(list).value = list.toList()
           return
         }

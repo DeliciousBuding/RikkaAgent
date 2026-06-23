@@ -11,8 +11,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import io.rikka.agent.nav.AppNavHost
 import io.rikka.agent.storage.AppPreferences
-import io.rikka.agent.ui.RikkaAgentTheme
-import io.rikka.agent.ui.ThemeMode
+import io.rikka.agent.ui.theme.RikkaAgentTheme
+import io.rikka.agent.ui.theme.ThemeMode
 import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
@@ -24,6 +24,7 @@ class MainActivity : ComponentActivity() {
 
     setContent {
       val themeName by prefs.theme.collectAsState(initial = "system")
+      val dynamicColor by prefs.dynamicColor.collectAsState(initial = false)
       val themeMode = when (themeName) {
         "light" -> ThemeMode.Light
         "dark" -> ThemeMode.Dark
@@ -31,7 +32,7 @@ class MainActivity : ComponentActivity() {
         else -> ThemeMode.System
       }
 
-      RikkaAgentTheme(themeMode = themeMode) {
+      RikkaAgentTheme(themeMode = themeMode, dynamicColor = dynamicColor) {
         Surface(modifier = Modifier.fillMaxSize()) {
           AppNavHost()
         }
