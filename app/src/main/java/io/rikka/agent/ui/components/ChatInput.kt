@@ -45,6 +45,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -91,6 +92,8 @@ import io.rikka.agent.ui.R as UiR
 fun ChatInput(
   enabled: Boolean,
   quickMessages: List<QuickMessage> = emptyList(),
+  editText: String? = null,
+  onCancelEdit: (() -> Unit)? = null,
   onSend: (String) -> Unit,
   modifier: Modifier = Modifier,
 ) {
@@ -98,6 +101,13 @@ fun ChatInput(
   var isExpanded by remember { mutableStateOf(false) }
   var showQuickMessages by remember { mutableStateOf(false) }
   val haptic = LocalHapticFeedback.current
+
+  // Pre-fill text when entering edit mode
+  LaunchedEffect(editText) {
+    if (editText != null) {
+      text = editText
+    }
+  }
 
   fun doSend() {
     if (text.isNotBlank() && enabled) {

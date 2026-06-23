@@ -57,6 +57,7 @@ import io.rikka.agent.model.MessageStatus
 import io.rikka.agent.ui.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import lucide.icons.Lucide
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
