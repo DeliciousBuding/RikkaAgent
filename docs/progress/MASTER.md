@@ -13,7 +13,7 @@
 | **Phase 1** | ✅ 3 commits | MessagePart + ChatMessage + Room v5 |
 | **Phase 2** | ✅ 3 commits | ExtendColors + Lucide Icons (6 屏 11 处) |
 | **设计合规** | ✅ 3 commits | P0+P1+P2 全部修复 (78→0 Critical) |
-| **ADB 验收** | ✅ | MuMu 127.0.0.1:5555 已连接，竖屏模式正常 |
+| **ADB 验收** | ✅ | MuMu 127.0.0.1:5555，DPI 420，竖屏模式正常 |
 | **Material Icons** | ✅ 4 commits | 全部替换为 Lucide Icons（全模块零残留） |
 | **SshOutputMapper** | ✅ | SSH 输出→MessagePart 桥接，ChatViewModel 已集成 |
 | **UI 验收** | ✅ | 首页/设置/配置编辑器 三屏截图通过 |
