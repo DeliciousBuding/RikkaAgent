@@ -257,6 +257,7 @@ private fun ActionBar(
     message: ChatMessage,
     isUser: Boolean,
     showExpand: Boolean,
+    onEdit: ((String) -> Unit)?,
     onRerun: ((String) -> Unit)?,
     onShare: ((String) -> Unit)?,
     onExpand: (() -> Unit)?,
@@ -273,6 +274,9 @@ private fun ActionBar(
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
         )
         val copyableText = remember(message.parts) { message.partsToCopyableText() }
+        if (isUser && onEdit != null && message.textContent.isNotBlank()) {
+            EditButton(content = message.textContent, onEdit = onEdit)
+        }
         if (isUser && onRerun != null && message.textContent.isNotBlank()) {
             RerunButton(command = message.textContent, onRerun = onRerun)
         }
@@ -396,6 +400,25 @@ private fun RerunButton(command: String, onRerun: (String) -> Unit) {
         Icon(
             painter = painterResource(id = R.drawable.ic_replay),
             contentDescription = stringResource(R.string.cd_rerun),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            modifier = ActionBarIconInnerSize,
+        )
+    }
+}
+
+@Composable
+private fun EditButton(content: String, onEdit: (String) -> Unit) {
+    val haptic = LocalHapticFeedback.current
+    IconButton(
+        onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onEdit(content)
+        },
+        modifier = ActionBarIconSize,
+    ) {
+        Icon(
+            imageVector = Lucide.Pencil,
+            contentDescription = stringResource(R.string.cd_edit),
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             modifier = ActionBarIconInnerSize,
         )
