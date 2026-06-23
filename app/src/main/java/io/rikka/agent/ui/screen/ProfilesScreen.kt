@@ -27,17 +27,14 @@ import com.composables.icons.lucide.Server
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -48,11 +45,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.rikka.agent.model.AuthType
 import io.rikka.agent.model.SshProfile
 import io.rikka.agent.R
@@ -60,7 +57,6 @@ import io.rikka.agent.vm.ProfilesViewModel
 import io.rikka.agent.ui.components.MeshGradientBackground
 import org.koin.androidx.compose.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfilesScreen(
   onOpenSession: (profileId: String) -> Unit,
@@ -69,83 +65,88 @@ fun ProfilesScreen(
 ) {
   val vm: ProfilesViewModel = koinViewModel()
   val profiles by vm.profiles.collectAsState()
-  val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
   MeshGradientBackground {
-  Scaffold(
-    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-    topBar = {
-      LargeTopAppBar(
-        title = { Text(stringResource(R.string.app_name)) },
-        actions = {
-          IconButton(onClick = onOpenSettings) {
-            Icon(Lucide.Settings, contentDescription = stringResource(R.string.settings))
-          }
-        },
-        scrollBehavior = scrollBehavior,
-        colors = TopAppBarDefaults.largeTopAppBarColors(
-          containerColor = androidx.compose.ui.graphics.Color.Transparent,
-        ),
-      )
-    },
-    containerColor = androidx.compose.ui.graphics.Color.Transparent,
-    floatingActionButton = {
-      FloatingActionButton(onClick = { onEditProfile(null) }) {
-        Icon(Lucide.Plus, contentDescription = stringResource(R.string.new_profile))
-      }
-    },
-  ) { innerPadding ->
-    if (profiles.isEmpty()) {
-      EmptyState(
-        modifier = Modifier
-          .fillMaxSize()
-          .padding(innerPadding),
-        onAdd = { onEditProfile(null) },
-      )
-    } else {
-      LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = innerPadding + PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+    Box(modifier = Modifier.fillMaxSize()) {
+      // Settings icon top-right
+      IconButton(
+        onClick = onOpenSettings,
+        modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 8.dp),
       ) {
-        items(profiles, key = { it.id }) { profile ->
-          val dismissState = rememberSwipeToDismissBoxState(
-            confirmValueChange = { value ->
-              if (value == SwipeToDismissBoxValue.EndToStart) {
-                vm.delete(profile.id)
-                true
-              } else false
-            },
-          )
-          SwipeToDismissBox(
-            state = dismissState,
-            backgroundContent = {
-              Box(
-                modifier = Modifier
-                  .fillMaxSize()
-                  .padding(horizontal = 16.dp),
-                contentAlignment = Alignment.CenterEnd,
-              ) {
-                Icon(
-                  Lucide.Trash2,
-                  contentDescription = stringResource(R.string.delete),
-                  tint = MaterialTheme.colorScheme.error,
-                )
-              }
-            },
-            enableDismissFromStartToEnd = false,
-          ) {
-            ProfileCard(
-              profile = profile,
-              onClick = { onOpenSession(profile.id) },
-              onEdit = { onEditProfile(profile.id) },
-              onDuplicate = { vm.duplicate(profile) },
+        Icon(Lucide.Settings, contentDescription = stringResource(R.string.settings))
+      }
+
+      // Title top-left
+      androidx.compose.foundation.text.BasicText(
+        text = stringResource(R.string.app_name),
+        style = androidx.compose.ui.text.TextStyle(
+          fontFamily = androidx.compose.ui.text.font.FontFamily.SansSerif,
+          fontWeight = androidx.compose.ui.text.font.FontWeight.Normal,
+          fontSize = 9.sp,
+          lineHeight = 12.sp,
+          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+        ),
+        modifier = Modifier.padding(start = 16.dp, top = 16.dp),
+      )
+
+      // Content
+      if (profiles.isEmpty()) {
+        EmptyState(
+          modifier = Modifier.fillMaxSize(),
+          onAdd = { onEditProfile(null) },
+        )
+      } else {
+        LazyColumn(
+          modifier = Modifier.fillMaxSize(),
+          contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 48.dp, bottom = 8.dp),
+          verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+          items(profiles, key = { it.id }) { profile ->
+            val dismissState = rememberSwipeToDismissBoxState(
+              confirmValueChange = { value ->
+                if (value == SwipeToDismissBoxValue.EndToStart) {
+                  vm.delete(profile.id)
+                  true
+                } else false
+              },
             )
+            SwipeToDismissBox(
+              state = dismissState,
+              backgroundContent = {
+                Box(
+                  modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                  contentAlignment = Alignment.CenterEnd,
+                ) {
+                  Icon(
+                    Lucide.Trash2,
+                    contentDescription = stringResource(R.string.delete),
+                    tint = MaterialTheme.colorScheme.error,
+                  )
+                }
+              },
+              enableDismissFromStartToEnd = false,
+            ) {
+              ProfileCard(
+                profile = profile,
+                onClick = { onOpenSession(profile.id) },
+                onEdit = { onEditProfile(profile.id) },
+                onDuplicate = { vm.duplicate(profile) },
+              )
+            }
           }
         }
       }
-    }
-  }
+
+      // FAB
+      FloatingActionButton(
+        onClick = { onEditProfile(null) },
+        modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+      ) {
+        Icon(Lucide.Plus, contentDescription = stringResource(R.string.new_profile))
+      }
+    } // Box
   } // MeshGradientBackground
 }
 
@@ -270,15 +271,4 @@ private fun EmptyState(
       color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
     )
   }
-}
-
-private operator fun PaddingValues.plus(other: PaddingValues): PaddingValues {
-  return PaddingValues(
-    start = calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr) +
-      other.calculateLeftPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
-    top = calculateTopPadding() + other.calculateTopPadding(),
-    end = calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr) +
-      other.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
-    bottom = calculateBottomPadding() + other.calculateBottomPadding(),
-  )
 }
