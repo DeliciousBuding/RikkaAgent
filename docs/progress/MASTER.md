@@ -19,8 +19,11 @@
 | **UI 验收** | ✅ | 首页/设置/配置编辑器 三屏截图通过 |
 | **MeshGradient** | ✅ | Gemini 风格动态渐变背景，双屏已集成 |
 | **ChatInput 重做** | ✅ | 圆角容器 + 边框 + 底部按钮行，对齐 RikkaHub |
-| **标题比例** | ✅ | BasicText 18sp，绕过 LocalTextStyle |
+| **标题比例** | ✅ | BasicText 14sp，绕过 LocalTextStyle |
 | **差距分析** | ✅ | 完整 UI 差距文档，P0-P3 优先级排列 |
+| **PRD** | ✅ | 产品需求文档，用户画像 + 功能矩阵 |
+| **架构文档** | ✅ | Clean Architecture 五模块 + 数据流图 |
+| **安全审查** | ✅ | SSH 密钥/密码/网络安全/日志全面审查 |
 
 ## 当前阶段
 
