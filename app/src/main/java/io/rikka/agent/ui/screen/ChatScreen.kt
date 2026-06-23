@@ -26,13 +26,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.AlertDialog
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.ArrowLeft
+import com.composables.icons.lucide.X
+import com.composables.icons.lucide.Menu
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButtonDefaults
@@ -289,7 +290,7 @@ fun ChatScreen(
         },
         navigationIcon = {
           IconButton(onClick = { scope.launch { drawerState.open() } }) {
-            Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.sessions))
+            Icon(Lucide.Menu, contentDescription = stringResource(R.string.sessions))
           }
         },
         actions = {
@@ -317,7 +318,7 @@ fun ChatScreen(
             ConnectionState.EXECUTING -> {
               IconButton(onClick = { vm.cancelRunning() }) {
                 Icon(
-                  Icons.Default.Close,
+                  Lucide.X,
                   contentDescription = stringResource(R.string.cancel),
                   tint = MaterialTheme.colorScheme.error,
                 )
@@ -326,7 +327,7 @@ fun ChatScreen(
             else -> {
               IconButton(onClick = onBack) {
                 Icon(
-                  Icons.AutoMirrored.Filled.ArrowBack,
+                  Lucide.ArrowLeft,
                   contentDescription = stringResource(R.string.back),
                 )
               }
@@ -362,7 +363,7 @@ fun ChatScreen(
             state = listState,
             modifier = Modifier.weight(1f).fillMaxSize(),
             contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
           ) {
             items(messages, key = { it.id }) { msg ->
               ChatBubble(

@@ -96,7 +96,7 @@ fun ChatBubble(
         modifier = Modifier
           .clip(bubbleShape)
           .animateContentSize(animationSpec = tween(150))
-          .padding(horizontal = 12.dp, vertical = 6.dp),
+          .padding(horizontal = 12.dp, vertical = 8.dp),
       ) {
         Box(
           modifier = Modifier
@@ -120,7 +120,7 @@ fun ChatBubble(
         shape = bubbleShape,
         modifier = Modifier
           .clip(bubbleShape)
-          .padding(horizontal = 12.dp, vertical = 6.dp),
+          .padding(horizontal = 12.dp, vertical = 8.dp),
       ) {
         Box(modifier = Modifier.padding(contentPadding)) {
           TypingIndicator()
@@ -130,7 +130,7 @@ fun ChatBubble(
       // Assistant messages: markdown for rich content, code card for plain output/errors
       // During streaming, skip markdown parsing (expensive) — render as CodeCard until finalized
       Column(
-        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
       ) {
         if (isError || isCanceled || isStreaming || !looksLikeMarkdown(message.content)) {
           CodeCard(
@@ -158,7 +158,7 @@ fun ChatBubble(
 
     // Timestamp + action row
     Row(
-      modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
+      modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -274,9 +274,9 @@ private fun ExpandButton(onExpand: () -> Unit) {
     style = MaterialTheme.typography.labelSmall,
     color = MaterialTheme.colorScheme.primary,
     modifier = Modifier
-      .clip(RoundedCornerShape(6.dp))
+      .clip(RoundedCornerShape(8.dp))
       .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
-      .padding(horizontal = 6.dp, vertical = 2.dp)
+      .padding(horizontal = 8.dp, vertical = 4.dp)
       .clickable { onExpand() },
   )
 }
