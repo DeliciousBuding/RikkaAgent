@@ -14,6 +14,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import io.rikka.agent.ui.theme.LocalExtendColors
+import io.rikka.agent.ui.theme.darkExtendColors
+import io.rikka.agent.ui.theme.lightExtendColors
 
 enum class ThemeMode { Light, Dark, Amoled, System }
 
@@ -130,8 +133,12 @@ fun RikkaAgentTheme(
     ThemeMode.Amoled -> AmoledScheme
     ThemeMode.System -> if (isSystemInDarkTheme()) DarkScheme else LightScheme
   }
+  val extendColors = if (colors.background == Color(0xFF000000) || colors == DarkScheme) darkExtendColors() else lightExtendColors()
 
-  CompositionLocalProvider(LocalCodeFontFamily provides FontFamily.Monospace) {
+  CompositionLocalProvider(
+    LocalCodeFontFamily provides FontFamily.Monospace,
+    LocalExtendColors provides extendColors,
+  ) {
     MaterialTheme(
       colorScheme = colors,
       typography = AppTypography,
