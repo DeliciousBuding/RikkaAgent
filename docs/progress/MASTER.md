@@ -17,6 +17,8 @@
 | **Material Icons** | ✅ 4 commits | 全部替换为 Lucide Icons（全模块零残留） |
 | **SshOutputMapper** | ✅ | SSH 输出→MessagePart 桥接，ChatViewModel 已集成 |
 | **UI 验收** | ✅ | 首页/设置/配置编辑器 三屏截图通过 |
+| **MeshGradient** | ✅ | Gemini 风格动态渐变背景，双屏已集成 |
+| **ChatInput 重做** | ✅ | 圆角容器 + 边框 + 底部按钮行，对齐 RikkaHub |
 
 ## 当前阶段
 
