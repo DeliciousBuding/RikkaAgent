@@ -199,6 +199,7 @@ fun ChatBubble(
                 message = message,
                 isUser = isUser,
                 showExpand = showExpand,
+                onEdit = onEdit,
                 onRerun = onRerun,
                 onShare = onShare,
                 onExpand = onExpand,

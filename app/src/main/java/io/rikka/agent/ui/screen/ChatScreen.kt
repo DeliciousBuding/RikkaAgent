@@ -757,19 +757,38 @@ private fun ConnectionErrorBanner(
 
 // ── Session Drawer ───────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SessionDrawerContent(
-  threads: List<io.rikka.agent.model.ChatThread>,
+  activeThreads: List<io.rikka.agent.model.ChatThread>,
+  archivedThreads: List<io.rikka.agent.model.ChatThread>,
+  searchResults: List<io.rikka.agent.model.ChatThread>,
+  searchQuery: String,
   currentThreadId: String?,
+  onSearchQueryChange: (String) -> Unit,
   onNewSession: () -> Unit,
   onSelectThread: (String) -> Unit,
   onDeleteThread: (String) -> Unit,
+  onTogglePin: (String) -> Unit,
+  onArchiveThread: (String) -> Unit,
+  onUnarchiveThread: (String) -> Unit,
+  onAddTag: (String) -> Unit,
+  onRemoveTag: (String, String) -> Unit,
 ) {
   var confirmDeleteId by remember { mutableStateOf<String?>(null) }
+  var showArchived by remember { mutableStateOf(false) }
+
+  // Determine which list to display
+  val displayThreads = when {
+    searchQuery.isNotBlank() -> searchResults
+    showArchived -> archivedThreads
+    else -> activeThreads
+  }
 
   // Delete confirmation dialog
   confirmDeleteId?.let { id ->
-    val thread = threads.find { it.id == id }
+    val allThreads = activeThreads + archivedThreads
+    val thread = allThreads.find { it.id == id }
     AlertDialog(
       onDismissRequest = { confirmDeleteId = null },
       title = { Text(stringResource(R.string.delete_session_title)) },
@@ -820,7 +839,61 @@ private fun SessionDrawerContent(
       }
     }
 
-    if (threads.isEmpty()) {
+    // Search bar
+    TextField(
+      value = searchQuery,
+      onValueChange = onSearchQueryChange,
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 12.dp, vertical = 4.dp),
+      placeholder = {
+        Text(
+          text = stringResource(R.string.search_sessions),
+          style = MaterialTheme.typography.bodyMedium,
+        )
+      },
+      leadingIcon = {
+        Icon(Lucide.Search, contentDescription = null, modifier = Modifier.size(18.dp))
+      },
+      trailingIcon = {
+        if (searchQuery.isNotEmpty()) {
+          IconButton(onClick = { onSearchQueryChange("") }, modifier = Modifier.size(32.dp)) {
+            Icon(Lucide.X, contentDescription = stringResource(R.string.clear_search), modifier = Modifier.size(16.dp))
+          }
+        }
+      },
+      singleLine = true,
+      shape = RoundedCornerShape(12.dp),
+      colors = TextFieldDefaults.colors(
+        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+        unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+      ),
+    )
+
+    // Active / Archived filter chips (hidden during search)
+    if (searchQuery.isBlank()) {
+      Row(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(horizontal = 12.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+      ) {
+        FilterChip(
+          selected = !showArchived,
+          onClick = { showArchived = false },
+          label = { Text(stringResource(R.string.filter_active), style = MaterialTheme.typography.labelSmall) },
+        )
+        FilterChip(
+          selected = showArchived,
+          onClick = { showArchived = true },
+          label = { Text(stringResource(R.string.filter_archived), style = MaterialTheme.typography.labelSmall) },
+        )
+      }
+    }
+
+    if (displayThreads.isEmpty()) {
       Box(
         modifier = Modifier
           .fillMaxWidth()
@@ -828,7 +901,8 @@ private fun SessionDrawerContent(
         contentAlignment = Alignment.Center,
       ) {
         Text(
-          text = stringResource(R.string.no_past_sessions),
+          text = if (searchQuery.isNotBlank()) stringResource(R.string.no_search_results)
+                 else stringResource(R.string.no_past_sessions),
           style = MaterialTheme.typography.bodyMedium,
           color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
         )
@@ -838,13 +912,19 @@ private fun SessionDrawerContent(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 16.dp),
       ) {
-        items(threads, key = { it.id }) { thread ->
+        items(displayThreads, key = { it.id }) { thread ->
           val isActive = thread.id == currentThreadId
           SessionItem(
-            title = thread.title.ifBlank { stringResource(R.string.session_fallback_name) },
+            thread = thread,
             isActive = isActive,
             onClick = { onSelectThread(thread.id) },
             onDelete = { confirmDeleteId = thread.id },
+            onTogglePin = { onTogglePin(thread.id) },
+            onArchive = { onArchiveThread(thread.id) },
+            onUnarchive = { onUnarchiveThread(thread.id) },
+            onAddTag = { onAddTag(thread.id) },
+            onRemoveTag = { tag -> onRemoveTag(thread.id, tag) },
+            isArchivedView = showArchived,
           )
         }
       }
@@ -852,13 +932,22 @@ private fun SessionDrawerContent(
   }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SessionItem(
-  title: String,
+  thread: io.rikka.agent.model.ChatThread,
   isActive: Boolean,
   onClick: () -> Unit,
   onDelete: () -> Unit,
+  onTogglePin: () -> Unit,
+  onArchive: () -> Unit,
+  onUnarchive: () -> Unit,
+  onAddTag: () -> Unit,
+  onRemoveTag: (String) -> Unit,
+  isArchivedView: Boolean,
 ) {
+  var showContextMenu by remember { mutableStateOf(false) }
+
   val containerColor = if (isActive) {
     MaterialTheme.colorScheme.secondaryContainer
   } else {
@@ -870,48 +959,163 @@ private fun SessionItem(
     MaterialTheme.colorScheme.onSurface
   }
 
-  Surface(
-    modifier = Modifier
-      .fillMaxWidth()
-      .padding(horizontal = 12.dp, vertical = 2.dp)
-      .clip(SessionItemShape)
-      .clickable { onClick() },
-    shape = SessionItemShape,
-    color = containerColor,
-    tonalElevation = 0.dp,
-  ) {
-    Row(
+  Box {
+    Surface(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(horizontal = 12.dp, vertical = 10.dp),
-      verticalAlignment = Alignment.CenterVertically,
+        .padding(horizontal = 12.dp, vertical = 2.dp)
+        .clip(SessionItemShape)
+        .clickable { onClick() },
+      shape = SessionItemShape,
+      color = containerColor,
+      tonalElevation = 0.dp,
     ) {
-      Icon(
-        Lucide.MessageSquare,
-        contentDescription = null,
-        modifier = Modifier.size(18.dp),
-        tint = contentColor.copy(alpha = 0.6f),
-      )
-      Spacer(modifier = Modifier.width(10.dp))
-      Text(
-        text = title,
-        style = MaterialTheme.typography.bodyMedium,
-        color = contentColor,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.weight(1f),
-      )
-      IconButton(
-        onClick = onDelete,
-        modifier = Modifier.size(48.dp),
+      Column(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(horizontal = 12.dp, vertical = 8.dp),
       ) {
-        Icon(
-          Lucide.Trash2,
-          contentDescription = stringResource(R.string.delete),
-          modifier = Modifier.size(14.dp),
-          tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          verticalAlignment = Alignment.CenterVertically,
+        ) {
+          // Pin icon or message icon
+          if (thread.isPinned) {
+            Icon(
+              Lucide.Pin,
+              contentDescription = stringResource(R.string.pin_session),
+              modifier = Modifier.size(16.dp),
+              tint = MaterialTheme.colorScheme.primary,
+            )
+          } else {
+            Icon(
+              Lucide.MessageSquare,
+              contentDescription = null,
+              modifier = Modifier.size(18.dp),
+              tint = contentColor.copy(alpha = 0.6f),
+            )
+          }
+          Spacer(modifier = Modifier.width(10.dp))
+          Text(
+            text = thread.title.ifBlank { stringResource(R.string.session_fallback_name) },
+            style = MaterialTheme.typography.bodyMedium,
+            color = contentColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+          )
+          // More actions button
+          IconButton(
+            onClick = { showContextMenu = true },
+            modifier = Modifier.size(36.dp),
+          ) {
+            Icon(
+              Lucide.MoreVertical,
+              contentDescription = stringResource(R.string.more_actions),
+              modifier = Modifier.size(16.dp),
+              tint = contentColor.copy(alpha = 0.5f),
+            )
+          }
+        }
+
+        // Stats subtitle
+        if (thread.stats.commandCount > 0) {
+          Text(
+            text = stringResource(
+              R.string.session_stats_subtitle,
+              thread.stats.commandCount,
+              thread.stats.outputLineCount,
+            ),
+            style = MaterialTheme.typography.labelSmall,
+            color = contentColor.copy(alpha = 0.5f),
+            modifier = Modifier.padding(start = 28.dp),
+          )
+        }
+
+        // Tags
+        if (thread.tags.isNotEmpty()) {
+          FlowRow(
+            modifier = Modifier.padding(start = 28.dp, top = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+          ) {
+            thread.tags.forEach { tag ->
+              AssistChip(
+                onClick = { onRemoveTag(tag) },
+                label = {
+                  Text(
+                    text = tag,
+                    style = MaterialTheme.typography.labelSmall,
+                  )
+                },
+                modifier = Modifier.height(24.dp),
+                leadingIcon = {
+                  Icon(
+                    Lucide.X,
+                    contentDescription = stringResource(R.string.remove_tag),
+                    modifier = Modifier.size(12.dp),
+                  )
+                },
+                colors = AssistChipDefaults.assistChipColors(
+                  containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                ),
+                border = null,
+              )
+            }
+          }
+        }
+      }
+    }
+
+    // Context menu
+    DropdownMenu(
+      expanded = showContextMenu,
+      onDismissRequest = { showContextMenu = false },
+    ) {
+      // Pin / Unpin
+      DropdownMenuItem(
+        text = { Text(stringResource(if (thread.isPinned) R.string.unpin_session else R.string.pin_session)) },
+        onClick = { onTogglePin(); showContextMenu = false },
+        leadingIcon = {
+          Icon(
+            if (thread.isPinned) Lucide.PinOff else Lucide.Pin,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+          )
+        },
+      )
+      // Archive / Unarchive
+      if (isArchivedView) {
+        DropdownMenuItem(
+          text = { Text(stringResource(R.string.unarchive_session)) },
+          onClick = { onUnarchive(); showContextMenu = false },
+          leadingIcon = { Icon(Lucide.ArchiveRestore, contentDescription = null, modifier = Modifier.size(18.dp)) },
+        )
+      } else {
+        DropdownMenuItem(
+          text = { Text(stringResource(R.string.archive_session)) },
+          onClick = { onArchive(); showContextMenu = false },
+          leadingIcon = { Icon(Lucide.Archive, contentDescription = null, modifier = Modifier.size(18.dp)) },
         )
       }
+      // Add tag
+      DropdownMenuItem(
+        text = { Text(stringResource(R.string.add_tag)) },
+        onClick = { onAddTag(); showContextMenu = false },
+        leadingIcon = { Icon(Lucide.Tag, contentDescription = null, modifier = Modifier.size(18.dp)) },
+      )
+      // Delete
+      DropdownMenuItem(
+        text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
+        onClick = { onDelete(); showContextMenu = false },
+        leadingIcon = {
+          Icon(
+            Lucide.Trash2,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.colorScheme.error,
+          )
+        },
+      )
     }
   }
 }
