@@ -75,6 +75,7 @@ import io.rikka.agent.vm.ConnectionState
 import io.rikka.agent.vm.HostKeyEvent
 import io.rikka.agent.ui.components.ChatBubble
 import io.rikka.agent.ui.components.ChatInput
+import io.rikka.agent.ui.components.MeshGradientBackground
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import io.rikka.agent.R
@@ -260,6 +261,7 @@ fun ChatScreen(
       )
     },
   ) {
+  MeshGradientBackground { // aurora gradient background
   Scaffold(
     topBar = {
       TopAppBar(
@@ -337,11 +339,11 @@ fun ChatScreen(
           }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-          containerColor = MaterialTheme.colorScheme.background,
+          containerColor = Color.Transparent,
         ),
       )
     },
-    containerColor = MaterialTheme.colorScheme.background,
+    containerColor = Color.Transparent,
   ) { innerPadding ->
     Box(
       modifier = Modifier
