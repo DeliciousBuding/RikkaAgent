@@ -7,10 +7,13 @@
 
 | 维度 | 状态 | 说明 |
 |------|------|------|
-| **编译** | ✅ 通过 | SDK 36, `./gradlew :app:assembleDevDebug` |
-| **APK** | ✅ 就绪 | 24MB, `app/build/outputs/apk/dev/debug/app-dev-debug.apk` |
-| **基线** | ✅ 锁定 | commit `99f1423`, pre-refactor clean baseline |
-| **ADB 验收** | ⏳ 待定 | Mumu ADB 端口冲突，需手动恢复 |
+| **编译** | ✅ 通过 | SDK 36, 每次增量验证 |
+| **APK** | ✅ 24MB | `app-dev-debug.apk` |
+| **基线** | ✅ | commit `99f1423` |
+| **Phase 1** | ✅ 3 commits | MessagePart + ChatMessage + Room v5 |
+| **Phase 2** | 🔄 进行中 | 2A ExtendColors ✅ 2C Lucide ✅ 2B/2D ⏳ |
+| **Phase 3** | ⏳ | UI 组件增量复刻 |
+| **ADB 验收** | ⏳ | Mumu ADB 端口冲突，待手动恢复 |
 
 ## 当前阶段
 
@@ -21,10 +24,11 @@
 
 ## 下一步
 
-**Phase 1：数据模型升级** ⏳
-- MessagePart sealed class 设计（基于分析报告中的方案）
-- Room Migration v4→v5（ChatMessageEntity.partsJson）
-- 存储层 Bug 修复（insertMessage REPLACE, codexApiKey 加密）
+**Phase 1：数据模型升级** ✅
+
+- 1A MessagePart sealed class ✅ (`ee9d0c9`)
+- 1B ChatMessage.parts field ✅ (`4a200ba`)
+- 1C Room v5 + TypeConverter + Migration ✅ (`6afa71b`)
 
 **Phase 2：主题系统对齐** ⏳
 - ExtendColors + MaterialExpressiveTheme
