@@ -1,21 +1,31 @@
 package io.rikka.agent.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -24,16 +34,21 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,27 +62,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.PopupProperties
 import io.rikka.agent.R
+import io.rikka.agent.storage.QuickMessage
 import io.rikka.agent.ui.R as UiR
-
-/**
- * State holder for [ChatInput].
- *
- * @property text Current input text.
- * @property isExpanded Whether the full-screen editor is open.
- * @property isExecuting Whether a command is currently running (disables input, shows cancel).
- * @property suggestions Shell command suggestion chips shown when input is empty.
- */
-data class ChatInputState(
-  val text: String = "",
-  val isExpanded: Boolean = false,
-  val isExecuting: Boolean = false,
-  val suggestions: List<String> = DEFAULT_SUGGESTIONS,
-) {
-  companion object {
-    val DEFAULT_SUGGESTIONS = listOf("uname -a", "df -h", "uptime", "free -m", "top -bn1")
-  }
-}
 
 /**
  * Chat input component for RikkaAgent.
@@ -75,38 +73,37 @@ data class ChatInputState(
  * Features:
  * - Multi-line input; Enter sends, Shift+Enter inserts newline.
  * - Monospace font throughout (command-input scenario).
- * - Shell command suggestion chips when the input is empty.
- * - Disabled + cancel button while a command is executing.
+ * - Disabled state while a command is executing.
  * - Full-screen edit mode via an expand button.
  * - Auto-height text field (up to 5 visible lines, then scrolls).
+ * - Long-press send button to open quick message picker.
  *
  * Visual style follows RikkaHub: rounded Surface with outline border,
  * trailing send/cancel circle, bottom safe-area padding.
  *
- * @param state Current [ChatInputState].
- * @param onTextChange Called when the input text changes.
+ * @param enabled Whether the input is enabled (false while streaming/executing).
+ * @param quickMessages List of user-configurable quick messages for the long-press picker.
  * @param onSend Called with trimmed text when the user taps send or presses Enter.
- * @param onCancel Called when the user cancels a running command.
- * @param onSuggestionClick Called when a suggestion chip is tapped.
- * @param onExpandedChange Called to toggle the full-screen editor.
  * @param modifier Modifier applied to the root Column.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChatInput(
-  state: ChatInputState,
-  onTextChange: (String) -> Unit,
+  enabled: Boolean,
+  quickMessages: List<QuickMessage> = emptyList(),
   onSend: (String) -> Unit,
-  onCancel: () -> Unit,
-  onSuggestionClick: (String) -> Unit,
-  onExpandedChange: (Boolean) -> Unit,
   modifier: Modifier = Modifier,
 ) {
+  var text by remember { mutableStateOf("") }
+  var isExpanded by remember { mutableStateOf(false) }
+  var showQuickMessages by remember { mutableStateOf(false) }
   val haptic = LocalHapticFeedback.current
 
   fun doSend() {
-    if (state.text.isNotBlank() && !state.isExecuting) {
+    if (text.isNotBlank() && enabled) {
       haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-      onSend(state.text.trim())
+      onSend(text.trim())
+      text = ""
     }
   }
 
@@ -118,28 +115,6 @@ fun ChatInput(
       .padding(horizontal = 12.dp, vertical = 8.dp),
     verticalArrangement = Arrangement.spacedBy(8.dp),
   ) {
-    // Suggestion chips -- visible when input is empty and nothing is running
-    if (state.text.isEmpty() && !state.isExecuting) {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-      ) {
-        state.suggestions.forEach { cmd ->
-          SuggestionChip(
-            onClick = { onSuggestionClick(cmd) },
-            label = {
-              Text(
-                text = cmd,
-                style = MaterialTheme.typography.labelSmall.copy(
-                  fontFamily = FontFamily.Monospace,
-                ),
-              )
-            },
-          )
-        }
-      }
-    }
-
     // Input surface -- rounded box with subtle border (RikkaHub-aligned)
     Surface(
       shape = RoundedCornerShape(24.dp),
@@ -152,10 +127,10 @@ fun ChatInput(
       ) {
         // Text field -- monospace, multi-line, auto-height (max 5 visible lines)
         TextField(
-          value = state.text,
-          onValueChange = onTextChange,
+          value = text,
+          onValueChange = { text = it },
           modifier = Modifier.fillMaxWidth(),
-          enabled = !state.isExecuting,
+          enabled = enabled,
           placeholder = {
             Text(
               text = stringResource(UiR.string.input_placeholder),
@@ -182,7 +157,7 @@ fun ChatInput(
           ),
         )
 
-        // Action row -- expand (left) + send/cancel (right)
+        // Action row -- expand (left) + send (right)
         Row(
           modifier = Modifier
             .fillMaxWidth()
@@ -191,7 +166,7 @@ fun ChatInput(
         ) {
           // Expand button -- toggles full-screen editor
           IconButton(
-            onClick = { onExpandedChange(!state.isExpanded) },
+            onClick = { isExpanded = !isExpanded },
             modifier = Modifier.size(32.dp),
           ) {
             Icon(
@@ -204,45 +179,88 @@ fun ChatInput(
 
           Spacer(modifier = Modifier.weight(1f))
 
-          // Send / Cancel circle button
-          val containerColor = when {
-            state.isExecuting -> MaterialTheme.colorScheme.errorContainer
-            state.text.isBlank() -> MaterialTheme.colorScheme.surfaceContainerHigh
-            else -> MaterialTheme.colorScheme.primary
-          }
-          val contentColor = when {
-            state.isExecuting -> MaterialTheme.colorScheme.onErrorContainer
-            state.text.isBlank() -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-            else -> MaterialTheme.colorScheme.onPrimary
-          }
+          // Quick message dropdown anchor
+          Box {
+            // Send circle button with long-press for quick messages
+            val containerColor = when {
+              !enabled -> MaterialTheme.colorScheme.errorContainer
+              text.isBlank() -> MaterialTheme.colorScheme.surfaceContainerHigh
+              else -> MaterialTheme.colorScheme.primary
+            }
+            val contentColor = when {
+              !enabled -> MaterialTheme.colorScheme.onErrorContainer
+              text.isBlank() -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+              else -> MaterialTheme.colorScheme.onPrimary
+            }
 
-          Box(
-            modifier = Modifier
-              .size(32.dp)
-              .clip(CircleShape)
-              .background(containerColor)
-              .clickable(
-                enabled = state.isExecuting || state.text.isNotBlank(),
-                onClick = {
-                  if (state.isExecuting) onCancel() else doSend()
-                },
-              ),
-            contentAlignment = Alignment.Center,
-          ) {
-            if (state.isExecuting) {
-              Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = stringResource(R.string.cancel),
-                tint = contentColor,
-                modifier = Modifier.size(18.dp),
-              )
-            } else {
-              Icon(
-                painter = painterResource(id = UiR.drawable.ic_send),
-                contentDescription = stringResource(UiR.string.cd_send),
-                tint = contentColor,
-                modifier = Modifier.size(18.dp),
-              )
+            Box(
+              modifier = Modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(containerColor)
+                .combinedClickable(
+                  enabled = enabled || text.isNotBlank(),
+                  onClick = {
+                    if (!enabled) return@combinedClickable
+                    doSend()
+                  },
+                  onLongClick = {
+                    if (quickMessages.isNotEmpty()) {
+                      haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                      showQuickMessages = true
+                    }
+                  },
+                ),
+              contentAlignment = Alignment.Center,
+            ) {
+              if (!enabled) {
+                Icon(
+                  imageVector = Icons.Default.Close,
+                  contentDescription = stringResource(R.string.cancel),
+                  tint = contentColor,
+                  modifier = Modifier.size(18.dp),
+                )
+              } else {
+                Icon(
+                  painter = painterResource(id = UiR.drawable.ic_send),
+                  contentDescription = stringResource(UiR.string.cd_send),
+                  tint = contentColor,
+                  modifier = Modifier.size(18.dp),
+                )
+              }
+            }
+
+            // Quick message dropdown menu
+            DropdownMenu(
+              expanded = showQuickMessages,
+              onDismissRequest = { showQuickMessages = false },
+              properties = PopupProperties(focusable = true),
+            ) {
+              quickMessages.forEach { msg ->
+                DropdownMenuItem(
+                  text = {
+                    Column {
+                      Text(
+                        text = msg.label,
+                        style = MaterialTheme.typography.bodyMedium,
+                      )
+                      if (msg.label != msg.command) {
+                        Text(
+                          text = msg.command,
+                          style = MaterialTheme.typography.bodySmall.copy(
+                            fontFamily = FontFamily.Monospace,
+                          ),
+                          color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                      }
+                    }
+                  },
+                  onClick = {
+                    text = msg.command
+                    showQuickMessages = false
+                  },
+                )
+              }
             }
           }
         }
@@ -251,11 +269,11 @@ fun ChatInput(
   }
 
   // Full-screen editor dialog
-  if (state.isExpanded) {
+  if (isExpanded) {
     FullScreenEditor(
-      text = state.text,
-      onTextChange = onTextChange,
-      onDismiss = { onExpandedChange(false) },
+      text = text,
+      onTextChange = { text = it },
+      onDismiss = { isExpanded = false },
     )
   }
 }
@@ -264,8 +282,8 @@ fun ChatInput(
  * Full-screen editor dialog for long command editing.
  *
  * Anchored to the bottom of the screen, occupying 90% of height.
- * Shares the same [TextFieldState][state] as the inline input so
- * edits are reflected immediately when dismissed.
+ * Shares the same text state as the inline input so edits are
+ * reflected immediately when dismissed.
  */
 @Composable
 private fun FullScreenEditor(

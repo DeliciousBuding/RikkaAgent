@@ -57,6 +57,7 @@ import kotlinx.coroutines.launch
 
 private const val COLLAPSE_LINE_THRESHOLD = 15
 private const val MAX_HIGHLIGHT_LENGTH = 8192
+private val HighlightShape = RoundedCornerShape(12.dp)
 
 // ── Color palettes ─────────────────────────────────────────────────────────────
 
@@ -605,7 +606,6 @@ fun HighlightCodeBlock(
     val darkMode = LocalDarkMode.current
     val palette = if (darkMode) DarkPalette else LightPalette
 
-    val shape = RoundedCornerShape(12.dp)
     val headerBg = if (darkMode) {
         MaterialTheme.colorScheme.surfaceVariant
     } else {
@@ -620,10 +620,10 @@ fun HighlightCodeBlock(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(shape),
+            .clip(HighlightShape),
         color = bodyBg,
         tonalElevation = 0.dp,
-        shape = shape,
+        shape = HighlightShape,
     ) {
         Column(modifier = Modifier.animateContentSize()) {
             // ── Header bar ──
@@ -751,7 +751,7 @@ private fun CopyCodeButton(code: String) {
             copied = true
             scope.launch { delay(1500); copied = false }
         },
-        modifier = Modifier.size(28.dp),
+        modifier = Modifier.size(48.dp),
     ) {
         if (copied) {
             Text(
