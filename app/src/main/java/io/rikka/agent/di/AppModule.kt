@@ -22,7 +22,7 @@ val appModule = module {
       androidContext(),
       AppDatabase::class.java,
       "rikka_agent.db",
-    ).fallbackToDestructiveMigration().build()
+    ).addMigrations(AppDatabase.MIGRATION_4_5).fallbackToDestructiveMigration().build()
   }
 
   single { get<AppDatabase>().sshProfileDao() }
