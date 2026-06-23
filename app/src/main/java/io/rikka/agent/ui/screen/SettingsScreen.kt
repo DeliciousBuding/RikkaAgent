@@ -40,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.rikka.agent.BuildConfig
 import io.rikka.agent.R
+import io.rikka.agent.storage.QuickMessage
 import io.rikka.agent.ui.theme.ChatFont
 import io.rikka.agent.ui.theme.PresetTheme
 import io.rikka.agent.vm.SettingsViewModel
@@ -68,10 +69,13 @@ fun SettingsScreen(
   val chatFontId by vm.chatFont.collectAsStateWithLifecycle()
   val fontSizeRatio by vm.fontSizeRatio.collectAsStateWithLifecycle()
   val bubbleOpacity by vm.bubbleOpacity.collectAsStateWithLifecycle()
+  val quickMessages by vm.quickMessages.collectAsStateWithLifecycle()
   var showThemePicker by remember { mutableStateOf(false) }
   var showPresetThemePicker by remember { mutableStateOf(false) }
   var showShellPicker by remember { mutableStateOf(false) }
   var showChatFontPicker by remember { mutableStateOf(false) }
+  var showQuickMessageEditor by remember { mutableStateOf(false) }
+  var editingQuickMessage by remember { mutableStateOf<QuickMessage?>(null) }
 
   if (showThemePicker) {
     ThemePickerDialog(
@@ -102,6 +106,25 @@ fun SettingsScreen(
       currentId = chatFontId,
       onSelect = { vm.setChatFont(it); showChatFontPicker = false },
       onDismiss = { showChatFontPicker = false },
+    )
+  }
+
+  if (showQuickMessageEditor) {
+    QuickMessageEditorDialog(
+      initial = editingQuickMessage,
+      onSave = { label, command ->
+        if (editingQuickMessage != null) {
+          vm.updateQuickMessage(editingQuickMessage!!.id, label, command)
+        } else {
+          vm.addQuickMessage(label, command)
+        }
+        showQuickMessageEditor = false
+        editingQuickMessage = null
+      },
+      onDismiss = {
+        showQuickMessageEditor = false
+        editingQuickMessage = null
+      },
     )
   }
 
@@ -184,6 +207,20 @@ fun SettingsScreen(
       BubbleOpacityItem(
         opacity = bubbleOpacity,
         onOpacityChange = vm::setBubbleOpacity,
+      )
+
+      SectionHeader(stringResource(R.string.section_quick_messages))
+      QuickMessagesSection(
+        messages = quickMessages,
+        onAdd = {
+          editingQuickMessage = null
+          showQuickMessageEditor = true
+        },
+        onEdit = { msg ->
+          editingQuickMessage = msg
+          showQuickMessageEditor = true
+        },
+        onDelete = { vm.removeQuickMessage(it) },
       )
 
       SectionHeader(stringResource(R.string.section_security))
@@ -424,6 +461,43 @@ private fun FontSizeRatioItem(
 }
 
 @Composable
+private fun BubbleOpacityItem(
+  opacity: Float,
+  onOpacityChange: (Float) -> Unit,
+) {
+  var sliderValue by remember { mutableFloatStateOf(opacity) }
+  Column(
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(horizontal = 16.dp, vertical = 8.dp),
+  ) {
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Text(
+        text = stringResource(R.string.bubble_opacity),
+        style = MaterialTheme.typography.bodyLarge,
+      )
+      Text(
+        text = "%d%%".format((sliderValue * 100).toInt()),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+    }
+    Slider(
+      value = sliderValue,
+      onValueChange = { sliderValue = it },
+      onValueChangeFinished = { onOpacityChange(sliderValue) },
+      valueRange = 0.5f..1.0f,
+      steps = 9,
+      modifier = Modifier.fillMaxWidth().padding(horizontal = 0.dp),
+    )
+  }
+}
+
+@Composable
 private fun SectionHeader(title: String) {
   Text(
     text = title,
@@ -465,5 +539,142 @@ private fun SettingsSwitchItem(
       )
     },
     modifier = Modifier.clickable { onCheckedChange(!checked) },
+  )
+}
+
+// ── Quick Messages ─────────────────────────────────────────────────────────
+
+@Composable
+private fun QuickMessagesSection(
+  messages: List<QuickMessage>,
+  onAdd: () -> Unit,
+  onEdit: (QuickMessage) -> Unit,
+  onDelete: (String) -> Unit,
+) {
+  var confirmDeleteId by remember { mutableStateOf<String?>(null) }
+
+  // Delete confirmation dialog
+  confirmDeleteId?.let { id ->
+    val msg = messages.find { it.id == id }
+    AlertDialog(
+      onDismissRequest = { confirmDeleteId = null },
+      title = { Text(stringResource(R.string.quick_message_delete_title)) },
+      text = {
+        Text(stringResource(R.string.quick_message_delete_msg, msg?.label ?: ""))
+      },
+      confirmButton = {
+        TextButton(onClick = { onDelete(id); confirmDeleteId = null }) {
+          Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = { confirmDeleteId = null }) {
+          Text(stringResource(R.string.cancel))
+        }
+      },
+    )
+  }
+
+  // Add button
+  ListItem(
+    headlineContent = { Text(stringResource(R.string.quick_message_add)) },
+    leadingContent = {
+      Icon(
+        Lucide.Plus,
+        contentDescription = null,
+        modifier = Modifier.size(20.dp),
+        tint = MaterialTheme.colorScheme.primary,
+      )
+    },
+    modifier = Modifier.clickable(onClick = onAdd),
+  )
+
+  // List of existing quick messages
+  messages.forEach { msg ->
+    ListItem(
+      headlineContent = { Text(msg.label) },
+      supportingContent = {
+        Text(
+          text = msg.command,
+          style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+          maxLines = 1,
+        )
+      },
+      trailingContent = {
+        Row {
+          IconButton(onClick = { onEdit(msg) }, modifier = Modifier.size(40.dp)) {
+            Icon(
+              Lucide.Pencil,
+              contentDescription = stringResource(R.string.edit),
+              modifier = Modifier.size(16.dp),
+              tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+          }
+          IconButton(onClick = { confirmDeleteId = msg.id }, modifier = Modifier.size(40.dp)) {
+            Icon(
+              Lucide.Trash2,
+              contentDescription = stringResource(R.string.delete),
+              modifier = Modifier.size(16.dp),
+              tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+            )
+          }
+        }
+      },
+    )
+  }
+}
+
+@Composable
+private fun QuickMessageEditorDialog(
+  initial: QuickMessage?,
+  onSave: (label: String, command: String) -> Unit,
+  onDismiss: () -> Unit,
+) {
+  var label by remember { mutableStateOf(initial?.label ?: "") }
+  var command by remember { mutableStateOf(initial?.command ?: "") }
+  val isEditing = initial != null
+
+  AlertDialog(
+    onDismissRequest = onDismiss,
+    title = {
+      Text(
+        if (isEditing) stringResource(R.string.quick_message_edit)
+        else stringResource(R.string.quick_message_add)
+      )
+    },
+    text = {
+      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        androidx.compose.material3.OutlinedTextField(
+          value = label,
+          onValueChange = { label = it },
+          label = { Text(stringResource(R.string.quick_message_label)) },
+          placeholder = { Text(stringResource(R.string.quick_message_label_hint)) },
+          singleLine = true,
+          modifier = Modifier.fillMaxWidth(),
+        )
+        androidx.compose.material3.OutlinedTextField(
+          value = command,
+          onValueChange = { command = it },
+          label = { Text(stringResource(R.string.quick_message_command)) },
+          placeholder = { Text(stringResource(R.string.quick_message_command_hint)) },
+          singleLine = true,
+          textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+          modifier = Modifier.fillMaxWidth(),
+        )
+      }
+    },
+    confirmButton = {
+      TextButton(
+        onClick = { onSave(label.trim(), command.trim()) },
+        enabled = label.isNotBlank() && command.isNotBlank(),
+      ) {
+        Text(stringResource(R.string.save))
+      }
+    },
+    dismissButton = {
+      TextButton(onClick = onDismiss) {
+        Text(stringResource(R.string.cancel))
+      }
+    },
   )
 }

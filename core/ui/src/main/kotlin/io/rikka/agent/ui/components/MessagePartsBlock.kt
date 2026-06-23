@@ -19,10 +19,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.rikka.agent.model.ChatMessage
 import io.rikka.agent.model.MessagePart
 import io.rikka.agent.model.MessageStatus
+import io.rikka.agent.ui.R
 import lucide.icons.Lucide
 
 /**
@@ -79,6 +82,7 @@ fun MessagePartsBlock(
     message: ChatMessage,
     modifier: Modifier = Modifier,
     enableMermaid: Boolean = false,
+    bubbleOpacity: Float = 1.0f,
     isStreaming: Boolean = false,
     onDelete: (() -> Unit)? = null,
     onRerun: (() -> Unit)? = null,
@@ -92,6 +96,7 @@ fun MessagePartsBlock(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .alpha(bubbleOpacity)
             .animateContentSize(),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -181,9 +186,9 @@ fun MessagePartsBlock(
             ) {
                 Icon(
                     imageVector = Lucide.MoreHorizontal,
-                    contentDescription = "More actions",
+                    contentDescription = stringResource(R.string.more_actions),
                     modifier = Modifier
-                        .size(20.dp)
+                        .size(48.dp)
                         .clickable { showActionsSheet = true }
                         .padding(2.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),

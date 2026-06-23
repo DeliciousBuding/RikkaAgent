@@ -35,6 +35,7 @@ import io.rikka.agent.ui.util.AnsiStripper
 
 private const val COLLAPSED_MAX_LINES = 15
 private val SCROLLABLE_MAX_HEIGHT = 400.dp
+private val StreamOutputShape = RoundedCornerShape(12.dp)
 
 /**
  * Renders stdout or stderr output in a terminal-style card.
@@ -61,7 +62,6 @@ fun StreamOutputCard(
     val displayText = if (expanded || !isLong) cleanText
     else lines.take(COLLAPSED_MAX_LINES).joinToString("\n")
 
-    val shape = RoundedCornerShape(12.dp)
     val isDark = LocalDarkMode.current
 
     // Stderr gets a warmer tint; stdout is neutral
@@ -81,11 +81,11 @@ fun StreamOutputCard(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(shape)
+            .clip(StreamOutputShape)
             .animateContentSize(),
         color = bgColor,
         tonalElevation = 0.dp,
-        shape = shape,
+        shape = StreamOutputShape,
     ) {
         Column {
             // Left accent border + content

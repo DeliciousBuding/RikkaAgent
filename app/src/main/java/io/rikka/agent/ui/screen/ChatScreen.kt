@@ -77,7 +77,7 @@ import io.rikka.agent.ui.components.ChatBubble
 import io.rikka.agent.ui.components.ChatInput
 import io.rikka.agent.vm.ChatViewModel
 import io.rikka.agent.vm.ConnectionError
-import io.rikka.agent.vm.ConnectionState
+import io.rikka.agent.ssh.ConnectionState
 import io.rikka.agent.vm.HostKeyEvent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -107,6 +107,7 @@ fun ChatScreen(
   val connectionError by vm.lastConnectionError.collectAsStateWithLifecycle()
   val threads by vm.threads.collectAsStateWithLifecycle()
   val profileLabel by vm.profileLabel.collectAsStateWithLifecycle()
+  val quickMessages by prefs.quickMessages.collectAsStateWithLifecycle(initialValue = emptyList())
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
   val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -116,7 +117,7 @@ fun ChatScreen(
   // Elapsed timer for running commands
   var elapsedSeconds by remember { mutableStateOf(0) }
   LaunchedEffect(connectionState) {
-    if (connectionState == ConnectionState.EXECUTING) {
+    if (connectionState == ConnectionState.Executing) {
       elapsedSeconds = 0
       while (true) {
         delay(1000)
@@ -234,7 +235,7 @@ fun ChatScreen(
     )
   }
 
-  val isStreaming = connectionState == ConnectionState.EXECUTING
+  val isStreaming = connectionState == ConnectionState.Executing
 
   val showScrollToBottom by remember {
     derivedStateOf {
@@ -300,7 +301,7 @@ fun ChatScreen(
       ) {
         Column(modifier = Modifier.fillMaxSize()) {
           // Progress bar when executing
-          if (connectionState == ConnectionState.EXECUTING) {
+          if (connectionState == ConnectionState.Executing) {
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
           }
 
@@ -333,7 +334,7 @@ fun ChatScreen(
                     fullOutputDialog = vm.getFullOutput(msg.id)
                   },
                   onRerun = { cmd ->
-                    if (connectionState != ConnectionState.EXECUTING) vm.send(cmd)
+                    if (connectionState != ConnectionState.Executing) vm.send(cmd)
                   },
                   onShare = { content ->
                     startActivity(
@@ -395,6 +396,7 @@ fun ChatScreen(
         Box(modifier = Modifier.align(Alignment.BottomCenter)) {
           ChatInput(
             enabled = !isStreaming,
+            quickMessages = quickMessages,
             onSend = { text -> vm.send(text) },
           )
         }
@@ -429,20 +431,23 @@ private fun ChatTopAppBar(
         )
         // Connection status indicator (RikkaHub-aligned)
         val statusText = when (connectionState) {
-          ConnectionState.IDLE -> stringResource(R.string.status_connecting)
-          ConnectionState.READY -> stringResource(R.string.status_ready)
-          ConnectionState.EXECUTING -> stringResource(R.string.status_running, elapsedSeconds)
-          ConnectionState.ERROR -> stringResource(R.string.status_error)
+          ConnectionState.Idle -> stringResource(R.string.status_connecting)
+          ConnectionState.Ready -> stringResource(R.string.status_ready)
+          ConnectionState.Executing -> stringResource(R.string.status_running, elapsedSeconds)
+          is ConnectionState.Reconnecting -> stringResource(R.string.status_connecting)
+          is ConnectionState.Disconnected -> stringResource(R.string.status_error)
+          is ConnectionState.Failed -> stringResource(R.string.status_error)
         }
         val statusColor = when (connectionState) {
-          ConnectionState.READY -> MaterialTheme.colorScheme.primary
-          ConnectionState.EXECUTING -> MaterialTheme.colorScheme.tertiary
-          ConnectionState.ERROR -> MaterialTheme.colorScheme.error
-          ConnectionState.IDLE -> MaterialTheme.colorScheme.onSurfaceVariant
+          ConnectionState.Ready -> MaterialTheme.colorScheme.primary
+          ConnectionState.Executing -> MaterialTheme.colorScheme.tertiary
+          is ConnectionState.Failed, is ConnectionState.Disconnected -> MaterialTheme.colorScheme.error
+          ConnectionState.Idle, is ConnectionState.Reconnecting -> MaterialTheme.colorScheme.onSurfaceVariant
         }
-        // Pulsing animation for active states (IDLE = connecting, EXECUTING = running)
-        val shouldPulse = connectionState == ConnectionState.IDLE ||
-          connectionState == ConnectionState.EXECUTING
+        // Pulsing animation for active states (Idle = connecting, Executing = running, Reconnecting)
+        val shouldPulse = connectionState == ConnectionState.Idle ||
+          connectionState == ConnectionState.Executing ||
+          connectionState is ConnectionState.Reconnecting
         val infiniteTransition = rememberInfiniteTransition(label = "statusPulse")
         val pulseAlpha by infiniteTransition.animateFloat(
           initialValue = 1f,

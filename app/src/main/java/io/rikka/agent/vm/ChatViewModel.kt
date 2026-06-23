@@ -9,6 +9,7 @@ import io.rikka.agent.model.ChatMessage
 import io.rikka.agent.model.ChatRole
 import io.rikka.agent.model.ChatThread
 import io.rikka.agent.model.MessageStatus
+import io.rikka.agent.ssh.ConnectionState
 import io.rikka.agent.ssh.DefaultSshExecRunnerFactory
 import io.rikka.agent.ssh.KeyContentProvider
 import io.rikka.agent.ssh.KnownHostsStore
@@ -368,21 +369,6 @@ class ChatViewModel(
     )
     _messages.update { it + msg }
   }
-}
-
-/**
- * Represents the SSH connection lifecycle state.
- *
- * - [IDLE] -- No profile loaded; initial state.
- * - [READY] -- Profile loaded and connection available; no command running.
- * - [EXECUTING] -- A command is currently running over SSH.
- * - [ERROR] -- Profile could not be loaded or a fatal connection error occurred.
- */
-enum class ConnectionState {
-  IDLE,
-  READY,
-  EXECUTING,
-  ERROR,
 }
 
 /**

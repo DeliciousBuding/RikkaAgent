@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -370,6 +371,7 @@ private fun CellBox(
 /**
  * Parsed table data extracted from SSH command output.
  */
+@Immutable
 data class ParsedTable(
     val headers: List<String>,
     val rows: List<List<String>>,

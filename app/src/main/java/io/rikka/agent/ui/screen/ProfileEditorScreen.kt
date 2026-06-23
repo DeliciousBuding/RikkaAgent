@@ -4,6 +4,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,6 +29,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
@@ -58,6 +61,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.rikka.agent.R
 import io.rikka.agent.model.AuthType
+import io.rikka.agent.model.ProfileGroup
 import io.rikka.agent.ssh.ContentUriKeyContentProvider
 import io.rikka.agent.ssh.SshKeyGenerator
 import io.rikka.agent.vm.ProfileEditorViewModel
@@ -67,7 +71,7 @@ import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ProfileEditorScreen(
   profileId: String?,
@@ -84,6 +88,7 @@ fun ProfileEditorScreen(
   val snackbarHostState = remember { SnackbarHostState() }
   val scope = rememberCoroutineScope()
   var generatedPubKey by remember { mutableStateOf<String?>(null) }
+  var tagInput by remember { mutableStateOf("") }
 
   // SAF file picker for private key
   val keyPickerLauncher = rememberLauncherForActivityResult(
@@ -218,7 +223,7 @@ fun ProfileEditorScreen(
             strokeWidth = 2.dp,
           )
           Spacer(Modifier.width(8.dp))
-          Text("Testing…")
+          Text("Testing...")
         } else {
           Text("Test Connection")
         }
@@ -232,6 +237,96 @@ fun ProfileEditorScreen(
           else
             MaterialTheme.colorScheme.error,
         )
+      }
+
+      // --- Group & Tags section ---
+      SectionLabel("Organization")
+      Card(
+        colors = CardDefaults.cardColors(
+          containerColor = MaterialTheme.colorScheme.surface,
+        ),
+      ) {
+        Column(
+          modifier = Modifier.padding(16.dp),
+          verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+          // Group dropdown
+          ProfileGroupDropdown(
+            selected = form.group,
+            onSelect = { vm.updateForm(form.copy(group = it)) },
+          )
+
+          // Tags input
+          Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+          ) {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.spacedBy(8.dp),
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              OutlinedTextField(
+                value = tagInput,
+                onValueChange = { tagInput = it },
+                label = { Text("Tags") },
+                placeholder = { Text("Add a tag...") },
+                singleLine = true,
+                modifier = Modifier.weight(1f),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+              )
+              FilledTonalButton(
+                onClick = {
+                  val newTag = tagInput.trim()
+                  if (newTag.isNotEmpty()) {
+                    val currentTags = form.tags.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                    if (newTag !in currentTags) {
+                      val updatedTags = (currentTags + newTag).joinToString(", ")
+                      vm.updateForm(form.copy(tags = updatedTags))
+                    }
+                    tagInput = ""
+                  }
+                },
+                enabled = tagInput.trim().isNotEmpty(),
+              ) {
+                Text("Add")
+              }
+            }
+
+            // Display current tags as removable chips
+            val currentTags = form.tags.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+            if (currentTags.isNotEmpty()) {
+              FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+              ) {
+                currentTags.forEach { tag ->
+                  InputChip(
+                    selected = false,
+                    onClick = {
+                      val updatedTags = currentTags.filter { it != tag }.joinToString(", ")
+                      vm.updateForm(form.copy(tags = updatedTags))
+                    },
+                    label = { Text(tag) },
+                    trailingIcon = {
+                      Icon(
+                        Lucide.X,
+                        contentDescription = "Remove tag $tag",
+                        modifier = Modifier.size(16.dp),
+                      )
+                    },
+                  )
+                }
+              }
+            } else {
+              Text(
+                text = "No tags added yet.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+              )
+            }
+          }
+        }
       }
 
       // --- Authentication section ---
@@ -501,3 +596,57 @@ private fun AuthTypeDropdown(
   }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProfileGroupDropdown(
+  selected: ProfileGroup,
+  onSelect: (ProfileGroup) -> Unit,
+) {
+  var expanded by remember { mutableStateOf(false) }
+
+  ExposedDropdownMenuBox(
+    expanded = expanded,
+    onExpandedChange = { expanded = it },
+  ) {
+    OutlinedTextField(
+      value = when (selected) {
+        ProfileGroup.None -> "No Group"
+        ProfileGroup.Development -> "Development"
+        ProfileGroup.Production -> "Production"
+        ProfileGroup.Testing -> "Testing"
+        ProfileGroup.Personal -> "Personal"
+      },
+      onValueChange = {},
+      readOnly = true,
+      label = { Text("Group") },
+      trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+      modifier = Modifier
+        .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+        .fillMaxWidth(),
+    )
+    ExposedDropdownMenu(
+      expanded = expanded,
+      onDismissRequest = { expanded = false },
+    ) {
+      ProfileGroup.entries.forEach { group ->
+        DropdownMenuItem(
+          text = {
+            Text(
+              when (group) {
+                ProfileGroup.None -> "No Group"
+                ProfileGroup.Development -> "Development"
+                ProfileGroup.Production -> "Production"
+                ProfileGroup.Testing -> "Testing"
+                ProfileGroup.Personal -> "Personal"
+              }
+            )
+          },
+          onClick = {
+            onSelect(group)
+            expanded = false
+          },
+        )
+      }
+    }
+  }
+}
