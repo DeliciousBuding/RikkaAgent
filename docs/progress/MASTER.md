@@ -13,7 +13,7 @@
 | **Phase 1** | ✅ 3 commits | MessagePart + ChatMessage + Room v5 |
 | **Phase 2** | ✅ 3 commits | ExtendColors + Lucide Icons (6 屏 11 处) |
 | **设计合规** | ✅ 3 commits | P0+P1+P2 全部修复 (78→0 Critical) |
-| **ADB 验收** | ⏳ | Mumu ADB 端口冲突，待手动恢复 |
+| **ADB 验收** | ✅ | MuMu 127.0.0.1:5555 已连接，竖屏模式正常 |
 
 ## 当前阶段
 
