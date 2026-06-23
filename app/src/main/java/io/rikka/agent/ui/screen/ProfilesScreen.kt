@@ -57,6 +57,7 @@ import io.rikka.agent.model.AuthType
 import io.rikka.agent.model.SshProfile
 import io.rikka.agent.R
 import io.rikka.agent.vm.ProfilesViewModel
+import io.rikka.agent.ui.components.MeshGradientBackground
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -70,6 +71,7 @@ fun ProfilesScreen(
   val profiles by vm.profiles.collectAsState()
   val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
+  MeshGradientBackground {
   Scaffold(
     modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
     topBar = {
@@ -81,8 +83,12 @@ fun ProfilesScreen(
           }
         },
         scrollBehavior = scrollBehavior,
+        colors = TopAppBarDefaults.largeTopAppBarColors(
+          containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        ),
       )
     },
+    containerColor = androidx.compose.ui.graphics.Color.Transparent,
     floatingActionButton = {
       FloatingActionButton(onClick = { onEditProfile(null) }) {
         Icon(Lucide.Plus, contentDescription = stringResource(R.string.new_profile))
@@ -140,6 +146,7 @@ fun ProfilesScreen(
       }
     }
   }
+  } // MeshGradientBackground
 }
 
 @OptIn(ExperimentalFoundationApi::class)
