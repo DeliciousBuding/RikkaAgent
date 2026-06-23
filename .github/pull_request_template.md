@@ -3,24 +3,44 @@
 - What changed:
 - Why:
 
-## Checklist
+## Type of Change
 
-- [ ] Follows repository scope (rikka-agent only)
-- [ ] No secrets in code, docs, or screenshots
-- [ ] Security-sensitive changes reviewed (SSH/auth/storage)
-- [ ] Related docs updated (`ROADMAP.md` / `STATE.md` / `ARCHIVE.md` when needed)
-- [ ] Tests added/updated for changed behavior
-- [ ] Followed `docs/verification.md` for local checks
-- [ ] Instrumentation tests run when UI/platform flows changed
+- [ ] Bug fix (non-breaking change that fixes an issue)
+- [ ] New feature (non-breaking change that adds functionality)
+- [ ] Breaking change (fix or feature that causes existing functionality to change)
+- [ ] Refactor (no functional change)
+- [ ] Documentation update
+- [ ] CI / build / tooling change
+
+## Testing
+
+- [ ] Unit tests pass locally (`./gradlew test`)
+- [ ] Lint passes (`./gradlew :app:lintDevDebug`)
+- [ ] New tests added for changed behavior
+- [ ] Manual testing performed (describe below)
+
+Manual test notes:
 
 ## Screenshots / Demo
 
-- UI change screenshots (if any):
+<!-- Attach before/after screenshots for UI changes. Remove this section if not applicable. -->
+
+## Security Checklist
+
+- [ ] No secrets, tokens, or credentials in code, docs, or screenshots
+- [ ] Security-sensitive changes reviewed (SSH / auth / storage / crypto)
+- [ ] No new permissions added to `AndroidManifest.xml` without justification
+- [ ] User input validated and sanitized where applicable
+- [ ] Sensitive data encrypted at rest (DataStore / EncryptedSharedPreferences)
 
 ## Risk & Rollback
 
 - Risk level: low / medium / high
 - Rollback plan:
+
+## Related Issues
+
+<!-- Link related issues: Closes #123, Relates to #456 -->
 
 ## Notes for Reviewers
 

@@ -10,6 +10,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  DETEKT_VERSION: "1.23.7"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -33,18 +36,49 @@ jobs:
       - name: Create local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
+      # ── Static Analysis: detekt ──────────────────────────────────
+      - name: Download detekt CLI
+        run: |
+          curl -sSLO "https://github.com/detekt/detekt/releases/download/v${DETEKT_VERSION}/detekt-cli-${DETEKT_VERSION}.zip"
+          unzip -q "detekt-cli-${DETEKT_VERSION}.zip" -d detekt-cli
+          chmod +x detekt-cli/detekt-cli-${DETEKT_VERSION}/bin/detekt-cli
+          echo "detekt-cli/detekt-cli-${DETEKT_VERSION}/bin" >> "$GITHUB_PATH"
+
+      - name: Run detekt
+        if: always()
+        run: |
+          detekt-cli \
+            --input "$(pwd)" \
+            --report sarif:build/reports/detekt/detekt.sarif \
+            --report html:build/reports/detekt/detekt.html \
+            --report txt:build/reports/detekt/detekt.txt \
+            --build-upon-default-config \
+            --all-rules \
+            --excludes '**/build/**,**/resources/**,**/.gradle/**' \
+            || true
+
+      # ── Unit Tests ───────────────────────────────────────────────
       - name: Unit tests
         run: ./gradlew test --no-daemon
 
       - name: Focused module tests
         run: ./gradlew :core:model:testDebugUnitTest :core:storage:testDebugUnitTest :core:ssh:testDebugUnitTest :core:ui:testDebugUnitTest :app:testDevDebugUnitTest --no-daemon
 
+      # ── Lint ─────────────────────────────────────────────────────
       - name: Android lint (devDebug)
         run: ./gradlew :app:lintDevDebug --no-daemon
 
+      # ── JaCoCo Coverage ──────────────────────────────────────────
+      - name: Generate JaCoCo coverage report
+        if: always()
+        run: |
+          ./gradlew :app:testDevDebugUnitTest jacocoTestReportDevDebugUnitTest --no-daemon || true
+
+      # ── Build ────────────────────────────────────────────────────
       - name: Build debug APK
         run: ./gradlew assembleDevDebug --no-daemon
 
+      # ── Step Summary ─────────────────────────────────────────────
       - name: Build CI summary
         if: always()
         run: |
@@ -61,34 +95,83 @@ jobs:
             apk_size="N/A"
           fi
 
+          # detekt summary
+          detekt_txt="build/reports/detekt/detekt.txt"
+          if [ -f "$detekt_txt" ]; then
+            detekt_total=$(grep -c "Ruleset:" "$detekt_txt" 2>/dev/null || echo "0")
+            detekt_findings=$(grep -c -E "\[.*(error|warning|info)\]" "$detekt_txt" 2>/dev/null || echo "0")
+            detekt_files=$(grep -c "\.kt:" "$detekt_txt" 2>/dev/null || echo "0")
+          else
+            detekt_total="N/A"
+            detekt_findings="N/A"
+            detekt_files="N/A"
+          fi
+
+          # JaCoCo summary
+          jacoco_csv="app/build/reports/jacoco/jacocoTestReportDevDebugUnitTest/jacocoTestReportDevDebugUnitTest.csv"
+          if [ -f "$jacoco_csv" ] && [ -s "$jacoco_csv" ]; then
+            # Parse CSV: skip header, sum INSTRUCTION columns (missed=4, covered=5)
+            jacoco_line=$(tail -n +2 "$jacoco_csv" | awk -F',' '{missed+=$4; covered+=$5} END {printf "%d %d", missed, covered}')
+            jacoco_missed=$(echo "$jacoco_line" | awk '{print $1}')
+            jacoco_covered=$(echo "$jacoco_line" | awk '{print $2}')
+            jacoco_total=$((jacoco_missed + jacoco_covered))
+            if [ "$jacoco_total" -gt 0 ]; then
+              jacoco_pct=$(awk "BEGIN {printf \"%.1f\", ($jacoco_covered / $jacoco_total) * 100}")
+            else
+              jacoco_pct="0.0"
+            fi
+          else
+            jacoco_pct="N/A"
+          fi
+
           {
             echo "## Android CI Summary"
+            echo ""
+            echo "### Build"
+            echo ""
+            echo "| Metric | Value |"
+            echo "|---|---|"
+            echo "| APK size (devDebug) | ${apk_size} |"
+            echo ""
+            echo "### Tests"
             echo ""
             echo "| Metric | Value |"
             echo "|---|---|"
             echo "| Test result XML files | ${test_xml_count} |"
             echo "| Test cases | ${test_case_count} |"
-            echo "| Test failure tags | ${failed_count} |"
-            echo "| Test skipped tags | ${skipped_count} |"
-            echo "| Lint issue tags | ${lint_issue_count} |"
-            echo "| APK size (devDebug) | ${apk_size} |"
+            echo "| Failures | ${failed_count} |"
+            echo "| Skipped | ${skipped_count} |"
+            echo "| Coverage (instruction) | ${jacoco_pct}% |"
             echo ""
-            echo "### Failure Triage"
+            echo "### Static Analysis"
+            echo ""
+            echo "| Metric | Value |"
+            echo "|---|---|"
+            echo "| Lint issues | ${lint_issue_count} |"
+            echo "| Detekt findings | ${detekt_findings} |"
+            echo ""
+            echo "### Triage"
             echo ""
             if [ "$failed_count" -gt "0" ]; then
-              echo "- Unit test failures detected. Check artifacts: unit-test-reports"
+              echo "- :x: Unit test failures detected. Check artifact: **unit-test-reports**"
             else
-              echo "- No unit test failures detected."
+              echo "- :white_check_mark: No unit test failures."
             fi
             if [ "$lint_issue_count" -gt "0" ]; then
-              echo "- Lint issues detected. Check artifacts: lint-reports"
+              echo "- :warning: Lint issues detected. Check artifact: **lint-reports**"
             else
-              echo "- No lint issue tags detected."
+              echo "- :white_check_mark: No lint issues."
+            fi
+            if [ "$detekt_findings" != "N/A" ] && [ "$detekt_findings" -gt "0" ]; then
+              echo "- :warning: Detekt findings detected. Check artifact: **detekt-reports**"
+            else
+              echo "- :white_check_mark: No detekt findings."
             fi
             echo ""
-            echo "Artifacts: app-dev-debug / unit-test-reports / lint-reports"
+            echo "**Artifacts:** app-dev-debug / unit-test-reports / lint-reports / detekt-reports / jacoco-coverage"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # ── Upload Artifacts ─────────────────────────────────────────
       - name: Upload APK
         if: always()
         uses: actions/upload-artifact@v4
@@ -115,4 +198,25 @@ jobs:
           path: |
             **/build/reports/lint-results*.html
             **/build/reports/lint-results*.xml
+          retention-days: 14
+
+      - name: Upload detekt reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: detekt-reports
+          path: |
+            build/reports/detekt/detekt.html
+            build/reports/detekt/detekt.sarif
+            build/reports/detekt/detekt.txt
+          retention-days: 14
+
+      - name: Upload JaCoCo coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-coverage
+          path: |
+            **/build/reports/jacoco/
+            **/build/jacoco/
           retention-days: 14
