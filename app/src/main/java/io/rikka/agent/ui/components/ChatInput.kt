@@ -67,6 +67,7 @@ import androidx.compose.ui.window.PopupProperties
 import io.rikka.agent.R
 import io.rikka.agent.storage.QuickMessage
 import io.rikka.agent.ui.R as UiR
+import lucide.icons.Lucide
 
 /**
  * Chat input component for RikkaAgent.
@@ -125,6 +126,52 @@ fun ChatInput(
       .padding(horizontal = 12.dp, vertical = 8.dp),
     verticalArrangement = Arrangement.spacedBy(8.dp),
   ) {
+    // Editing indicator banner
+    if (editText != null) {
+      Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        tonalElevation = 0.dp,
+      ) {
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+          Icon(
+            imageVector = Lucide.Pencil,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+          )
+          Text(
+            text = stringResource(UiR.string.editing_message),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            modifier = Modifier.weight(1f),
+          )
+          if (onCancelEdit != null) {
+            IconButton(
+              onClick = {
+                text = ""
+                onCancelEdit()
+              },
+              modifier = Modifier.size(24.dp),
+            ) {
+              Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = stringResource(R.string.cancel),
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+              )
+            }
+          }
+        }
+      }
+    }
+
     // Input surface -- rounded box with subtle border (RikkaHub-aligned)
     Surface(
       shape = RoundedCornerShape(24.dp),
