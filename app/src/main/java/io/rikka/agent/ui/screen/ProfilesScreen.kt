@@ -76,17 +76,14 @@ fun ProfilesScreen(
         Icon(Lucide.Settings, contentDescription = stringResource(R.string.settings))
       }
 
-      // Title top-left
-      androidx.compose.foundation.text.BasicText(
+      // Title top-left — scaled down to match RikkaHub's subtle title
+      Text(
         text = stringResource(R.string.app_name),
-        style = androidx.compose.ui.text.TextStyle(
-          fontFamily = androidx.compose.ui.text.font.FontFamily.SansSerif,
-          fontWeight = androidx.compose.ui.text.font.FontWeight.Normal,
-          fontSize = 14.sp,
-          lineHeight = 18.sp,
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-        ),
-        modifier = Modifier.padding(start = 16.dp, top = 16.dp),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+        modifier = Modifier
+          .padding(start = 16.dp, top = 16.dp)
+          .graphicsLayer(scaleX = 0.55f, scaleY = 0.55f),
       )
 
       // Content
