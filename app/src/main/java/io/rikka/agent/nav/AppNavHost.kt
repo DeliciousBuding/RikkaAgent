@@ -1,5 +1,7 @@
 package io.rikka.agent.nav
 
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -23,10 +25,10 @@ fun AppNavHost() {
   NavHost(
     navController = navController,
     startDestination = Screen.Profiles,
-    enterTransition = { slideInHorizontally { it } + fadeIn() },
-    exitTransition = { slideOutHorizontally { -it / 3 } + fadeOut() },
-    popEnterTransition = { slideInHorizontally { -it / 3 } + fadeIn() },
-    popExitTransition = { slideOutHorizontally { it } + fadeOut() },
+    enterTransition = { slideInHorizontally(animationSpec = tween(300, easing = CubicBezierEasing(0.175f, 0.885f, 0.32f, 1.275f))) { it } + fadeIn(animationSpec = tween(300)) },
+    exitTransition = { slideOutHorizontally(animationSpec = tween(300, easing = CubicBezierEasing(0.175f, 0.885f, 0.32f, 1.275f))) { -it / 3 } + fadeOut(animationSpec = tween(300)) },
+    popEnterTransition = { slideInHorizontally(animationSpec = tween(300, easing = CubicBezierEasing(0.175f, 0.885f, 0.32f, 1.275f))) { -it / 3 } + fadeIn(animationSpec = tween(300)) },
+    popExitTransition = { slideOutHorizontally(animationSpec = tween(300, easing = CubicBezierEasing(0.175f, 0.885f, 0.32f, 1.275f))) { it } + fadeOut(animationSpec = tween(300)) },
   ) {
     composable<Screen.Profiles> {
       ProfilesScreen(

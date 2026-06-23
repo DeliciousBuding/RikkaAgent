@@ -1,6 +1,7 @@
 package io.rikka.agent.ui.components
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
@@ -16,8 +17,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -72,7 +73,7 @@ fun CodeCard(
     modifier = modifier
       .fillMaxWidth()
       .clip(shape)
-      .animateContentSize(),
+      .animateContentSize(animationSpec = tween(150)),
     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
     tonalElevation = 0.dp,
     shape = shape,
@@ -145,7 +146,7 @@ private fun CopyCodeButton(code: String) {
   val scope = rememberCoroutineScope()
   var copied by remember { mutableStateOf(false) }
 
-  IconButton(
+  OutlinedIconButton(
     onClick = {
       clipboardManager.setText(AnnotatedString(code))
       haptic.performHapticFeedback(HapticFeedbackType.LongPress)
