@@ -101,12 +101,12 @@ fun ChatScreen(
 ) {
   val vm: ChatViewModel = vmOverride ?: koinViewModel { parametersOf(profileId) }
   val prefs: AppPreferences = prefsOverride ?: koinInject()
-  val messages by vm.messages.collectAsState()
-  val enableMermaid by prefs.enableMermaid.collectAsState(initial = false)
-  val connectionState by vm.connectionState.collectAsState()
-  val connectionError by vm.lastConnectionError.collectAsState()
-  val threads by vm.threads.collectAsState()
-  val profileLabel by vm.profileLabel.collectAsState()
+  val messages by vm.messages.collectAsStateWithLifecycle()
+  val enableMermaid by prefs.enableMermaid.collectAsStateWithLifecycle(initialValue = false)
+  val connectionState by vm.connectionState.collectAsStateWithLifecycle()
+  val connectionError by vm.lastConnectionError.collectAsStateWithLifecycle()
+  val threads by vm.threads.collectAsStateWithLifecycle()
+  val profileLabel by vm.profileLabel.collectAsStateWithLifecycle()
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
   val drawerState = rememberDrawerState(DrawerValue.Closed)

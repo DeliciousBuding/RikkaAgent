@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.rikka.agent.ui.util.AnsiStripper
 
+private val CommandCardShape = RoundedCornerShape(12.dp)
+
 /**
  * Renders a [MessagePart.Command] as a terminal-style card.
  *
@@ -64,17 +66,16 @@ fun CommandCard(
     isRunning: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val shape = RoundedCornerShape(12.dp)
     val headerBg = MaterialTheme.colorScheme.surfaceVariant
 
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(shape)
+            .clip(CommandCardShape)
             .animateContentSize(),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
         tonalElevation = 0.dp,
-        shape = shape,
+        shape = CommandCardShape,
     ) {
         Column {
             // Header: prompt + command

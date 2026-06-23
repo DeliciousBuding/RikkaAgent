@@ -44,6 +44,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val COLLAPSED_MAX_LINES = 15
+private val CodeCardShape = RoundedCornerShape(12.dp)
 
 /**
  * Code card for rendering command output with:
@@ -59,23 +60,21 @@ fun CodeCard(
   language: String? = null,
   modifier: Modifier = Modifier,
 ) {
-  val lines = code.lines()
+  val lines = remember(code) { code.lines() }
   val isLong = lines.size > COLLAPSED_MAX_LINES
   var expanded by remember { mutableStateOf(!isLong) }
 
   val displayText = if (expanded || !isLong) code
   else lines.take(COLLAPSED_MAX_LINES).joinToString("\n")
 
-  val shape = RoundedCornerShape(12.dp)
-
   Surface(
     modifier = modifier
       .fillMaxWidth()
-      .clip(shape)
+      .clip(CodeCardShape)
       .animateContentSize(),
     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
     tonalElevation = 0.dp,
-    shape = shape,
+    shape = CodeCardShape,
   ) {
     Column {
       // Header: language + copy
@@ -152,7 +151,7 @@ private fun CopyCodeButton(code: String) {
       copied = true
       scope.launch { delay(1500); copied = false }
     },
-    modifier = Modifier.size(28.dp),
+    modifier = Modifier.size(48.dp),
   ) {
     if (copied) {
       Text("✓", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)

@@ -12,10 +12,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -62,7 +62,7 @@ fun ChatUserAvatar(
     modifier: Modifier = Modifier,
 ) {
     val prefs: AppPreferences = koinInject()
-    val showAvatar by prefs.showUserAvatar.collectAsState(initial = true)
+    val showAvatar by prefs.showUserAvatar.collectAsStateWithLifecycle(initialValue = true)
 
     if (message.role == ChatRole.User && message.textContent.isNotBlank() && showAvatar) {
         Row(
@@ -109,7 +109,7 @@ fun ChatAssistantAvatar(
     modifier: Modifier = Modifier,
 ) {
     val prefs: AppPreferences = koinInject()
-    val showIcon by prefs.showModelIcon.collectAsState(initial = true)
+    val showIcon by prefs.showModelIcon.collectAsStateWithLifecycle(initialValue = true)
 
     if (message.role == ChatRole.Assistant && message.parts.isNotEmpty() && showIcon) {
         Row(

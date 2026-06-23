@@ -3,6 +3,34 @@ package io.rikka.agent.model
 import kotlinx.serialization.Serializable
 
 /**
+ * Purpose-based grouping for SSH profiles.
+ *
+ * Helps users organize profiles by deployment target or usage context.
+ * Each group can have different default settings or visual indicators.
+ *
+ * ## Thread safety
+ *
+ * Enum constants are inherently thread-safe.
+ */
+@Serializable
+enum class ProfileGroup {
+  /** Development and local environments. */
+  Development,
+
+  /** Production and live service environments. */
+  Production,
+
+  /** Testing, staging, and QA environments. */
+  Testing,
+
+  /** Personal or hobby projects. */
+  Personal,
+
+  /** Uncategorized / no specific group. */
+  None,
+}
+
+/**
  * Configuration profile for an SSH connection.
  *
  * Stores all parameters needed to establish and maintain an SSH session to
@@ -26,6 +54,8 @@ import kotlinx.serialization.Serializable
  *     keyRef = "~/.ssh/id_ed25519",
  *     hostKeyPolicy = HostKeyPolicy.TrustFirstUse,
  *     keepaliveIntervalSec = 30,
+ *     group = ProfileGroup.Production,
+ *     tags = listOf("web", "nginx", "deploy"),
  * )
  * ```
  *
@@ -56,6 +86,10 @@ import kotlinx.serialization.Serializable
  * @property codexApiKey API key for Codex authentication on the remote host.
  *   Only used when [codexMode] is `true`. `null` when Codex does not require
  *   an API key or when the key is managed externally.
+ * @property group Purpose-based grouping for organizational filtering.
+ *   Defaults to [ProfileGroup.None].
+ * @property tags Freeform string labels for cross-cutting categorization
+ *   (e.g. `"web"`, `"docker"`, `"gpu"`). Empty by default.
  */
 @Serializable
 data class SshProfile(
@@ -71,6 +105,8 @@ data class SshProfile(
   val codexMode: Boolean = false,
   val codexWorkDir: String? = null,
   val codexApiKey: String? = null,
+  val group: ProfileGroup = ProfileGroup.None,
+  val tags: List<String> = emptyList(),
 )
 
 /**

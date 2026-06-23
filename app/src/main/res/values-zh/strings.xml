@@ -196,6 +196,25 @@
   <string name="font_serif">衬线</string>
   <string name="font_monospace">等宽</string>
 
+  <!-- Chat font settings -->
+  <string name="section_chat_font">聊天字体</string>
+  <string name="chat_font">字体</string>
+  <string name="chat_font_title">聊天字体</string>
+  <string name="chat_font_preview">天地玄黄 宇宙洪荒</string>
+  <string name="font_size_ratio">字号</string>
+  <string name="font_size_small">小</string>
+  <string name="font_size_large">大</string>
+
+  <!-- DisplaySettingsScreen -->
+  <string name="display_settings">显示</string>
+  <string name="section_display">显示</string>
+  <string name="bubble_opacity">气泡透明度</string>
+  <string name="bubble_opacity_subtitle">聊天气泡的透明程度</string>
+  <string name="show_assistant_bubble">显示助手气泡</string>
+  <string name="show_assistant_bubble_subtitle">为助手消息显示背景气泡</string>
+  <string name="show_timestamp">显示时间戳</string>
+  <string name="show_timestamp_subtitle">在每条消息下方显示时间</string>
+
   <!-- NerdLine -->
   <string name="nerd_line_exit_code">退出码：%d</string>
   <string name="nerd_line_duration">%d毫秒</string>

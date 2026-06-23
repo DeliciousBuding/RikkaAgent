@@ -10,6 +10,8 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
@@ -34,6 +36,9 @@ class AppPreferences(
     val SHOW_MODEL_ICON = booleanPreferencesKey("show_model_icon")
     val CHAT_FONT = stringPreferencesKey("chat_font")
     val FONT_SIZE_RATIO = floatPreferencesKey("font_size_ratio")
+    val BUBBLE_OPACITY = floatPreferencesKey("bubble_opacity")
+    val SHOW_ASSISTANT_BUBBLE = booleanPreferencesKey("show_assistant_bubble")
+    val SHOW_TIMESTAMP = booleanPreferencesKey("show_timestamp")
   }
 
   val theme: Flow<String> = dataStore.data.map { prefs ->
@@ -76,6 +81,18 @@ class AppPreferences(
     prefs[FONT_SIZE_RATIO] ?: 1.0f
   }
 
+  val bubbleOpacity: Flow<Float> = dataStore.data.map { prefs ->
+    prefs[BUBBLE_OPACITY] ?: 0.85f
+  }
+
+  val showAssistantBubble: Flow<Boolean> = dataStore.data.map { prefs ->
+    prefs[SHOW_ASSISTANT_BUBBLE] ?: true
+  }
+
+  val showTimestamp: Flow<Boolean> = dataStore.data.map { prefs ->
+    prefs[SHOW_TIMESTAMP] ?: true
+  }
+
   suspend fun setTheme(value: String) {
     dataStore.edit { prefs -> prefs[THEME] = value }
   }
@@ -114,5 +131,17 @@ class AppPreferences(
 
   suspend fun setFontSizeRatio(value: Float) {
     dataStore.edit { prefs -> prefs[FONT_SIZE_RATIO] = value.coerceIn(0.8f, 1.5f) }
+  }
+
+  suspend fun setBubbleOpacity(value: Float) {
+    dataStore.edit { prefs -> prefs[BUBBLE_OPACITY] = value.coerceIn(0.5f, 1.0f) }
+  }
+
+  suspend fun setShowAssistantBubble(value: Boolean) {
+    dataStore.edit { prefs -> prefs[SHOW_ASSISTANT_BUBBLE] = value }
+  }
+
+  suspend fun setShowTimestamp(value: Boolean) {
+    dataStore.edit { prefs -> prefs[SHOW_TIMESTAMP] = value }
   }
 }

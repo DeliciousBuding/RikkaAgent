@@ -6,6 +6,7 @@ import io.rikka.agent.model.ChatRole
 import io.rikka.agent.model.HostKeyPolicy
 import io.rikka.agent.model.MessagePart
 import io.rikka.agent.model.MessageStatus
+import io.rikka.agent.model.ProfileGroup
 import io.rikka.agent.model.SshProfile
 import kotlinx.serialization.encodeToString
 
@@ -22,6 +23,8 @@ fun SshProfileEntity.toModel(): SshProfile = SshProfile(
   codexMode = codexMode,
   codexWorkDir = codexWorkDir,
   codexApiKey = codexApiKey,
+  group = try { ProfileGroup.valueOf(group) } catch (_: Exception) { ProfileGroup.None },
+  tags = if (tags.isBlank()) emptyList() else tags.split(",").map { it.trim() }.filter { it.isNotEmpty() },
 )
 
 fun SshProfile.toEntity(): SshProfileEntity = SshProfileEntity(
@@ -37,6 +40,8 @@ fun SshProfile.toEntity(): SshProfileEntity = SshProfileEntity(
   codexMode = codexMode,
   codexWorkDir = codexWorkDir,
   codexApiKey = codexApiKey,
+  group = group.name,
+  tags = tags.joinToString(","),
 )
 
 // ── ChatMessage ↔ Entity ──────────────────────────────────────────────────────

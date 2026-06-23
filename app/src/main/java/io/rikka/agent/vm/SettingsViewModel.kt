@@ -98,6 +98,15 @@ class SettingsViewModel(
   val fontSizeRatio: StateFlow<Float> = prefs.fontSizeRatio
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 1.0f)
 
+  val bubbleOpacity: StateFlow<Float> = prefs.bubbleOpacity
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0.85f)
+
+  val showAssistantBubble: StateFlow<Boolean> = prefs.showAssistantBubble
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
+  val showTimestamp: StateFlow<Boolean> = prefs.showTimestamp
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
   /**
    * Persist a new theme value.
    *
@@ -177,5 +186,17 @@ class SettingsViewModel(
    */
   fun setFontSizeRatio(value: Float) {
     viewModelScope.launch { prefs.setFontSizeRatio(value) }
+  }
+
+  fun setBubbleOpacity(value: Float) {
+    viewModelScope.launch { prefs.setBubbleOpacity(value) }
+  }
+
+  fun setShowAssistantBubble(value: Boolean) {
+    viewModelScope.launch { prefs.setShowAssistantBubble(value) }
+  }
+
+  fun setShowTimestamp(value: Boolean) {
+    viewModelScope.launch { prefs.setShowTimestamp(value) }
   }
 }

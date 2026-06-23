@@ -1,431 +1,420 @@
-# PTY Interactive Mode Support — Design Document
+# RikkaAgent PTY 交互模式支持方案
 
-> Status: **Proposed** (not scheduled)
-> Author: agent-generated, 2026-06-23
-> Scope: RikkaAgent v1.x / v2 feasibility analysis
-
----
-
-## 1. Current Mode A (exec channel) — Limitations
-
-### What Mode A Does
-
-Mode A opens an SSH `exec` channel (`session.exec(command)` in sshj), streams
-stdout and stderr as raw byte chunks, captures the exit code, and renders the
-result inside a chat bubble. This is implemented in `SshjExecRunner` (lines 138–164)
-and surfaced through the `ExecEvent` sealed class.
-
-### Limitations
-
-| # | Limitation | Impact |
-|---|-----------|--------|
-| L1 | **No PTY allocation** — the remote shell has no controlling terminal. | Programs that check `isatty()` behave differently: `ls` defaults to one-column output, `git log` has no pager, color is off. |
-| L2 | **No stdin after command start** — `session.exec()` is fire-and-forget on input. | Interactive programs (`sudo` password prompt, `mysql` REPL, `python` REPL) are impossible. |
-| L3 | **No terminal size negotiation** — no `winsize` is communicated to the remote. | Programs that query `$COLUMNS`/`$LINES` (top, less, vim) get defaults or fail. |
-| L4 | **No ANSI escape code handling** — raw bytes are rendered as plain text. | Programs that emit ANSI sequences (colors, cursor movement) produce garbled output. |
-| L5 | **No signal forwarding** — closing the exec channel is the only cancellation. | Cannot send `Ctrl-C`, `Ctrl-Z`, `SIGWINCH`. |
-| L6 | **No environment variable injection** — `TERM`, `LANG`, `SHELL` are unset. | Some programs refuse to start or fall back to dumb mode. |
-
-The current spec explicitly acknowledges these as non-goals for v1
-(`docs/spec/33-remote-exec.md`: "Interactive shells / full-screen apps /
-ANSI terminal UX").
+> 状态：设计文档
+> 日期：2026-06-23
+> 前置阅读：`docs/spec/32-ssh.md`, `docs/spec/33-remote-exec.md`, `docs/spec/30-architecture.md`
 
 ---
 
-## 2. PTY Mode Technical Design
+## 1. 当前 Mode A（exec channel）的限制
 
-### 2.1 SSH Protocol Layer
+### 1.1 现状
 
-sshj provides `Session.startShell()` which allocates a PTY on the remote side
-and opens a bidirectional shell channel. The key API surface:
-
-```
-val session: Session = client.startSession()
-val shell: Session.Shell = session.startShell()
-// shell.inputStream  — remote stdout (OutputStream to write stdin)
-// shell.outputStream — remote stdout (InputStream to read)
-// shell.errorStream  — remote stderr (InputStream)
-// shell.allocatePTY(type, cols, rows, width, height, modes)
-```
-
-PTY allocation must happen **before** `startShell()`:
+`SshjExecRunner` 使用 sshj 的 `Session.exec(command)` 打开 exec channel：
 
 ```
-session.allocatePTY("xterm-256color", cols, rows, 0, 0, PTYModes.EMPTY)
+val session = client.startSession()
+val cmd = session.exec(command)   // 单向：写入命令，读取 stdout/stderr
 ```
 
-### 2.2 New Interface: `SshPtyRunner`
+`ExecEvent` sealed class 定义了事件流：`StdoutChunk` / `StderrChunk` / `StructuredEvent` / `Exit` / `Canceled` / `Error`。
+
+### 1.2 核心限制
+
+| 限制 | 影响 | 用户感知 |
+|------|------|---------|
+| **无 PTY 分配** | 远程进程没有控制终端，`isatty()` 返回 false | `ls` 不带颜色，`git log` 不分页，进度条不刷新 |
+| **无 stdin** | exec channel 一旦打开，无法向远程进程写入数据 | 无法交互式输入密码、无法使用 REPL（python/node）、无法 `git rebase -i` |
+| **无终端尺寸协商** | 远程进程不知道终端的行列数 | `vim`/`htop` 等全屏 TUI 应用无法正常渲染 |
+| **stdout/stderr 分离** | 两个独立 InputStream | 正确，但 PTY 模式下会合并为一个流 |
+| **无 ANSI 解析** | 原始字节直接渲染为代码块 | 带颜色的输出显示为乱码转义序列 |
+| **无信号转发** | 只能关闭 channel 来取消 | 无法发送 Ctrl+C、Ctrl+Z、SIGWINCH |
+
+### 1.3 能力边界
+
+Mode A 能做：运行一次性命令、获取输出、解析 JSONL（Codex exec）。
+Mode A 不能做：交互式 shell、密码输入、全屏 TUI、需要 PTY 的程序（如 `script`、`expect`）。
+
+---
+
+## 2. PTY 模式技术方案
+
+### 2.1 sshj API 映射
 
 ```kotlin
+// exec 模式（当前）
+val session = client.startSession()
+val cmd = session.exec(command)
+// → cmd.inputStream (stdout), cmd.errorStream (stderr)
+// → cmd.join() 等待结束
+// → cmd.exitStatus
+
+// PTY 模式（新增）
+val session = client.startSession()
+session.allocatePTY("xterm-256color", cols, rows, 0, 0, PTYModes.EMPTY)
+val shell = session.startShell()
+// → shell.outputStream (写入 stdin)
+// → shell.inputStream (读取 stdout+stderr 合并流)
+// → shell.join() 等待结束
+// → shell.exitStatus
+// → session.sendWindowChange(cols, rows) // SIGWINCH
+```
+
+### 2.2 新接口设计
+
+```kotlin
+/**
+ * PTY 交互式 shell runner。
+ * 与 SshExecRunner 并列，共享认证/连接池基础设施。
+ */
 interface SshPtyRunner {
-  /**
-   * Open an interactive PTY session.
-   *
-   * @param profile   SSH connection profile
-   * @param cols      initial terminal columns (default 80)
-   * @param rows      initial terminal rows (default 24)
-   * @param term      TERM value (default "xterm-256color")
-   * @return a bidirectional flow:
-   *   - downstream: PtyEvent from the remote
-   *   - upstream:   PtyInput written by the UI
-   */
-  fun open(profile: SshProfile, cols: Int = 80, rows: Int = 24, term: String = "xterm-256color"): PtySession
+  fun open(profile: SshProfile, ptyConfig: PtyConfig): Flow<PtyEvent>
+  fun sendInput(sessionId: String, data: ByteArray)
+  fun resize(sessionId: String, cols: Int, rows: Int)
+  fun close(sessionId: String)
 }
 
-class PtySession(
-  val events: Flow<PtyEvent>,     // remote → UI
-  val input: suspend (PtyInput) -> Unit,  // UI → remote
-  val resize: suspend (cols: Int, rows: Int) -> Unit,  // SIGWINCH
-  val close: suspend () -> Unit,
+data class PtyConfig(
+  val term: String = "xterm-256color",
+  val cols: Int = 80,
+  val rows: Int = 24,
+  val shellCommand: String? = null,  // null = login shell
 )
 
 sealed class PtyEvent {
-  data class Output(val bytes: ByteArray) : PtyEvent()  // combined stdout
+  data class Output(val bytes: ByteArray) : PtyEvent()     // 合并的 stdout+stderr
   data class Exit(val code: Int?) : PtyEvent()
   data class Error(val category: String, val message: String) : PtyEvent()
   data object Closed : PtyEvent()
 }
-
-sealed class PtyInput {
-  data class Bytes(val data: ByteArray) : PtyInput()
-  data class CtrlKey(val code: Int) : PtyInput()  // e.g. Ctrl-C = 0x03
-}
 ```
 
-### 2.3 Implementation Sketch: `SshjPtyRunner`
+### 2.3 实现要点：`SshjPtyRunner`
 
-```kotlin
-class SshjPtyRunner(
-  private val knownHostsStore: KnownHostsStore,
-  private val hostKeyCallback: HostKeyCallback,
-  // ... same auth providers as SshjExecRunner
-) : ClosableSshPtyRunner {
-
-  override fun open(profile: SshProfile, cols: Int, rows: Int, term: String): PtySession {
-    // 1. Acquire SSHClient (reuse SshjExecRunner's acquireClient logic)
-    // 2. Start session, allocate PTY
-    // 3. Start shell
-    // 4. Launch coroutine to read outputStream → PtyEvent.Output
-    // 5. Return PtySession with input/resize/close lambdas
-  }
-}
+```
+SshjPtyRunner
+  ├── 复用 SshjExecRunner 的认证逻辑（HostKeyCallback, PasswordProvider 等）
+  ├── 复用 SshConnectionPool 的连接复用
+  ├── 新增：PTY 分配 + shell 启动
+  ├── 新增：双向流处理（output → 事件流，input ← UI 侧写入）
+  └── 新增：窗口尺寸变更通知
 ```
 
-Key differences from `SshjExecRunner`:
+关键差异：
 
-| Aspect | Mode A (exec) | PTY mode (shell) |
-|--------|--------------|------------------|
-| Channel open | `session.exec(cmd)` | `session.allocatePTY(...)` + `session.startShell()` |
-| stdin | none after start | continuous `shell.outputStream.write()` |
-| stdout+stderr | two separate streams | merged into one stream (PTY merges them) |
-| resize | N/A | `session.sendWindowChange(cols, rows)` |
-| exit | `cmd.exitStatus` after join | `shell.join()` + exit status |
+| 维度 | exec 模式 | PTY 模式 |
+|------|----------|---------|
+| Channel 打开 | `session.exec(cmd)` | `session.allocatePTY()` + `session.startShell()` |
+| stdin | 无 | 持续写入 `shell.outputStream` |
+| stdout+stderr | 两个独立流 | 合并为一个流（PTY 特性） |
+| 窗口变更 | 不支持 | `session.sendWindowChange(cols, rows)` |
+| 退出检测 | `cmd.exitStatus` | `shell.exitStatus`（同） |
+| 连接复用 | 每次 exec 新 channel | 同一 session 上可同时有 exec 和 shell channel |
 
-### 2.4 Connection Reuse
+### 2.4 新增文件结构
 
-PTY sessions are long-lived (user keeps terminal open). Connection pooling
-must change:
-
-- Mode A: pool `SSHClient` per profile, open/close exec channels freely.
-- PTY mode: one `SSHClient` → one PTY session at a time per profile.
-  Concurrent exec channels (Mode A) can coexist on the same `SSHClient`
-  because SSH multiplexes channels.
-
-Strategy: `SshConnectionPool` returns a shared `SSHClient`. Mode A opens
-exec channels on it. PTY mode opens a shell channel on it. Both can run
-concurrently because sshj supports multiple channels per connection.
+```
+core/ssh/src/main/kotlin/io/rikka/agent/ssh/
+  ├── SshInterfaces.kt          ← 新增 PtyConfig, PtyEvent, SshPtyRunner
+  ├── SshjPtyRunner.kt          ← 新实现（核心）
+  ├── SshjExecRunner.kt         ← 不修改
+  └── SshExecRunnerFactory.kt   ← 不修改（PTY 用独立 factory）
+```
 
 ---
 
-## 3. Terminal Emulation Requirements
+## 3. 终端仿真需求
 
-### 3.1 Why We Need a Terminal Emulator
+### 3.1 需要解析的内容
 
-Remote programs assume a terminal. Without emulation:
+PTY 模式下，远程进程输出的是带 ANSI 转义码的字节流。必须解析才能正确显示。
 
-- `\r\n` vs `\n` handling is wrong.
-- ANSI escape sequences (`\e[31m` red, `\e[1;1H` cursor home) render as garbage.
-- Programs that use cursor positioning (progress bars, spinners, `htop`) are unusable.
-- Backspace/delete key handling differs.
+#### P0 — 必须支持（最小可用）
 
-### 3.2 Minimal Viable Emulator
+| 功能 | ANSI 序列 | 说明 |
+|------|----------|------|
+| 文本输出 | 普通字符 + `\r` `\n` `\t` | 基础渲染 |
+| SGR 颜色/样式 | `\e[...m` | 前景色、背景色、粗体、斜体、下划线 |
+| 光标定位 | `\e[nA/B/C/D`, `\e[H`, `\e[n;mH` | 上下左右移动、绝对定位 |
+| 行内擦除 | `\e[K` | 清除光标到行尾 |
+| 回车覆盖 | `\r` | 进度条效果（`Downloading... 45%`） |
 
-For v1.x PTY support, we need a **minimal VT100/xterm subset**:
+#### P1 — 应该支持（常用工具需要）
 
-| Feature | Priority | Notes |
-|---------|----------|-------|
-| Basic text output | P0 | Print characters, handle `\r`, `\n`, `\t` |
-| SGR (colors, bold, italic, underline) | P0 | `\e[...m` — map to Compose `AnnotatedString` spans |
-| Cursor movement (up/down/left/right, home) | P1 | `\e[nA/B/C/D`, `\e[H` — needed for progress bars |
-| Erase (line, screen) | P1 | `\e[2J`, `\e[K` — needed for `git push` progress |
-| Scroll regions | P2 | `\e[r` — needed by `less`, `man` |
-| Alternate screen buffer | P2 | `\e[?1049h/l` — `vim`, `htop`, `less` |
-| Mouse tracking | P3 | `\e[?1000h` — optional, for `mc`, `htop` mouse support |
+| 功能 | ANSI 序列 | 说明 |
+|------|----------|------|
+| 全屏擦除 | `\e[2J`, `\e[H` | 清屏 |
+| 滚动区域 | `\e[r` | `less`/`man` 使用 |
+| 备用屏幕 | `\e[?1049h/l` | `vim`/`htop`/`less` 进入/退出全屏模式 |
+| 行擦除 | `\e[2K` | 清除整行 |
+| 光标可见性 | `\e[?25h/l` | 隐藏/显示光标 |
 
-### 3.3 Library Options
+#### P2 — 可以延后
 
-| Option | Pros | Cons |
-|--------|------|------|
-| **Custom Kotlin emulator** | Full control, minimal deps, Compose-native output | Significant effort (VT100 is non-trivial), maintenance burden |
-| **JTerm (JVM terminal emulator)** | Existing VT100 implementation | Designed for Swing/AWT, needs Compose adapter; maturity unclear |
-| **Telnet/SSH lib with built-in terminal** | None found with good Android + Kotlin support | — |
-| **WebView + xterm.js** | Battle-tested terminal emulator | WebView overhead, security surface, IPC complexity |
-| **Minimal ANSI parser (custom)** | Strips/colors only, no cursor control | Covers P0 features only; insufficient for full-screen apps |
+| 功能 | 说明 |
+|------|------|
+| 鼠标追踪 | `\e[?1000h` — `mc`、`htop` 鼠标支持 |
+| 256色/真彩色 | `\e[38;5;n`, `\e[38;2;r;g;b` |
+| Unicode 宽字符 | CJK 字符宽度计算 |
 
-**Recommendation:** Start with a **minimal ANSI parser** for P0 features (colors + basic text), then build cursor movement (P1) incrementally. Full VT100 emulation (P2+) is a separate effort and may justify using xterm.js in a WebView for "advanced terminal" mode.
+### 3.2 实现方案选择
 
-### 3.4 ANSI → Compose Mapping
+| 方案 | 优点 | 缺点 | 推荐 |
+|------|------|------|------|
+| **自研 VT100 解析器** | 完全控制，无外部依赖，可深度集成 Compose | 开发量大（VT100 规范复杂） | P0 阶段 |
+| **WebView + xterm.js** | 成熟终端仿真，零开发成本 | WebView 开销大，与 Compose 集成差，安全面大 | 否 |
+| **JVM 终端库（如 jediterm）** | 已有 VT100 实现 | 为 Swing 设计，需适配 Compose | 调研后决定 |
+
+**推荐路径**：
+
+1. **第一阶段**：自研最小 VT100 解析器，覆盖 P0 功能（SGR + 光标定位 + 行内擦除 + 回车覆盖）。
+2. **第二阶段**：根据用户反馈决定是否引入备用屏幕（P1），此时评估 jediterm 移植成本。
+3. **全屏 TUI**（vim/htop）作为远期目标，需要完整的 P1+P2 支持。
+
+### 3.3 解析器数据模型
 
 ```kotlin
-// Parsed ANSI state → AnnotatedString spans
-data class TerminalLine(
-  val spans: List<StyledSpan>,
-  val attributes: LineAttributes,  // dim, reverse, etc.
+/** 终端屏幕缓冲区 — 二维字符网格 + 样式 */
+data class TerminalBuffer(
+  val cols: Int,
+  val rows: Int,
+  val cells: Array<Array<Cell>>,   // [row][col]
+  var cursorRow: Int = 0,
+  var cursorCol: Int = 0,
+  var cursorStyle: CursorStyle = CursorStyle.BLOCK,
 )
 
-data class StyledSpan(
-  val text: String,
-  val foreground: Color?,   // null = default
-  val background: Color?,
+data class Cell(
+  val char: Char = ' ',
+  val style: SgrStyle = SgrStyle(),
+)
+
+data class SgrStyle(
+  val fg: TerminalColor? = null,    // null = 默认色
+  val bg: TerminalColor? = null,
   val bold: Boolean = false,
+  val dim: Boolean = false,
   val italic: Boolean = false,
   val underline: Boolean = false,
-  val dim: Boolean = false,
+  val reverse: Boolean = false,
 )
 ```
 
-The emulator maintains a **screen buffer** (2D grid of cells) and a **cursor
-position.** On each batch of incoming bytes, it updates the buffer and emits
-a snapshot for the UI to render.
+---
+
+## 4. UI 适配
+
+### 4.1 两种渲染模式
+
+Mode A 的输出渲染为 **Chat Bubble**（代码块在聊天气泡中）。
+PTY 模式需要一个独立的 **Terminal View**。
+
+```
+┌─────────────────────────────────────┐
+│ ┌─ 聊天视图 ──────────────────────┐ │
+│ │ $ ls -la                        │ │
+│ │ ┌─ Output Bubble ────────────┐  │ │  ← Mode A：exec 输出
+│ │ │ total 48                    │  │ │
+│ │ │ drwxr-xr-x 5 user user ... │  │ │
+│ │ └────────────────────────────┘  │ │
+│ │                                 │ │
+│ │ $ bash                          │ │
+│ │ ┌─ Terminal View ────────────┐  │ │  ← PTY 模式：内嵌终端
+│ │ │ user@host:~$ █              │  │ │
+│ │ │                             │  │ │
+│ │ │                             │  │ │
+│ │ └────────────────────────────┘  │ │
+│ └─────────────────────────────────┘ │
+│ ┌─ 输入栏 ────────────────────────┐ │
+│ │ [发送]  [Ctrl] [Tab] [↑] [↓]   │ │  ← PTY 专用工具栏
+│ └─────────────────────────────────┘ │
+└─────────────────────────────────────┘
+```
+
+### 4.2 Terminal View 组件
+
+```
+TerminalView (Compose)
+  ├── Canvas 渲染层
+  │     ├── 背景色填充
+  │     ├── 逐字符绘制（等宽字体，网格对齐）
+  │     ├── SGR 样式应用（颜色、粗体等）
+  │     └── 光标绘制（闪烁块/下划线/竖线）
+  ├── 输入处理层
+  │     ├── 软键盘输入 → 写入 PTY stdin
+  │     ├── 特殊键映射（Ctrl+C → 0x03, Tab → 0x09, Esc → 0x1B）
+  │     └── 箭头键 → ANSI 序列（\e[A/B/C/D）
+  ├── 窗口变更
+  │     ├── 监听 Compose 尺寸变化
+  │     ├── 计算 cols/rows（像素 / 字符宽高）
+  │     └── 调用 `ptyRunner.resize(cols, rows)`
+  └── 滚动
+        ├── 终端历史缓冲区（可配置行数，如 10000 行）
+        └── 手势滚动（上滑查看历史）
+```
+
+### 4.3 输入工具栏
+
+移动端没有物理键盘的 Ctrl/Tab/Esc，需要虚拟按键：
+
+```
+┌──────────────────────────────────────────┐
+│ [Ctrl] [Tab] [Esc] [↑] [↓] [←] [→] [F1..F12] │
+└──────────────────────────────────────────┘
+```
+
+- **Ctrl**：切换模式，按下后下一个键自动附加 Ctrl 修饰（Ctrl+C = `\x03`）
+- **Tab**：发送 `\t`
+- **Esc**：发送 `\x1B`
+- **方向键**：发送对应 ANSI 序列
+
+### 4.4 内嵌 vs 全屏
+
+| 模式 | 场景 | 实现 |
+|------|------|------|
+| **内嵌 Terminal View** | 交互式 shell、简单命令 | 在聊天气泡区域内渲染终端 Canvas |
+| **全屏 Terminal** | vim/htop/less | 占满整个屏幕，隐藏聊天 UI，退出时恢复 |
+
+全屏模式的触发：检测到备用屏幕切换序列（`\e[?1049h`）时自动进入，检测到退出序列（`\e[?1049l`）时自动退出。
 
 ---
 
-## 4. UI Adaptation
+## 5. 与现有 exec 模式的共存策略
 
-### 4.1 Two Rendering Modes
+### 5.1 并行共存
 
-The app needs two distinct rendering surfaces:
-
-| Mode | Rendered as | Use case |
-|------|-------------|----------|
-| **Chat bubble** (Mode A) | Code block in chat timeline | `ls`, `docker ps`, one-shot commands |
-| **Terminal view** (PTY) | Full-screen or inline terminal widget | Interactive shells, `vim`, `htop`, REPLs |
-
-### 4.2 Terminal View Component
+exec 模式和 PTY 模式可以在同一 SSH 连接上并行工作。SSH 协议支持多 channel 复用：
 
 ```
-┌─────────────────────────────────┐
-│ [Profile] bash - connected  [×] │  ← header bar
-├─────────────────────────────────┤
-│ user@host:~$ ls                 │
-│ file1.txt  file2.txt            │  ← terminal canvas
-│ user@host:~$ █                  │     (Compose Canvas or
-│                                 │      LazyColumn of TerminalLine)
-│                                 │
-├─────────────────────────────────┤
-│ [Ctrl] [Tab] [↑] [↓] [←] [→]  │  ← virtual keyboard toolbar
-└─────────────────────────────────┘
+SSH Connection (单个 TCP 连接)
+  ├── Channel 1: exec "docker ps"          ← Mode A
+  ├── Channel 2: exec "uptime"             ← Mode A
+  └── Channel 3: shell (PTY)               ← PTY 模式
 ```
 
-Implementation options:
+`SshConnectionPool` 已支持连接复用，新增 PTY 不需要修改池化逻辑。
 
-1. **Compose Canvas** — render the cell grid directly onto a `Canvas`
-   composable. Best for performance, full control over cell placement.
-   Requires implementing text measurement and hit-testing.
+### 5.2 用户入口
 
-2. **LazyColumn of AnnotatedString** — each terminal row is a `Text`
-   composable with `AnnotatedString` spans. Simpler implementation, but
-   recomposition overhead for rapid updates (scrolling `htop`).
+```
+输入栏行为：
+  ┌─────────────────────────────────────────┐
+  │ [输入框: 输入命令...] [发送] [终端模式]  │
+  └─────────────────────────────────────────┘
 
-3. **WebView + xterm.js** — delegate all terminal rendering to a WebView.
-   Best fidelity, worst integration with Compose navigation and theming.
+  - 普通输入 + 发送 → Mode A（exec channel）
+  - 点击 [终端模式] → 切换到 PTY 输入模式
+  - PTY 模式下输入栏变为终端工具栏（Ctrl/Tab/Esc/方向键）
+  - 再次点击 [终端模式] 或输入 /exit → 退出 PTY
+```
 
-**Recommendation:** Option 1 (Compose Canvas) for the primary terminal view.
-It avoids recomposition overhead, supports precise cursor rendering, and
-integrates naturally with the app's theming.
+### 5.3 命令模板与 PTY
 
-### 4.3 Virtual Keyboard Toolbar
+| Runner 类型 | 模式 | 说明 |
+|------------|------|------|
+| `shell_exec` | exec | 一次性命令 |
+| `codex_exec_jsonl` | exec | Codex CLI JSONL 流 |
+| `interactive_shell` (新增) | PTY | 登录 shell |
+| `custom_tui` (新增) | PTY | 指定命令（如 `htop`, `vim /etc/hosts`）|
 
-Mobile keyboards lack terminal-critical keys. A toolbar row provides:
+### 5.4 生命周期管理
 
-- **Ctrl** toggle (sends Ctrl+next key)
-- **Tab** key
-- **Arrow keys** (up/down/left/right)
-- **Escape** key
-- **Pipe** `|`, **Redirect** `>`, **Backtick** `` ` `` shortcuts
+```
+PTY Session 生命周期：
 
-### 4.4 Resize Handling
+  用户点击 [终端模式]
+    → ViewModel 调用 ptyRunner.open(profile, config)
+    → 创建 TerminalView，绑定输入/输出
+    → 进入 PTY 交互循环
 
-When the terminal view resizes (orientation change, split-screen,
-soft keyboard appear/disappear):
+  用户输入 → TerminalView 捕获 → ptyRunner.sendInput()
+  远程输出 → ptyRunner 事件流 → TerminalBuffer 解析 → Canvas 重绘
+  窗口变更 → 计算新 cols/rows → ptyRunner.resize()
 
-1. Measure new pixel dimensions.
-2. Calculate cols/rows from font metrics: `cols = pixelWidth / charWidth`.
-3. Call `ptySession.resize(cols, rows)`.
-4. Remote shell receives `SIGWINCH` and redraws.
+  退出条件：
+    - 用户输入 exit/logout
+    - 远程 shell 进程退出（PtyEvent.Exit）
+    - 用户主动关闭（返回按钮）
+    - 网络断开（PtyEvent.Error）
 
-### 4.5 Mode Switching
-
-Users should not have to choose mode manually. Detection heuristics:
-
-| Signal | Mode |
-|--------|------|
-| Command returns immediately (exit < 1s) | Chat bubble |
-| Command is known interactive (`bash`, `python`, `mysql`, `ssh`) | Offer PTY |
-| Remote sends ANSI escape sequences | Auto-switch to terminal view |
-| User explicitly requests "Open terminal" | PTY mode |
-
-A manual toggle should always be available: the input bar can offer
-"Run in terminal" as a checkbox or long-press action.
+  退出处理：
+    - 清理 TerminalView
+    - 关闭 PTY channel
+    - 在聊天记录中留下 "PTY session closed" 消息
+```
 
 ---
 
-## 5. Coexistence Strategy: exec + PTY
+## 6. 优先级评估
 
-### 5.1 Architecture
+### 6.1 用户价值矩阵
 
-```
-                   ┌──────────────────────┐
-                   │   SshConnectionPool   │
-                   │  (shared SSHClient)   │
-                   └──────┬───────┬───────┘
-                          │       │
-              ┌───────────┘       └───────────┐
-              │                               │
-    ┌─────────▼─────────┐         ┌───────────▼───────────┐
-    │  SshjExecRunner    │         │   SshjPtyRunner       │
-    │  (Mode A: exec)    │         │   (Mode B: PTY)       │
-    │  Flow<ExecEvent>   │         │   PtySession          │
-    └─────────┬─────────┘         └───────────┬───────────┘
-              │                               │
-    ┌─────────▼─────────┐         ┌───────────▼───────────┐
-    │  Chat Bubble       │         │  Terminal View        │
-    │  ViewModel         │         │  ViewModel            │
-    └───────────────────┘         └───────────────────────┘
-```
+| 能力 | 用户需求 | 技术复杂度 | 优先级 |
+|------|---------|-----------|--------|
+| 交互式 shell（bash/zsh） | 极高 | 中 | **v1.x P0** |
+| 密码输入（sudo、ssh） | 高 | 低 | **v1.x P0** |
+| 进度条/Spinner 显示 | 高 | 低（SGR + 回车覆盖） | **v1.x P0** |
+| 带颜色的命令输出 | 中高 | 低（SGR 解析） | **v1.x P0** |
+| REPL（python/node） | 中 | 低（PTY 天然支持） | **v1.x P1** |
+| vim/nano 编辑器 | 中 | 高（备用屏幕 + 完整 VT100） | **v2.0** |
+| htop/top 全屏 TUI | 中 | 高（备用屏幕 + 鼠标） | **v2.0** |
+| git rebase -i | 低 | 高（需要 vim 交互） | **v2.0** |
 
-### 5.2 Rules
+### 6.2 实施建议
 
-1. **Both modes share the same `SSHClient`** from `SshConnectionPool`. SSH
-   multiplexes channels, so an exec channel and a shell channel can coexist
-   on one TCP connection.
+**v1.x（建议纳入）**：
 
-2. **PTY sessions are one-at-a-time per profile.** Opening a second PTY
-   session on the same profile should either close the first one or be
-   blocked with a message ("Terminal already open").
+- 最小 PTY 支持：交互式 shell、密码输入、SGR 颜色、光标定位
+- 内嵌 Terminal View（Canvas 渲染）
+- 虚拟键盘工具栏（Ctrl/Tab/Esc/方向键）
+- 复用现有认证和连接池
 
-3. **Exec commands can run concurrently with an open PTY session.** The user
-   can type a quick `uptime` in the chat input while a terminal session is
-   active. The exec result appears as a chat bubble; the terminal is
-   unaffected.
+**理由**：
+1. 交互式 shell 是 SSH 客户端的核心能力，缺失会让 RikkaAgent 始终是个"半成品"
+2. 技术上只需在现有架构上增量添加，不破坏 Mode A
+3. SGR + 光标定位的解析器开发量可控（~500-800 行 Kotlin）
+4. 用户价值/开发成本比最高
 
-4. **Lifecycle:** PTY sessions must be closed when the user navigates away
-   from the terminal view (or the app goes to background) to avoid orphaned
-   remote shells. A "keep alive in background" option can be added later.
+**v2.0（延后）**：
 
-### 5.3 Event Model Extension
+- 完整 VT100 仿真（备用屏幕、滚动区域、鼠标追踪）
+- 全屏 TUI 支持（vim/htop/less）
+- 可能需要评估 jediterm 移植或 WebView 方案
 
-```kotlin
-// Mode A events (existing, unchanged)
-sealed class ExecEvent {
-  data class StdoutChunk(val bytes: ByteArray) : ExecEvent()
-  data class StderrChunk(val bytes: ByteArray) : ExecEvent()
-  data class StructuredEvent(val kind: String, val rawJson: String) : ExecEvent()
-  data class Exit(val code: Int?) : ExecEvent()
-  data object Canceled : ExecEvent()
-  data class Error(val category: String, val message: String) : ExecEvent()
-}
+**延后理由**：
+1. 备用屏幕 + 鼠标追踪的开发量是 P0 的 2-3 倍
+2. 手机屏幕上运行 vim 的 UX 本身就不理想
+3. 少数用户需要，ROI 不高
 
-// PTY events (new)
-sealed class PtyEvent {
-  data class Output(val bytes: ByteArray) : PtyEvent()   // merged stream
-  data class Exit(val code: Int?) : PtyEvent()
-  data class Error(val category: String, val message: String) : PtyEvent()
-  data object Closed : PtyEvent()
-}
-```
+### 6.3 工作量估算
 
-No changes to `ExecEvent` — the two event streams are independent.
+| 阶段 | 内容 | 估算 |
+|------|------|------|
+| sshj PTY runner | SshjPtyRunner + 接口定义 | 2-3 天 |
+| VT100 解析器 P0 | SGR + 光标 + 行擦除 + 回车 | 3-5 天 |
+| TerminalBuffer | 屏幕缓冲区 + 渲染 | 2-3 天 |
+| TerminalView | Compose Canvas 组件 | 3-4 天 |
+| 输入工具栏 | 虚拟键 + 特殊键映射 | 1-2 天 |
+| 集成测试 | Docker sshd + 端到端 | 2-3 天 |
+| **合计** | | **13-20 天** |
 
 ---
 
-## 6. Priority Assessment
+## 7. 风险与缓解
 
-### 6.1 Effort Estimate
-
-| Component | Effort | Notes |
-|-----------|--------|-------|
-| `SshjPtyRunner` | 2–3 days | Thin wrapper, reuses auth/hostkey infra |
-| Minimal ANSI parser (P0: colors + text) | 3–5 days | State machine, SGR mapping |
-| Cursor movement (P1) | 3–5 days | Screen buffer, erase sequences |
-| Compose Canvas terminal view | 5–7 days | Cell grid, cursor blink, selection |
-| Virtual keyboard toolbar | 1–2 days | Key buttons, Ctrl toggle |
-| Resize handling | 1–2 days | Measure + SIGWINCH |
-| Mode detection / switching | 2–3 days | Heuristics + manual toggle |
-| Tests (unit + integration) | 3–5 days | Mock PTY server, ANSI parser tests |
-| **Total (P0+P1)** | **~20–30 days** | Does not include full VT100 |
-
-### 6.2 User Value Analysis
-
-**High value scenarios unlocked by PTY:**
-
-- Interactive shell sessions (`bash`, `zsh`) — the single most requested
-  feature after basic exec.
-- `sudo` commands that require password input.
-- REPL access (`python`, `node`, `irb`) for quick server-side prototyping.
-- `git rebase -i`, `git add -p` — interactive git workflows.
-- Database CLIs (`psql`, `mysql`, `redis-cli`).
-
-**Low value / deferred:**
-
-- Full-screen TUI apps (`vim`, `htop`, `mc`) — these need P2 terminal
-  features (alternate screen, scroll regions) and are better served by a
-  dedicated terminal app or SSH client.
-- Mouse tracking — niche, high complexity.
-
-### 6.3 Recommendation
-
-**Do NOT include PTY in v1.0.** Ship v1.0 with Mode A only (exec channel).
-The exec channel covers 80% of the "run a command on my server" use case
-and is much simpler to test, secure, and polish.
-
-**Include minimal PTY (P0+P1) in v1.x** as a fast-follow after v1.0 ships.
-Target:
-
-- Minimal ANSI parser (colors, basic text).
-- Compose Canvas terminal view with virtual keyboard toolbar.
-- Manual "Open terminal" toggle (no auto-detection yet).
-- No full-screen TUI apps (documented limitation).
-
-**Rationale:**
-
-- Interactive shell access is the natural next step after "run commands."
-- The effort is bounded (~3 weeks) and mostly independent of Mode A code.
-- Full VT100 emulation (for vim/htop) is a separate v2+ effort and should
-  not block the initial PTY release.
+| 风险 | 影响 | 缓解 |
+|------|------|------|
+| VT100 解析器覆盖不全 | 部分程序显示异常 | P0 聚焦高频序列；日志记录未解析序列，逐步补齐 |
+| Compose Canvas 渲染性能 | 快速输出时卡顿 | 帧率限制（30fps）、脏区域重绘、异步缓冲 |
+| 输入延迟 | 打字体验差 | 输入直写 PTY，不经过 UI 线程批处理 |
+| sshj 的 PTY API 限制 | 某些 PTY 功能不支持 | 验证 allocatePTY + sendWindowChange 的可用性；必要时降级到 JSch |
+| 终端尺寸计算 | CJK 字符宽度不对齐 | 暂不支持 CJK 宽字符（P2）；英文环境下 cols/rows 计算准确 |
 
 ---
 
-## 7. Risks and Mitigations
+## 附录：参考实现
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| ANSI parser bugs cause garbled output | Medium | Comprehensive test suite with real-world escape sequences from common tools |
-| PTY session leaks (orphaned remote shells) | High | Close PTY on view destroy; implement keepalive timeout; document behavior |
-| Connection pool contention between Mode A and PTY | Medium | SSH channel multiplexing is well-defined; test concurrent usage |
-| Compose Canvas performance for rapid updates (htop-like) | Medium | Batch updates at 30fps cap; skip frames if behind; benchmark early |
-| Security: PTY exposes interactive shell → wider attack surface | Medium | Same auth/hostkey model as Mode A; no additional credential handling; document that PTY gives full shell access |
-
----
-
-## 8. Related Specs
-
-- `docs/spec/32-ssh.md` — SSH transport (Mode A)
-- `docs/spec/33-remote-exec.md` — Remote execution (Mode A)
-- `docs/spec/30-architecture.md` — Module structure and interfaces
-- `docs/spec/23-rendering.md` — Output rendering (chat bubbles)
-- `docs/spec/29-interaction.md` — Gesture and input behavior
-- `docs/spec/20-ux.md` — UX flows
-
-This document does NOT modify any existing spec. It is a standalone design
-proposal for future implementation.
+- sshj Shell 示例：`sshd-core` 测试中的 `SessionTest.startShell()`
+- VT100 规范：ECMA-48 / DEC VT100 User Guide
+- Android 终端模拟器参考：Termux（完整 VT100，GPL）
+- Compose Canvas 文本渲染：`drawText` + `TextMeasurer`

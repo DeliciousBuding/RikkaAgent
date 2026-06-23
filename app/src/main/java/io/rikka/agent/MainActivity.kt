@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.rikka.agent.nav.AppNavHost
 import io.rikka.agent.storage.AppPreferences
+import io.rikka.agent.ui.theme.ChatFont
 import io.rikka.agent.ui.theme.RikkaAgentTheme
 import io.rikka.agent.ui.theme.ThemeMode
 import org.koin.android.ext.android.inject
@@ -26,6 +27,8 @@ class MainActivity : ComponentActivity() {
       val themeName by prefs.theme.collectAsStateWithLifecycle(initialValue = "system")
       val presetThemeId by prefs.presetTheme.collectAsStateWithLifecycle(initialValue = "sakura")
       val dynamicColor by prefs.dynamicColor.collectAsStateWithLifecycle(initialValue = false)
+      val chatFontId by prefs.chatFont.collectAsStateWithLifecycle(initialValue = "default")
+      val fontSizeRatio by prefs.fontSizeRatio.collectAsStateWithLifecycle(initialValue = 1.0f)
       val themeMode = when (themeName) {
         "light" -> ThemeMode.Light
         "dark" -> ThemeMode.Dark
@@ -33,7 +36,13 @@ class MainActivity : ComponentActivity() {
         else -> ThemeMode.System
       }
 
-      RikkaAgentTheme(themeMode = themeMode, dynamicColor = dynamicColor, presetThemeId = presetThemeId) {
+      RikkaAgentTheme(
+        themeMode = themeMode,
+        dynamicColor = dynamicColor,
+        presetThemeId = presetThemeId,
+        chatFont = ChatFont.findById(chatFontId),
+        fontSizeRatio = fontSizeRatio,
+      ) {
         Surface(modifier = Modifier.fillMaxSize()) {
           AppNavHost()
         }
