@@ -30,7 +30,10 @@ data class ChatMessageEntity(
   @PrimaryKey val id: String,
   val threadId: String,
   val role: String,
+  /** Plain-text content kept for FTS / search. */
   val content: String,
+  /** JSON-serialized List&lt;MessagePart&gt;. Default '[]' for backward compat. */
+  val partsJson: String = "[]",
   val timestampMs: Long,
   val status: String,
 )

@@ -1,21 +1,23 @@
 package io.rikka.agent.storage
 
 import io.rikka.agent.model.ChatMessage
-import io.rikka.agent.model.ChatRole
 import io.rikka.agent.model.ChatThread
+import io.rikka.agent.model.MessagePart
 import io.rikka.agent.model.MessageStatus
 import io.rikka.agent.storage.db.ChatMessageDao
-import io.rikka.agent.storage.db.ChatMessageEntity
 import io.rikka.agent.storage.db.ChatThreadEntity
+import io.rikka.agent.storage.db.toEntity
+import io.rikka.agent.storage.db.toModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.encodeToString
 
 interface ChatRepository {
   fun observeThreads(profileId: String): Flow<List<ChatThread>>
   suspend fun createThread(profileId: String, title: String): String
   suspend fun deleteThread(threadId: String)
   suspend fun insertMessage(threadId: String, message: ChatMessage)
-  suspend fun updateMessage(id: String, content: String, status: MessageStatus)
+  suspend fun updateMessage(id: String, parts: List<MessagePart>, status: MessageStatus)
   fun observeMessages(threadId: String): Flow<List<ChatMessage>>
   suspend fun getMessages(threadId: String): List<ChatMessage>
   suspend fun updateThreadTitle(threadId: String, title: String)
@@ -48,21 +50,21 @@ class RoomChatRepository(private val dao: ChatMessageDao) : ChatRepository {
   }
 
   override suspend fun insertMessage(threadId: String, message: ChatMessage) {
-    dao.insertMessage(
-      ChatMessageEntity(
-        id = message.id,
-        threadId = threadId,
-        role = message.role.name,
-        content = message.content,
-        timestampMs = message.timestampMs,
-        status = message.status.name,
-      )
-    )
-    dao.updateThread(threadId, title = "", updatedAtMs = message.timestampMs)
+    val entity = message.toEntity(threadId)
+    val inserted = dao.insertMessage(entity)
+    if (inserted == -1L) {
+      // Row already exists (IGNORE conflict) — update instead
+      dao.updateMessageParts(entity.id, entity.content, entity.partsJson, entity.status)
+    }
+    // Only update thread timestamp, do NOT overwrite the title
+    dao.updateThreadTimestamp(threadId, message.timestampMs)
   }
 
-  override suspend fun updateMessage(id: String, content: String, status: MessageStatus) {
-    dao.updateMessageContent(id, content, status.name)
+  override suspend fun updateMessage(id: String, parts: List<MessagePart>, status: MessageStatus) {
+    val textContent = parts.filterIsInstance<MessagePart.Text>()
+      .joinToString(separator = "\n") { it.text }
+    val partsJson = ChatMessage.json.encodeToString(parts)
+    dao.updateMessageParts(id, textContent, partsJson, status.name)
   }
 
   override fun observeMessages(threadId: String): Flow<List<ChatMessage>> =
@@ -74,14 +76,6 @@ class RoomChatRepository(private val dao: ChatMessageDao) : ChatRepository {
     dao.getMessages(threadId).map { it.toModel() }
 
   override suspend fun updateThreadTitle(threadId: String, title: String) {
-    dao.updateThread(threadId, title, System.currentTimeMillis())
+    dao.updateThreadTitle(threadId, title, System.currentTimeMillis())
   }
-
-  private fun ChatMessageEntity.toModel() = ChatMessage(
-    id = id,
-    role = ChatRole.valueOf(role),
-    content = content,
-    timestampMs = timestampMs,
-    status = MessageStatus.valueOf(status),
-  )
 }

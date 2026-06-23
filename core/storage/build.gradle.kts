@@ -33,5 +33,12 @@ dependencies {
   // DataStore
   implementation(libs.datastore.preferences)
 
+  // Unit tests
   testImplementation(libs.junit4)
+
+  // Android instrumented tests (Room migration testing)
+  androidTestImplementation(libs.junit4)
+  androidTestImplementation(libs.room.testing)
+  androidTestImplementation(libs.androidx.test.core)
+  androidTestImplementation(libs.androidx.test.runner)
 }

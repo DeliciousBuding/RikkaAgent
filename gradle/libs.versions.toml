@@ -27,6 +27,7 @@ turbine = "1.1.0"
 androidx-test-core = "1.6.1"
 androidx-test-ext-junit = "1.2.1"
 androidx-test-rules = "1.6.1"
+androidx-test-runner = "1.6.2"
 espresso = "3.6.1"
 robolectric = "4.14.1"
 sshj = "0.39.0"
@@ -65,6 +66,7 @@ compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 
 # DataStore
 datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore-preferences" }
@@ -81,6 +83,7 @@ turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "androidx-test-core" }
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-test-ext-junit" }
 androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidx-test-rules" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test-runner" }
 espresso-intents = { module = "androidx.test.espresso:espresso-intents", version.ref = "espresso" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 sshj = { module = "com.hierynomus:sshj", version.ref = "sshj" }

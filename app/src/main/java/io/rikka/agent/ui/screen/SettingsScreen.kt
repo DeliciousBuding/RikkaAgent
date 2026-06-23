@@ -44,6 +44,7 @@ fun SettingsScreen(
 ) {
   val vm: SettingsViewModel = koinViewModel()
   val theme by vm.theme.collectAsState()
+  val dynamicColor by vm.dynamicColor.collectAsState()
   val defaultShell by vm.defaultShell.collectAsState()
   val enableMermaid by vm.enableMermaid.collectAsState()
   var showThemePicker by remember { mutableStateOf(false) }
@@ -89,6 +90,14 @@ fun SettingsScreen(
         subtitle = theme.replaceFirstChar { it.uppercase() },
         onClick = { showThemePicker = true },
       )
+      if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+        SettingsSwitchItem(
+          title = stringResource(R.string.dynamic_color),
+          subtitle = stringResource(R.string.dynamic_color_subtitle),
+          checked = dynamicColor,
+          onCheckedChange = vm::setDynamicColor,
+        )
+      }
       SettingsItem(
         title = stringResource(R.string.default_shell),
         subtitle = defaultShell,

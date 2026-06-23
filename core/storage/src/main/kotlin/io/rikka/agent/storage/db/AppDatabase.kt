@@ -1,8 +1,8 @@
 package io.rikka.agent.storage.db
 
-import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 
 @Database(
   entities = [
@@ -10,10 +10,10 @@ import androidx.room.RoomDatabase
     ChatThreadEntity::class,
     ChatMessageEntity::class,
   ],
-  version = 4,
+  version = 5,
   exportSchema = false,
-  autoMigrations = [],
 )
+@TypeConverters(MessagePartConverter::class)
 abstract class AppDatabase : RoomDatabase() {
   abstract fun sshProfileDao(): SshProfileDao
   abstract fun chatMessageDao(): ChatMessageDao

@@ -15,6 +15,9 @@ class SettingsViewModel(
   val theme: StateFlow<String> = prefs.theme
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "system")
 
+  val dynamicColor: StateFlow<Boolean> = prefs.dynamicColor
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
   val defaultShell: StateFlow<String> = prefs.defaultShell
     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "/bin/bash")
 
@@ -23,6 +26,10 @@ class SettingsViewModel(
 
   fun setTheme(value: String) {
     viewModelScope.launch { prefs.setTheme(value) }
+  }
+
+  fun setDynamicColor(value: Boolean) {
+    viewModelScope.launch { prefs.setDynamicColor(value) }
   }
 
   fun setDefaultShell(value: String) {

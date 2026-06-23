@@ -24,6 +24,7 @@ class AppPreferences(
 
   companion object Keys {
     val THEME = stringPreferencesKey("theme")
+    val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
     val DEFAULT_SHELL = stringPreferencesKey("default_shell")
     val LAST_PROFILE_ID = stringPreferencesKey("last_profile_id")
     val ENABLE_MERMAID = booleanPreferencesKey("enable_mermaid")
@@ -31,6 +32,10 @@ class AppPreferences(
 
   val theme: Flow<String> = dataStore.data.map { prefs ->
     prefs[THEME] ?: "system"
+  }
+
+  val dynamicColor: Flow<Boolean> = dataStore.data.map { prefs ->
+    prefs[DYNAMIC_COLOR] ?: false
   }
 
   val defaultShell: Flow<String> = dataStore.data.map { prefs ->
@@ -47,6 +52,10 @@ class AppPreferences(
 
   suspend fun setTheme(value: String) {
     dataStore.edit { prefs -> prefs[THEME] = value }
+  }
+
+  suspend fun setDynamicColor(value: Boolean) {
+    dataStore.edit { prefs -> prefs[DYNAMIC_COLOR] = value }
   }
 
   suspend fun setDefaultShell(value: String) {

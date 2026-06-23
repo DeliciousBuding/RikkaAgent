@@ -157,6 +157,8 @@
   <string name="section_security">Security</string>
   <string name="section_about">About</string>
   <string name="theme">Theme</string>
+  <string name="dynamic_color">Dynamic color</string>
+  <string name="dynamic_color_subtitle">Use Material You colors from your wallpaper (Android 12+)</string>
   <string name="default_shell">Default shell</string>
   <string name="default_shell_title">Default Shell</string>
   <string name="enable_mermaid_rendering">Enable Mermaid rendering</string>
