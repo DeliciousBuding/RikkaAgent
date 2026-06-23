@@ -1,10 +1,17 @@
 package io.rikka.agent.ui.screen
 
+import android.content.ClipData
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -56,11 +63,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.rikka.agent.storage.AppPreferences
 import io.rikka.agent.vm.ChatViewModel
+import io.rikka.agent.vm.ConnectionError
 import io.rikka.agent.vm.ConnectionState
 import io.rikka.agent.vm.HostKeyEvent
 import io.rikka.agent.ui.components.ChatBubble
@@ -89,6 +100,7 @@ fun ChatScreen(
   val messages by vm.messages.collectAsState()
   val enableMermaid by prefs.enableMermaid.collectAsState(initial = false)
   val connectionState by vm.connectionState.collectAsState()
+  val connectionError by vm.lastConnectionError.collectAsState()
   val threads by vm.threads.collectAsState()
   val profileLabel by vm.profileLabel.collectAsState()
   val listState = rememberLazyListState()
@@ -288,6 +300,12 @@ fun ChatScreen(
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
           }
 
+          // Connection error banner (RikkaHub ErrorCard style)
+          ConnectionErrorBanner(
+            error = connectionError,
+            onDismiss = { vm.dismissConnectionError() },
+          )
+
           if (messages.isEmpty()) {
             EmptySessionState(
               modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -405,7 +423,7 @@ private fun ChatTopAppBar(
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
         )
-        // Connection status indicator
+        // Connection status indicator (RikkaHub-aligned)
         val statusText = when (connectionState) {
           ConnectionState.IDLE -> stringResource(R.string.status_connecting)
           ConnectionState.READY -> stringResource(R.string.status_ready)
@@ -416,15 +434,31 @@ private fun ChatTopAppBar(
           ConnectionState.READY -> MaterialTheme.colorScheme.primary
           ConnectionState.EXECUTING -> MaterialTheme.colorScheme.tertiary
           ConnectionState.ERROR -> MaterialTheme.colorScheme.error
-          else -> MaterialTheme.colorScheme.onSurfaceVariant
+          ConnectionState.IDLE -> MaterialTheme.colorScheme.onSurfaceVariant
         }
+        // Pulsing animation for active states (IDLE = connecting, EXECUTING = running)
+        val shouldPulse = connectionState == ConnectionState.IDLE ||
+          connectionState == ConnectionState.EXECUTING
+        val infiniteTransition = rememberInfiniteTransition(label = "statusPulse")
+        val pulseAlpha by infiniteTransition.animateFloat(
+          initialValue = 1f,
+          targetValue = 0.3f,
+          animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 800),
+            repeatMode = RepeatMode.Reverse,
+          ),
+          label = "statusPulseAlpha",
+        )
+
         Row(
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-          // Dot indicator
+          // Animated dot indicator
           Surface(
-            modifier = Modifier.size(8.dp),
+            modifier = Modifier
+              .size(8.dp)
+              .graphicsLayer { alpha = if (shouldPulse) pulseAlpha else 1f },
             shape = CircleShape,
             color = statusColor,
           ) {}
@@ -474,6 +508,128 @@ private fun ChatTopAppBar(
       containerColor = MaterialTheme.colorScheme.background,
     ),
   )
+}
+
+// ── Connection Error Banner (RikkaHub ErrorCard style) ───────────────────────
+
+/**
+ * Maps a connection error category to a user-friendly title and icon.
+ * Styled after RikkaHub's ErrorCard pattern: Surface with errorContainer color,
+ * RoundedCornerShape(12.dp), shadowElevation = 4.dp, copy + dismiss actions.
+ */
+@Composable
+private fun ConnectionErrorBanner(
+  error: ConnectionError?,
+  onDismiss: () -> Unit,
+) {
+  val clipboard = LocalClipboard.current
+  val scope = rememberCoroutineScope()
+
+  AnimatedVisibility(
+    visible = error != null,
+    enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
+    exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
+  ) {
+    error ?: return@AnimatedVisibility
+
+    val bannerColor = when (error.category) {
+      "key_mismatch" -> MaterialTheme.colorScheme.errorContainer
+      else -> MaterialTheme.colorScheme.errorContainer
+    }
+    val contentColor = when (error.category) {
+      "key_mismatch" -> MaterialTheme.colorScheme.onErrorContainer
+      else -> MaterialTheme.colorScheme.onErrorContainer
+    }
+    val icon = when (error.category) {
+      "connection_refused" -> Lucide.WifiOff
+      "timeout" -> Lucide.Clock
+      "unknown_host" -> Lucide.CircleHelp
+      "auth_failed" -> Lucide.KeyRound
+      "key_mismatch" -> Lucide.ShieldAlert
+      else -> Lucide.AlertTriangle
+    }
+    val title = when (error.category) {
+      "connection_refused" -> stringResource(R.string.err_banner_connection_refused)
+      "timeout" -> stringResource(R.string.err_banner_timeout)
+      "unknown_host" -> stringResource(R.string.err_banner_unknown_host)
+      "auth_failed" -> stringResource(R.string.err_banner_auth_failed)
+      "key_mismatch" -> stringResource(R.string.err_banner_key_mismatch)
+      else -> stringResource(R.string.err_banner_generic)
+    }
+
+    Surface(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 12.dp, vertical = 6.dp),
+      shape = RoundedCornerShape(12.dp),
+      color = bannerColor,
+      shadowElevation = 4.dp,
+    ) {
+      Row(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        Icon(
+          imageVector = icon,
+          contentDescription = null,
+          modifier = Modifier.size(20.dp),
+          tint = contentColor,
+        )
+        Column(
+          modifier = Modifier.weight(1f),
+          verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+          Text(
+            text = title,
+            style = MaterialTheme.typography.labelMedium,
+            color = contentColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+          )
+          Text(
+            text = error.message,
+            style = MaterialTheme.typography.bodySmall,
+            color = contentColor.copy(alpha = 0.8f),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+          )
+        }
+        // Copy button
+        IconButton(
+          onClick = {
+            scope.launch {
+              clipboard.setClipEntry(
+                ClipEntry(ClipData.newPlainText("ConnectionError", "$title: ${error.message}"))
+              )
+            }
+          },
+          modifier = Modifier.size(32.dp),
+        ) {
+          Icon(
+            imageVector = Lucide.Copy,
+            contentDescription = stringResource(R.string.copy),
+            tint = contentColor,
+            modifier = Modifier.size(16.dp),
+          )
+        }
+        // Dismiss button
+        IconButton(
+          onClick = onDismiss,
+          modifier = Modifier.size(32.dp),
+        ) {
+          Icon(
+            imageVector = Lucide.X,
+            contentDescription = stringResource(R.string.cancel),
+            tint = contentColor,
+            modifier = Modifier.size(16.dp),
+          )
+        }
+      }
+    }
+  }
 }
 
 // ── Session Drawer ───────────────────────────────────────────────────────────
@@ -678,6 +834,10 @@ private fun EmptySessionState(
 
 // ── Dialogs ──────────────────────────────────────────────────────────────────
 
+/**
+ * Password / passphrase dialog, styled with Material3 Surface cards.
+ * Includes a visibility toggle for the input field.
+ */
 @Composable
 private fun PasswordDialog(
   target: String,
@@ -691,13 +851,38 @@ private fun PasswordDialog(
 
   AlertDialog(
     onDismissRequest = onCancel,
-    title = { Text(title) },
-    text = {
-      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-          text = stringResource(R.string.password_prompt, label, target),
-          style = MaterialTheme.typography.bodyMedium,
+    title = {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+      ) {
+        Icon(
+          imageVector = Lucide.KeyRound,
+          contentDescription = null,
+          modifier = Modifier.size(20.dp),
+          tint = MaterialTheme.colorScheme.primary,
         )
+        Text(
+          text = title,
+          style = MaterialTheme.typography.titleMedium,
+        )
+      }
+    },
+    text = {
+      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Info card
+        Surface(
+          shape = RoundedCornerShape(8.dp),
+          color = MaterialTheme.colorScheme.surfaceVariant,
+        ) {
+          Text(
+            text = stringResource(R.string.password_prompt, label, target),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(12.dp),
+          )
+        }
+        // Input field with visibility toggle
         androidx.compose.material3.OutlinedTextField(
           value = password,
           onValueChange = { password = it },
@@ -707,6 +892,15 @@ private fun PasswordDialog(
             androidx.compose.ui.text.input.VisualTransformation.None
           } else {
             androidx.compose.ui.text.input.PasswordVisualTransformation()
+          },
+          trailingIcon = {
+            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+              Icon(
+                imageVector = if (passwordVisible) Lucide.EyeOff else Lucide.Eye,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+              )
+            }
           },
           modifier = Modifier.fillMaxWidth(),
         )
@@ -726,41 +920,97 @@ private fun PasswordDialog(
   )
 }
 
+/**
+ * Host key verification dialog, redesigned with ErrorCard-style warning surface.
+ * Uses a colored warning card with icon instead of plain AlertDialog text.
+ */
 @Composable
 internal fun HostKeyDialog(
   event: HostKeyEvent,
   onAccept: () -> Unit,
   onReject: () -> Unit,
 ) {
-  val (title, text) = when (event) {
-    is HostKeyEvent.UnknownHost -> {
-      stringResource(R.string.trust_host_title) to
-        stringResource(R.string.trust_host_msg, event.host, event.port, event.keyType, event.fingerprint)
-    }
-    is HostKeyEvent.Mismatch -> {
-      stringResource(R.string.host_key_changed_title) to
-        stringResource(R.string.host_key_changed_msg, event.host, event.port, event.expectedFingerprint, event.actualFingerprint)
-    }
+  val isMismatch = event is HostKeyEvent.Mismatch
+  val warningColor = if (isMismatch) {
+    MaterialTheme.colorScheme.errorContainer
+  } else {
+    MaterialTheme.colorScheme.secondaryContainer
   }
+  val warningContentColor = if (isMismatch) {
+    MaterialTheme.colorScheme.onErrorContainer
+  } else {
+    MaterialTheme.colorScheme.onSecondaryContainer
+  }
+  val title = if (isMismatch) {
+    stringResource(R.string.host_key_changed_title)
+  } else {
+    stringResource(R.string.trust_host_title)
+  }
+  val icon = if (isMismatch) Lucide.ShieldAlert else Lucide.ShieldQuestion
 
   AlertDialog(
     onDismissRequest = onReject,
     title = {
-      Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium,
-      )
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+      ) {
+        Icon(
+          imageVector = icon,
+          contentDescription = null,
+          modifier = Modifier.size(22.dp),
+          tint = if (isMismatch) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+        )
+        Text(
+          text = title,
+          style = MaterialTheme.typography.titleMedium,
+        )
+      }
     },
     text = {
-      Text(
-        text = text,
-        style = MaterialTheme.typography.bodySmall,
-        fontFamily = FontFamily.Monospace,
-      )
+      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Warning card (ErrorCard style)
+        Surface(
+          shape = RoundedCornerShape(12.dp),
+          color = warningColor,
+          shadowElevation = 2.dp,
+        ) {
+          Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+          ) {
+            val detailText = when (event) {
+              is HostKeyEvent.UnknownHost -> stringResource(
+                R.string.trust_host_msg,
+                event.host,
+                event.port,
+                event.keyType,
+                event.fingerprint,
+              )
+              is HostKeyEvent.Mismatch -> stringResource(
+                R.string.host_key_changed_msg,
+                event.host,
+                event.port,
+                event.expectedFingerprint,
+                event.actualFingerprint,
+              )
+            }
+            Text(
+              text = detailText,
+              style = MaterialTheme.typography.bodySmall,
+              fontFamily = FontFamily.Monospace,
+              color = warningContentColor,
+            )
+          }
+        }
+      }
     },
     confirmButton = {
       TextButton(onClick = onAccept) {
-        Text(if (event is HostKeyEvent.Mismatch) stringResource(R.string.btn_replace_trust) else stringResource(R.string.btn_trust))
+        Text(
+          text = if (isMismatch) stringResource(R.string.btn_replace_trust) else stringResource(R.string.btn_trust),
+          color = if (isMismatch) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+        )
       }
     },
     dismissButton = {
@@ -771,6 +1021,10 @@ internal fun HostKeyDialog(
   )
 }
 
+/**
+ * Host key replacement confirmation dialog.
+ * Uses a prominent warning card for the final confirmation step.
+ */
 @Composable
 internal fun HostKeyReplacementConfirmDialog(
   event: HostKeyEvent.Mismatch,
@@ -779,19 +1033,47 @@ internal fun HostKeyReplacementConfirmDialog(
 ) {
   AlertDialog(
     onDismissRequest = onReject,
-    title = { Text(stringResource(R.string.host_key_replace_confirm_title)) },
-    text = {
-      Text(
-        text = stringResource(
-          R.string.host_key_replace_confirm_msg,
-          event.host,
-          event.port,
+    title = {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+      ) {
+        Icon(
+          imageVector = Lucide.AlertTriangle,
+          contentDescription = null,
+          modifier = Modifier.size(22.dp),
+          tint = MaterialTheme.colorScheme.error,
         )
-      )
+        Text(
+          text = stringResource(R.string.host_key_replace_confirm_title),
+          style = MaterialTheme.typography.titleMedium,
+        )
+      }
+    },
+    text = {
+      Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.errorContainer,
+        shadowElevation = 2.dp,
+      ) {
+        Text(
+          text = stringResource(
+            R.string.host_key_replace_confirm_msg,
+            event.host,
+            event.port,
+          ),
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onErrorContainer,
+          modifier = Modifier.padding(12.dp),
+        )
+      }
     },
     confirmButton = {
       TextButton(onClick = onConfirm) {
-        Text(stringResource(R.string.host_key_replace_confirm_action))
+        Text(
+          text = stringResource(R.string.host_key_replace_confirm_action),
+          color = MaterialTheme.colorScheme.error,
+        )
       }
     },
     dismissButton = {

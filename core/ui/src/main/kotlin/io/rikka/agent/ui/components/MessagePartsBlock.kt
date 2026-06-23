@@ -25,6 +25,30 @@ import io.rikka.agent.model.MessageStatus
  * - [MessagePart.Error]     -> ErrorCard (red border, error icon)
  * - [MessagePart.Reasoning] -> ReasoningCard (collapsible chain-of-thought)
  * - [MessagePart.Mermaid]   -> MermaidDiagramCard
+ *
+ * @param message The [ChatMessage] whose [MessagePart] list will be rendered.
+ * @param modifier Modifier applied to the outer [Column].
+ * @param enableMermaid Whether to render [MessagePart.Mermaid] definitions as diagrams.
+ *   Defaults to `false`; requires a Mermaid rendering dependency when enabled.
+ * @param isStreaming Whether the message is currently being streamed.
+ *   When `true`, text parts skip [SelectionContainer] to avoid
+ *   [ConcurrentModificationException] during rapid recomposition.
+ *
+ * ```
+ * // Basic usage in a chat list
+ * LazyColumn {
+ *     items(messages) { message ->
+ *         MessagePartsBlock(message = message)
+ *     }
+ * }
+ *
+ * // Streaming message with Mermaid support
+ * MessagePartsBlock(
+ *     message = currentMessage,
+ *     enableMermaid = true,
+ *     isStreaming = true,
+ * )
+ * ```
  */
 @Composable
 fun MessagePartsBlock(

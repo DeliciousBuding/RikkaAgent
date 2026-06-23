@@ -3,13 +3,17 @@ package io.rikka.agent.ssh
 import io.rikka.agent.model.AuthType
 import io.rikka.agent.model.HostKeyPolicy
 import io.rikka.agent.model.SshProfile
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ClosedReceiveChannelException
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import net.schmizz.sshj.SSHClient
 import net.schmizz.sshj.common.SecurityUtils
@@ -18,7 +22,6 @@ import net.schmizz.sshj.transport.verification.HostKeyVerifier
 import net.schmizz.sshj.userauth.keyprovider.OpenSSHKeyFile
 import net.schmizz.sshj.userauth.keyprovider.PuTTYKeyFile
 import net.schmizz.sshj.userauth.password.PasswordFinder
-import net.schmizz.sshj.common.IOUtils
 import net.schmizz.sshj.userauth.keyprovider.KeyProvider
 import java.io.InputStream
 import java.io.StringReader
@@ -40,12 +43,33 @@ internal fun detectPrivateKeyFormat(keyContent: String): PrivateKeyFormat {
 }
 
 /**
+ * Bridges the synchronous sshj [HostKeyVerifier.verify] callback to the asynchronous
+ * host-key decision flow.  Created inside [SshjExecRunner.run] and consumed by the
+ * same callbackFlow coroutine that processes host-key UI events.
+ */
+private class HostKeyDecisionRequest(
+  val host: String,
+  val port: Int,
+  val fingerprint: String,
+  val keyType: String,
+  val isMismatch: Boolean,
+  val expectedFingerprint: String?,
+  val needsStore: Boolean,
+  val decision: CompletableDeferred<Boolean>,
+)
+
+/**
  * Real SSH exec runner backed by sshj.
  *
  * Key design:
  * - When [reuseConnections] is true, caches the SSH client across commands.
  * - stdout/stderr read concurrently on IO dispatcher.
- * - Host key verification delegates to [HostKeyCallback] + [KnownHostsStore].
+ * - Host key verification uses [CompletableDeferred] + [Channel] to bridge
+ *   sshj's synchronous [HostKeyVerifier.verify] to the async [HostKeyCallback],
+ *   eliminating all [runBlocking] calls except the unavoidable deferred-await
+ *   inside the synchronous callback.
+ * - Known-host fingerprint and passphrase are pre-loaded before blocking sshj
+ *   calls so that no suspend functions are invoked via [runBlocking].
  * - Call [close] to release pooled connections when done.
  */
 class SshjExecRunner(
@@ -61,13 +85,53 @@ class SshjExecRunner(
   @Volatile private var cachedProfileKey: String? = null
 
   override fun run(profile: SshProfile, command: String): Flow<ExecEvent> = callbackFlow {
+    // Channel that bridges synchronous verify() calls to this coroutine.
+    // Capacity 8 is generous — sshj rarely verifies more than one key per connect.
+    val hostKeyChannel = Channel<HostKeyDecisionRequest>(capacity = 8)
+
+    // Consume host key decision requests asynchronously (suspend, no runBlocking).
+    val hostKeyJob = launch {
+      try {
+        for (request in hostKeyChannel) {
+          try {
+            val accepted = if (request.isMismatch) {
+              hostKeyCallback.onHostKeyMismatch(
+                request.host, request.port,
+                request.expectedFingerprint!!, request.fingerprint, request.keyType,
+              )
+            } else {
+              hostKeyCallback.onUnknownHost(
+                request.host, request.port, request.fingerprint, request.keyType,
+              )
+            }
+            request.decision.complete(accepted)
+
+            // Persist the host key if the user accepted and it needs storing.
+            // Done here (suspend context) instead of inside verify() to avoid runBlocking.
+            if (accepted && request.needsStore) {
+              knownHostsStore.store(
+                request.host, request.port,
+                StoredHostKey(request.fingerprint, request.keyType),
+              )
+            }
+          } catch (e: Exception) {
+            // Always complete the deferred so verify() unblocks.
+            request.decision.complete(false)
+            if (e !is CancellationException) throw e
+          }
+        }
+      } catch (_: ClosedReceiveChannelException) {
+        // Channel closed during normal cleanup — expected.
+      }
+    }
+
     var ownedClient: SSHClient? = null
     var retried = false
     try {
       // Retry loop: if a cached connection is stale, evict and reconnect once
       while (true) {
         try {
-          val client = acquireClient(profile).also {
+          val client = acquireClient(profile, hostKeyChannel).also {
             if (!reuseConnections) ownedClient = it
           }
 
@@ -145,63 +209,79 @@ class SshjExecRunner(
       }
       trySend(ExecEvent.Error(category, e.message ?: e.javaClass.simpleName))
       channel.close()
+    } finally {
+      // Shut down the host-key channel and wait for the consumer to drain.
+      hostKeyChannel.close()
+      hostKeyJob.cancel()
+      hostKeyJob.join()
     }
 
     awaitClose { /* cleanup already done above */ }
   }
 
-  private fun buildVerifier(profile: SshProfile): HostKeyVerifier {
+  /**
+   * Build a [HostKeyVerifier] that uses [CompletableDeferred] to bridge sshj's
+   * synchronous [HostKeyVerifier.verify] callback to the async host-key decision
+   * flow running in [callbackFlow].
+   *
+   * Known-host data is pre-loaded (see [createClient]) so that no suspend store
+   * reads happen inside the synchronous callback.  Store writes are deferred to
+   * the callbackFlow consumer via [HostKeyDecisionRequest.needsStore].
+   *
+   * The only remaining blocking call is [runBlocking] on
+   * [CompletableDeferred.await] — this is unavoidable because sshj's verify()
+   * is synchronous, but it is a pure signal-wait with no coroutine dispatching,
+   * so it cannot deadlock.
+   */
+  private fun buildVerifier(
+    profile: SshProfile,
+    knownHostFingerprint: StoredHostKey?,
+    hostKeyChannel: Channel<HostKeyDecisionRequest>,
+  ): HostKeyVerifier {
     return object : HostKeyVerifier {
       override fun verify(hostname: String?, port: Int, key: PublicKey?): Boolean {
         if (key == null) return false
         val h = hostname ?: profile.host
         val p = port.takeIf { it > 0 } ?: profile.port
+        val fp = fingerprint(key)
 
         return when (profile.hostKeyPolicy) {
           HostKeyPolicy.AcceptAll -> true
-          HostKeyPolicy.RejectUnknown -> {
-            // Strictly check against stored keys
-            val stored = kotlinx.coroutines.runBlocking {
-              knownHostsStore.getFingerprint(h, p)
-            }
-            stored != null && stored.fingerprint == fingerprint(key)
-          }
-          HostKeyPolicy.TrustFirstUse -> {
-            val fp = fingerprint(key)
-            val keyType = key.algorithm
-            val stored = kotlinx.coroutines.runBlocking {
-              knownHostsStore.getFingerprint(h, p)
-            }
 
+          HostKeyPolicy.RejectUnknown -> {
+            // Strictly check against pre-loaded stored key
+            knownHostFingerprint != null && knownHostFingerprint.fingerprint == fp
+          }
+
+          HostKeyPolicy.TrustFirstUse -> {
             when {
-              stored == null -> {
-                // First connect: ask user
-                val accepted = kotlinx.coroutines.runBlocking {
-                  hostKeyCallback.onUnknownHost(h, p, fp, keyType)
-                }
-                if (accepted) {
-                  kotlinx.coroutines.runBlocking {
-                    knownHostsStore.store(h, p, StoredHostKey(fp, keyType))
-                  }
-                  true
-                } else {
-                  false
-                }
+              knownHostFingerprint == null -> {
+                // First connect: ask user via CompletableDeferred
+                val deferred = CompletableDeferred<Boolean>()
+                val request = HostKeyDecisionRequest(
+                  host = h, port = p,
+                  fingerprint = fp, keyType = key.algorithm,
+                  isMismatch = false, expectedFingerprint = null,
+                  needsStore = true,
+                  decision = deferred,
+                )
+                if (!hostKeyChannel.trySend(request).isSuccess) return false
+                runBlocking { deferred.await() }
               }
-              stored.fingerprint == fp -> true
+              knownHostFingerprint.fingerprint == fp -> true
               else -> {
-                // Mismatch!
-                val replace = kotlinx.coroutines.runBlocking {
-                  hostKeyCallback.onHostKeyMismatch(h, p, stored.fingerprint, fp, keyType)
-                }
-                if (replace) {
-                  kotlinx.coroutines.runBlocking {
-                    knownHostsStore.store(h, p, StoredHostKey(fp, keyType))
-                  }
-                  true
-                } else {
-                  false
-                }
+                // Key mismatch: ask user whether to replace
+                val deferred = CompletableDeferred<Boolean>()
+                val request = HostKeyDecisionRequest(
+                  host = h, port = p,
+                  fingerprint = fp, keyType = key.algorithm,
+                  isMismatch = true,
+                  expectedFingerprint = knownHostFingerprint.fingerprint,
+                  needsStore = true,
+                  decision = deferred,
+                )
+                if (!hostKeyChannel.trySend(request).isSuccess) return false
+                runBlocking { deferred.await() }
               }
             }
           }
@@ -214,7 +294,10 @@ class SshjExecRunner(
     }
   }
 
-  private suspend fun acquireClient(profile: SshProfile): SSHClient {
+  private suspend fun acquireClient(
+    profile: SshProfile,
+    hostKeyChannel: Channel<HostKeyDecisionRequest>,
+  ): SSHClient {
     if (reuseConnections) {
       val profileKey = "[${profile.host}]:${profile.port}:${profile.username}"
       val existing = cachedClient
@@ -223,12 +306,12 @@ class SshjExecRunner(
       }
       // Evict stale cache
       evictCachedClient()
-      val client = createClient(profile)
+      val client = createClient(profile, hostKeyChannel)
       cachedClient = client
       cachedProfileKey = profileKey
       return client
     }
-    return createClient(profile)
+    return createClient(profile, hostKeyChannel)
   }
 
   private fun evictCachedClient() {
@@ -244,10 +327,27 @@ class SshjExecRunner(
     evictCachedClient()
   }
 
-  private suspend fun createClient(profile: SshProfile): SSHClient {
+  /**
+   * Create and connect an [SSHClient].
+   *
+   * Known-host fingerprint is pre-loaded here (suspend context) so that the
+   * synchronous [HostKeyVerifier.verify] callback never needs to call
+   * [runBlocking] for store reads.
+   */
+  private suspend fun createClient(
+    profile: SshProfile,
+    hostKeyChannel: Channel<HostKeyDecisionRequest>,
+  ): SSHClient {
     val client = SSHClient()
     client.loadKnownHosts()
-    client.addHostKeyVerifier(buildVerifier(profile))
+
+    // Pre-load known host fingerprint on IO dispatcher.
+    // This was previously done via runBlocking inside verify().
+    val knownHostFingerprint = withContext(Dispatchers.IO) {
+      knownHostsStore.getFingerprint(profile.host, profile.port)
+    }
+
+    client.addHostKeyVerifier(buildVerifier(profile, knownHostFingerprint, hostKeyChannel))
     withContext(Dispatchers.IO) { client.connect(profile.host, profile.port) }
     client.connection.keepAlive.keepAliveInterval = profile.keepaliveIntervalSec
     withContext(Dispatchers.IO) { authenticate(client, profile) }
@@ -258,12 +358,31 @@ class SshjExecRunner(
     return SecurityUtils.getFingerprint(key)
   }
 
+  /**
+   * Authenticate the SSH session.
+   *
+   * Passphrase is pre-fetched here (suspend context) and injected into a
+   * simple [PasswordFinder], replacing the old approach of calling
+   * [runBlocking] inside the synchronous [PasswordFinder.reqPassword] callback.
+   */
   private suspend fun authenticate(client: SSHClient, profile: SshProfile) {
     when (profile.authType) {
       AuthType.PublicKey -> {
         val keyContent = keyContentProvider?.getKeyContent(profile)
         if (keyContent != null) {
-          val pwFinder = buildPassphraseFinder(profile)
+          // Pre-fetch passphrase — previously done via runBlocking inside reqPassword()
+          val passphrase = passphraseProvider?.getPassphrase(profile)
+          val pwFinder = passphrase?.takeIf { it.isNotEmpty() }?.let { pw ->
+            object : PasswordFinder {
+              override fun reqPassword(
+                resource: net.schmizz.sshj.userauth.password.Resource<*>?,
+              ): CharArray = pw.toCharArray()
+
+              override fun shouldRetry(
+                resource: net.schmizz.sshj.userauth.password.Resource<*>?,
+              ): Boolean = false
+            }
+          }
           val keyFile = loadKeyProvider(keyContent, pwFinder)
           client.authPublickey(profile.username, listOf(keyFile))
         } else {
@@ -271,7 +390,7 @@ class SshjExecRunner(
           val password = passwordProvider?.getPassword(profile)
             ?: throw IllegalStateException(
               "No private key selected. Please select a key file in profile settings " +
-                "or switch to password authentication."
+                "or switch to password authentication.",
             )
           client.authPassword(profile.username, password)
         }
@@ -293,26 +412,6 @@ class SshjExecRunner(
       val keyFile = OpenSSHKeyFile()
       keyFile.init(StringReader(keyContent), null, pwFinder)
       keyFile
-    }
-  }
-
-  private suspend fun buildPassphraseFinder(profile: SshProfile): PasswordFinder? {
-    val provider = passphraseProvider ?: return null
-    return object : PasswordFinder {
-      private var passphrase: CharArray? = null
-
-      override fun reqPassword(resource: net.schmizz.sshj.userauth.password.Resource<*>?): CharArray {
-        if (passphrase == null) {
-          passphrase = kotlinx.coroutines.runBlocking {
-            provider.getPassphrase(profile)
-          }?.toCharArray() ?: charArrayOf()
-        }
-        return passphrase ?: charArrayOf()
-      }
-
-      override fun shouldRetry(resource: net.schmizz.sshj.userauth.password.Resource<*>?): Boolean {
-        return false
-      }
     }
   }
 

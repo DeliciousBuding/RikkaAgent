@@ -1,5 +1,7 @@
 package io.rikka.agent.ui.components
 
+import androidx.compose.material3.ColorScheme
+
 enum class MermaidSegmentKind {
   Markdown,
   Mermaid,
@@ -59,6 +61,7 @@ object MermaidFenceParser {
       }
     }
 
+    // Unclosed fence: treat remaining mermaid content as markdown
     if (inMermaidFence) {
       mdBuffer.append("```mermaid\n")
       mdBuffer.append(mermaidBuffer)
@@ -71,20 +74,49 @@ object MermaidFenceParser {
 }
 
 object MermaidRenderSupport {
-  const val WEBVIEW_HEIGHT_DP = 220
+  /** Minimum WebView height in dp; actual height adapts to diagram content. */
+  const val MIN_WEBVIEW_HEIGHT_DP = 120
+  /** Maximum WebView height in dp to prevent runaway diagrams. */
+  const val MAX_WEBVIEW_HEIGHT_DP = 600
 
-  fun mermaidTheme(isDark: Boolean): String = if (isDark) "dark" else "default"
-
-  fun buildHtml(source: String, theme: String): String {
+  /**
+   * Build the full HTML page for rendering a Mermaid diagram via CDN.
+   *
+   * The template:
+   * - Loads mermaid@11 from jsDelivr CDN
+   * - Maps Material3 [colorScheme] into Mermaid `themeVariables` for
+   *   flowcharts, sequence diagrams, gantt charts, and more
+   * - Reports render errors back to Android via `AndroidInterface.onRenderError()`
+   * - Reports rendered height via `AndroidInterface.onHeightReady(dp)` for auto-sizing
+   */
+  fun buildHtml(source: String, colorScheme: ColorScheme): String {
     val escaped = source
       .replace("&", "&amp;")
       .replace("<", "&lt;")
       .replace(">", "&gt;")
+      .replace("'", "\\'")
+      .replace("\n", "\\n")
 
-    val safeTheme = when (theme) {
-      "dark" -> "dark"
-      else -> "default"
-    }
+    val isDark = colorScheme.surface.luminance() < 0.5f
+
+    // Material3 -> Mermaid theme variable mapping
+    val primary = colorScheme.primary.toCssHex()
+    val onPrimary = colorScheme.onPrimary.toCssHex()
+    val primaryContainer = colorScheme.primaryContainer.toCssHex()
+    val onPrimaryContainer = colorScheme.onPrimaryContainer.toCssHex()
+    val secondary = colorScheme.secondary.toCssHex()
+    val secondaryContainer = colorScheme.secondaryContainer.toCssHex()
+    val onSecondaryContainer = colorScheme.onSecondaryContainer.toCssHex()
+    val tertiaryContainer = colorScheme.tertiaryContainer.toCssHex()
+    val onTertiaryContainer = colorScheme.onTertiaryContainer.toCssHex()
+    val surface = colorScheme.surface.toCssHex()
+    val onSurface = colorScheme.onSurface.toCssHex()
+    val surfaceVariant = colorScheme.surfaceVariant.toCssHex()
+    val onSurfaceVariant = colorScheme.onSurfaceVariant.toCssHex()
+    val outline = colorScheme.outline.toCssHex()
+    val error = colorScheme.error.toCssHex()
+    val onError = colorScheme.onError.toCssHex()
+    val background = colorScheme.background.toCssHex()
 
     return """
       <!doctype html>
@@ -92,73 +124,199 @@ object MermaidRenderSupport {
         <head>
           <meta charset="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
           <style>
-            body {
+            * { box-sizing: border-box; }
+            html, body {
               margin: 0;
               padding: 0;
-              background: transparent;
-              color: ${'$'}{if (safeTheme == "dark") "#E2E8F0" else "#1E293B"};
-              font-family: sans-serif;
+              background: $background;
+              overflow: hidden;
             }
-            #mermaid {
+            .mermaid {
+              padding: 4px;
               width: 100%;
-              min-height: 120px;
+              display: flex;
+              justify-content: center;
             }
-            #src {
-              display: none;
+            .mermaid svg {
+              max-width: 100%;
+              height: auto;
+              background: transparent !important;
             }
             .mermaid-fallback {
               white-space: pre-wrap;
-              font-family: monospace;
+              font-family: 'JetBrains Mono', 'Fira Code', monospace;
               font-size: 12px;
-              line-height: 1.4;
+              line-height: 1.5;
+              padding: 12px;
               border-radius: 8px;
-              padding: 8px;
-              background: ${'$'}{if (safeTheme == "dark") "#1F2937" else "#F1F5F9"};
+              background: ${if (isDark) "#1E293B" else "#F1F5F9"};
+              color: $onSurface;
+              overflow-x: auto;
+            }
+            .error-banner {
+              font-family: sans-serif;
+              font-size: 13px;
+              padding: 8px 12px;
+              margin: 4px;
+              border-radius: 6px;
+              background: ${error}20;
+              color: $error;
+              border-left: 3px solid $error;
             }
           </style>
         </head>
         <body>
-          <pre id="src" style="white-space: pre-wrap; font-family: monospace;">$escaped</pre>
-          <div id="mermaid"></div>
+          <div class="mermaid" id="diagram"></div>
           <script>
-            (function() {
-              const source = document.getElementById('src').textContent || '';
-              const container = document.getElementById('mermaid');
-              const safe = source
+            var source = '$escaped';
+
+            mermaid.initialize({
+              startOnLoad: false,
+              theme: 'base',
+              securityLevel: 'strict',
+              themeVariables: {
+                // -- Primary palette --
+                primaryColor: '$primaryContainer',
+                primaryTextColor: '$onPrimaryContainer',
+                primaryBorderColor: '$primary',
+
+                // -- Secondary palette --
+                secondaryColor: '$secondaryContainer',
+                secondaryTextColor: '$onSecondaryContainer',
+                secondaryBorderColor: '$secondary',
+
+                // -- Tertiary palette --
+                tertiaryColor: '$tertiaryContainer',
+                tertiaryTextColor: '$onTertiaryContainer',
+                tertiaryBorderColor: '$tertiaryContainer',
+
+                // -- Background & surface --
+                background: '$background',
+                mainBkg: '$primaryContainer',
+                secondBkg: '$secondaryContainer',
+                nodeBkg: '$surface',
+                nodeBorder: '$primary',
+                clusterBkg: '$surfaceVariant',
+                clusterBorder: '$outline',
+
+                // -- Text & lines --
+                lineColor: '$outline',
+                textColor: '$onSurface',
+                labelColor: '$onSurfaceVariant',
+
+                // -- Sequence diagram --
+                actorBkg: '$primaryContainer',
+                actorBorder: '$primary',
+                actorTextColor: '$onPrimaryContainer',
+                actorLineColor: '$outline',
+                signalColor: '$onSurface',
+                signalTextColor: '$onSurface',
+                labelBoxBkgColor: '$surfaceVariant',
+                labelBoxBorderColor: '$outline',
+                loopTextColor: '$onSurface',
+                noteBkgColor: '$tertiaryContainer',
+                noteTextColor: '$onTertiaryContainer',
+                noteBorderColor: '$outline',
+                activationBkgColor: '$primaryContainer',
+                activationBorderColor: '$primary',
+
+                // -- Gantt chart --
+                taskBkgColor: '$primaryContainer',
+                taskTextColor: '$onPrimaryContainer',
+                taskTextLightColor: '$onPrimaryContainer',
+                taskTextDarkColor: '$onSurface',
+                taskBorderColor: '$primary',
+                activeTaskBkgColor: '$primary',
+                activeTaskBorderColor: '$primary',
+                todayLineColor: '$error',
+                sectionBkgColor: '$surfaceVariant',
+                sectionBkgColor2: '$surface',
+                altSectionBkgColor: '$background',
+                gridColor: '${outline}40',
+                doneTaskBkgColor: '$outline',
+                doneTaskBorderColor: '$outline',
+                critBkgColor: '$error',
+                critBorderColor: '$error',
+                milestoneBkgColor: '$primary',
+                milestoneBorderColor: '$primary',
+
+                // -- Pie chart --
+                pie1: '$primary',
+                pie2: '$secondary',
+                pie3: '$tertiaryContainer',
+                pie4: '$primaryContainer',
+                pie5: '$secondaryContainer',
+                pie6: '$outline',
+                pie7: '$surfaceVariant',
+                pie8: '$onSurfaceVariant',
+                pie9: '$error',
+                pie10: '$onPrimary',
+                pieTitleTextSize: '14px',
+                pieTitleTextColor: '$onSurface',
+                pieSectionTextSize: '12px',
+                pieSectionTextColor: '$onSurface',
+                pieLegendTextSize: '12px',
+                pieLegendTextColor: '$onSurfaceVariant',
+                pieStrokeColor: '$background',
+                pieStrokeWidth: '2px',
+                pieOpacity: '1',
+
+                // -- Error styling --
+                errorBkgColor: '$error',
+                errorTextColor: '$onError'
+              }
+            });
+
+            function reportHeight() {
+              var h = document.documentElement.scrollHeight;
+              if (h > 0 && window.AndroidInterface) {
+                window.AndroidInterface.onHeightReady(h);
+              }
+            }
+
+            mermaid.render('diagram', source).then(function(result) {
+              var container = document.getElementById('diagram');
+              container.innerHTML = result.svg;
+              reportHeight();
+            }).catch(function(err) {
+              var container = document.getElementById('diagram');
+              var safe = source
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;');
-
-              // Local lightweight runtime shim: keeps rendering offline and deterministic.
-              window.mermaid = {
-                initialize: function() {},
-                render: function(id, text, cb) {
-                  const fg = '${'$'}{if (safeTheme == "dark") "#E2E8F0" else "#1E293B"}';
-                  const bg = '${'$'}{if (safeTheme == "dark") "#0F172A" else "#FFFFFF"}';
-                  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="960" height="220" viewBox="0 0 960 220">'
-                    + '<rect x="0" y="0" width="960" height="220" fill="' + bg + '"/>'
-                    + '<text x="16" y="32" fill="' + fg + '" font-family="monospace" font-size="16">Mermaid Diagram (' + '${safeTheme}' + ')</text>'
-                    + '<foreignObject x="16" y="46" width="928" height="160">'
-                    + '<div xmlns="http://www.w3.org/1999/xhtml" style="font-family: monospace; font-size: 12px; color:' + fg + '; white-space: pre-wrap;">'
-                    + safe +
-                    + '</div></foreignObject></svg>';
-                  cb(svg);
-                }
-              };
-
-              try {
-                window.mermaid.initialize({ startOnLoad: false, theme: '${safeTheme}' });
-                window.mermaid.render('m1', source, function(svg) {
-                  container.innerHTML = svg;
-                });
-              } catch (e) {
-                container.innerHTML = '<div class="mermaid-fallback">' + safe + '</div>';
+              container.innerHTML =
+                '<div class="error-banner">Render error: ' + (err.message || 'Unknown error') + '</div>' +
+                '<div class="mermaid-fallback">' + safe + '</div>';
+              reportHeight();
+              if (window.AndroidInterface) {
+                window.AndroidInterface.onRenderError();
               }
-            })();
+            });
           </script>
         </body>
       </html>
     """.trimIndent()
   }
+}
+
+/**
+ * Convert a Compose [Color] to a CSS hex string (e.g. "#1E293B").
+ * Uses the ARGB int representation.
+ */
+private fun androidx.compose.ui.graphics.Color.toCssHex(): String {
+  val argb = this.toArgb()
+  val r = (argb shr 16) and 0xFF
+  val g = (argb shr 8) and 0xFF
+  val b = argb and 0xFF
+  return "#%02X%02X%02X".format(r, g, b)
+}
+
+private fun androidx.compose.ui.graphics.Color.luminance(): Float {
+  val argb = this.toArgb()
+  val r = ((argb shr 16) and 0xFF) / 255f
+  val g = ((argb shr 8) and 0xFF) / 255f
+  val b = (argb and 0xFF) / 255f
+  return 0.2126f * r + 0.7152f * g + 0.0722f * b
 }
