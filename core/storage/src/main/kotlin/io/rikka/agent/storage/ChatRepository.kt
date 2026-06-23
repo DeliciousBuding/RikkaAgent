@@ -44,6 +44,7 @@ interface ChatRepository {
   // ── Messages ────────────────────────────────────────────────────────────
   suspend fun insertMessage(threadId: String, message: ChatMessage)
   suspend fun updateMessage(id: String, parts: List<MessagePart>, status: MessageStatus)
+  suspend fun deleteMessagesAfter(threadId: String, messageId: String)
   fun observeMessages(threadId: String): Flow<List<ChatMessage>>
   suspend fun getMessages(threadId: String): List<ChatMessage>
 }
@@ -165,6 +166,16 @@ class RoomChatRepository(private val dao: ChatMessageDao) : ChatRepository {
       .joinToString(separator = "\n") { it.text }
     val partsJson = ChatMessage.json.encodeToString(parts)
     dao.updateMessageParts(id, textContent, partsJson, status.name)
+  }
+
+  override suspend fun deleteMessagesAfter(threadId: String, messageId: String) {
+    val messages = dao.getMessages(threadId)
+    val targetIndex = messages.indexOfFirst { it.id == messageId }
+    if (targetIndex < 0) return
+    val toDelete = messages.drop(targetIndex + 1)
+    toDelete.forEach { entity ->
+      dao.deleteMessage(entity.id)
+    }
   }
 
   override fun observeMessages(threadId: String): Flow<List<ChatMessage>> =

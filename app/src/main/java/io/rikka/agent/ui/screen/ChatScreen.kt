@@ -132,6 +132,10 @@ fun ChatScreen(
   val haptic = LocalHapticFeedback.current
   val startActivity = startActivityOverride ?: { intent -> context.startActivity(intent) }
 
+  // Edit message state
+  var editingMessageId by remember { mutableStateOf<String?>(null) }
+  var editingText by remember { mutableStateOf<String?>(null) }
+
   // Elapsed timer for running commands
   var elapsedSeconds by remember { mutableStateOf(0) }
   LaunchedEffect(connectionState) {
@@ -442,6 +446,10 @@ fun ChatScreen(
                   onExpand = {
                     fullOutputDialog = vm.getFullOutput(msg.id)
                   },
+                  onEdit = { content ->
+                    editingMessageId = msg.id
+                    editingText = content
+                  },
                   onRerun = { cmd ->
                     if (connectionState != ConnectionState.Executing) vm.send(cmd)
                   },
@@ -506,7 +514,21 @@ fun ChatScreen(
           ChatInput(
             enabled = !isStreaming,
             quickMessages = quickMessages,
-            onSend = { text -> vm.send(text) },
+            editText = editingText,
+            onCancelEdit = {
+              editingMessageId = null
+              editingText = null
+            },
+            onSend = { text ->
+              val editId = editingMessageId
+              if (editId != null) {
+                vm.editAndResend(editId, text)
+                editingMessageId = null
+                editingText = null
+              } else {
+                vm.send(text)
+              }
+            },
           )
         }
       }
