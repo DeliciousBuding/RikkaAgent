@@ -31,6 +31,7 @@ data class ChatMessageEntity(
   val threadId: String,
   val role: String,
   val content: String,
+  val partsJson: String = "[]",
   val timestampMs: Long,
   val status: String,
 )

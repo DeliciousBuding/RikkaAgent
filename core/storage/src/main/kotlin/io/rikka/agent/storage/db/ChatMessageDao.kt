@@ -36,4 +36,7 @@ interface ChatMessageDao {
 
   @Query("UPDATE chat_threads SET updatedAtMs = :updatedAtMs, title = :title WHERE id = :id")
   suspend fun updateThread(id: String, title: String, updatedAtMs: Long)
+
+  @Query("UPDATE chat_threads SET updatedAtMs = :updatedAtMs WHERE id = :id")
+  suspend fun updateThreadTimestamp(id: String, updatedAtMs: Long)
 }

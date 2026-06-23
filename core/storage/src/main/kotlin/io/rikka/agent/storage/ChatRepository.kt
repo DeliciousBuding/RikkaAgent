@@ -5,8 +5,9 @@ import io.rikka.agent.model.ChatRole
 import io.rikka.agent.model.ChatThread
 import io.rikka.agent.model.MessageStatus
 import io.rikka.agent.storage.db.ChatMessageDao
-import io.rikka.agent.storage.db.ChatMessageEntity
 import io.rikka.agent.storage.db.ChatThreadEntity
+import io.rikka.agent.storage.db.toEntity
+import io.rikka.agent.storage.db.toModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -48,17 +49,8 @@ class RoomChatRepository(private val dao: ChatMessageDao) : ChatRepository {
   }
 
   override suspend fun insertMessage(threadId: String, message: ChatMessage) {
-    dao.insertMessage(
-      ChatMessageEntity(
-        id = message.id,
-        threadId = threadId,
-        role = message.role.name,
-        content = message.content,
-        timestampMs = message.timestampMs,
-        status = message.status.name,
-      )
-    )
-    dao.updateThread(threadId, title = "", updatedAtMs = message.timestampMs)
+    dao.insertMessage(message.toEntity(threadId))
+    dao.updateThreadTimestamp(threadId, message.timestampMs)
   }
 
   override suspend fun updateMessage(id: String, content: String, status: MessageStatus) {
@@ -76,12 +68,4 @@ class RoomChatRepository(private val dao: ChatMessageDao) : ChatRepository {
   override suspend fun updateThreadTitle(threadId: String, title: String) {
     dao.updateThread(threadId, title, System.currentTimeMillis())
   }
-
-  private fun ChatMessageEntity.toModel() = ChatMessage(
-    id = id,
-    role = ChatRole.valueOf(role),
-    content = content,
-    timestampMs = timestampMs,
-    status = MessageStatus.valueOf(status),
-  )
 }
