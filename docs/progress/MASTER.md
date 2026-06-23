@@ -11,8 +11,8 @@
 | **APK** | ✅ 24MB | `app-dev-debug.apk` |
 | **基线** | ✅ | commit `99f1423` |
 | **Phase 1** | ✅ 3 commits | MessagePart + ChatMessage + Room v5 |
-| **Phase 2** | 🔄 进行中 | 2A ExtendColors ✅ 2C Lucide ✅ 2B/2D ⏳ |
-| **Phase 3** | ⏳ | UI 组件增量复刻 |
+| **Phase 2** | ✅ 3 commits | ExtendColors + Lucide Icons (6 屏 11 处) |
+| **设计合规** | ✅ 3 commits | P0+P1+P2 全部修复 (78→0 Critical) |
 | **ADB 验收** | ⏳ | Mumu ADB 端口冲突，待手动恢复 |
 
 ## 当前阶段
