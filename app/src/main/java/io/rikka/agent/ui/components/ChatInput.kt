@@ -101,7 +101,7 @@ fun ChatInput(
 
   fun doSend() {
     if (text.isNotBlank() && enabled) {
-      haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+      haptic.performHapticFeedback(HapticFeedbackType.KeyboardTap)
       onSend(text.trim())
       text = ""
     }

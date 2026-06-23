@@ -1,4 +1,4 @@
-# Android / Gradle
+# === Android / Gradle ===
 .gradle/
 build/
 **/build/
@@ -6,22 +6,28 @@ captures/
 .externalNativeBuild/
 .cxx/
 local.properties
+google-services.json
 
-# IntelliJ / Android Studio
+# === IntelliJ / Android Studio ===
 .idea/
 *.iml
 *.ipr
 *.iws
 out/
+*.hprof
 
-# Kotlin
+# === Kotlin ===
 *.kotlin_module
+.kotlin/
 
-# OS
+# === OS ===
 .DS_Store
 Thumbs.db
+Desktop.ini
+*.swp
+*~
 
-# Secrets
+# === Secrets ===
 *.keystore
 *.jks
 *.p12
@@ -29,23 +35,61 @@ Thumbs.db
 *.key
 *.crt
 *.env
+*.env.local
+secrets/
+**/secrets/
 
-# Android outputs
+# === Android outputs ===
 *.apk
 *.aab
+*.ap_
+*.dex
 
-# Local scratch
+# === Local scratch ===
 tmp/
+temp/
+*.tmp
 
-# Local databases / runtime artifacts (keep user data out of git)
+# === Local databases / runtime artifacts ===
 *.db
 *.sqlite
 *.sqlite3
 *.log
+*.log.*
 
-# Gradle caches that may appear in repo root (should never be committed)
+# === Gradle caches ===
 native/
 notifications/
 
-# Gradle wrapper/metadata (optional; keep if you prefer)
-# gradle/wrapper/gradle-wrapper.jar
+# === Test artifacts ===
+**/test-results/
+**/reports/
+jacoco.exec
+*.exec
+
+# === CI artifacts ===
+*.output
+*.cache
+
+# === Dependency lock ===
+# gradle/verification-metadata.xml
+
+# === Dokka / KDoc output ===
+docs/api/
+docs/javadoc/
+
+# === Lint ===
+lint-report.html
+lint-report.xml
+
+# === Profiling ===
+*.trace
+*.hprof
+
+# === Google Services ===
+google-services.json
+app/google-services.json
+
+# === Signing ===
+signing.properties
+key.properties

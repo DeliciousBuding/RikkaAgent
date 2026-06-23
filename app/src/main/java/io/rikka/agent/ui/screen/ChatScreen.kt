@@ -16,6 +16,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,9 +35,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -47,6 +54,8 @@ import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
@@ -64,9 +73,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
@@ -78,6 +89,7 @@ import io.rikka.agent.ui.components.ChatInput
 import io.rikka.agent.vm.ChatViewModel
 import io.rikka.agent.vm.ConnectionError
 import io.rikka.agent.ssh.ConnectionState
+import io.rikka.agent.vm.ExportFormat
 import io.rikka.agent.vm.HostKeyEvent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -103,15 +115,21 @@ fun ChatScreen(
   val prefs: AppPreferences = prefsOverride ?: koinInject()
   val messages by vm.messages.collectAsStateWithLifecycle()
   val enableMermaid by prefs.enableMermaid.collectAsStateWithLifecycle(initialValue = false)
+  val bubbleOpacity by prefs.bubbleOpacity.collectAsStateWithLifecycle(initialValue = 1.0f)
   val connectionState by vm.connectionState.collectAsStateWithLifecycle()
   val connectionError by vm.lastConnectionError.collectAsStateWithLifecycle()
-  val threads by vm.threads.collectAsStateWithLifecycle()
+  val activeThreads by vm.activeThreads.collectAsStateWithLifecycle()
+  val archivedThreads by vm.archivedThreads.collectAsStateWithLifecycle()
+  val searchResults by vm.searchResults.collectAsStateWithLifecycle()
+  val searchQuery by vm.searchQuery.collectAsStateWithLifecycle()
+  val currentThreadId by vm.currentThreadId.collectAsStateWithLifecycle()
   val profileLabel by vm.profileLabel.collectAsStateWithLifecycle()
   val quickMessages by prefs.quickMessages.collectAsStateWithLifecycle(initialValue = emptyList())
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
   val drawerState = rememberDrawerState(DrawerValue.Closed)
   val context = LocalContext.current
+  val haptic = LocalHapticFeedback.current
   val startActivity = startActivityOverride ?: { intent -> context.startActivity(intent) }
 
   // Elapsed timer for running commands
@@ -135,6 +153,98 @@ fun ChatScreen(
   // Passphrase dialog state
   var passphraseTarget by remember { mutableStateOf<String?>(null) }
   var fullOutputDialog by remember { mutableStateOf<String?>(null) }
+
+  // Export format dialog state
+  var showExportFormatDialog by remember { mutableStateOf(false) }
+
+  // Tag input dialog state
+  var tagInputThreadId by remember { mutableStateOf<String?>(null) }
+
+  // Archive confirmation dialog state
+  var archiveConfirmThreadId by remember { mutableStateOf<String?>(null) }
+  var unarchiveConfirmThreadId by remember { mutableStateOf<String?>(null) }
+
+  // Show export format dialog
+  if (showExportFormatDialog) {
+    ExportFormatDialog(
+      onSelect = { format ->
+        showExportFormatDialog = false
+        val text = vm.exportSession(format)
+        val mimeType = when (format) {
+          ExportFormat.HTML -> "text/html"
+          ExportFormat.JSON -> "application/json"
+          else -> "text/plain"
+        }
+        startActivity(
+          ShareIntents.sessionExport(
+            text = text,
+            subject = context.getString(R.string.ssh_session_subject, profileLabel),
+            chooserTitle = context.getString(R.string.export_session),
+          )
+        )
+      },
+      onDismiss = { showExportFormatDialog = false },
+    )
+  }
+
+  // Show tag input dialog
+  tagInputThreadId?.let { threadId ->
+    TagInputDialog(
+      onAdd = { tag ->
+        vm.addTag(threadId, tag)
+        tagInputThreadId = null
+      },
+      onDismiss = { tagInputThreadId = null },
+    )
+  }
+
+  // Show archive confirmation
+  archiveConfirmThreadId?.let { id ->
+    val thread = activeThreads.find { it.id == id }
+    AlertDialog(
+      onDismissRequest = { archiveConfirmThreadId = null },
+      title = { Text(stringResource(R.string.archive_confirm_title)) },
+      text = {
+        Text(stringResource(R.string.archive_confirm_msg,
+          thread?.title?.ifBlank { stringResource(R.string.session_fallback_name) }
+            ?: stringResource(R.string.session_fallback_name)))
+      },
+      confirmButton = {
+        TextButton(onClick = { vm.archiveThread(id); archiveConfirmThreadId = null }) {
+          Text(stringResource(R.string.archive_session))
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = { archiveConfirmThreadId = null }) {
+          Text(stringResource(R.string.cancel))
+        }
+      },
+    )
+  }
+
+  // Show unarchive confirmation
+  unarchiveConfirmThreadId?.let { id ->
+    val thread = archivedThreads.find { it.id == id }
+    AlertDialog(
+      onDismissRequest = { unarchiveConfirmThreadId = null },
+      title = { Text(stringResource(R.string.unarchive_confirm_title)) },
+      text = {
+        Text(stringResource(R.string.unarchive_confirm_msg,
+          thread?.title?.ifBlank { stringResource(R.string.session_fallback_name) }
+            ?: stringResource(R.string.session_fallback_name)))
+      },
+      confirmButton = {
+        TextButton(onClick = { vm.unarchiveThread(id); unarchiveConfirmThreadId = null }) {
+          Text(stringResource(R.string.unarchive_session))
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = { unarchiveConfirmThreadId = null }) {
+          Text(stringResource(R.string.cancel))
+        }
+      },
+    )
+  }
 
   LaunchedEffect(Unit) {
     vm.hostKeyEvent.collect { event ->
@@ -255,8 +365,12 @@ fun ChatScreen(
     drawerState = drawerState,
     drawerContent = {
       SessionDrawerContent(
-        threads = threads,
-        currentThreadId = threads.firstOrNull()?.id,
+        activeThreads = activeThreads,
+        archivedThreads = archivedThreads,
+        searchResults = searchResults,
+        searchQuery = searchQuery,
+        currentThreadId = currentThreadId,
+        onSearchQueryChange = { vm.setSearchQuery(it) },
         onNewSession = {
           vm.newSession()
           scope.launch { drawerState.close() }
@@ -266,6 +380,11 @@ fun ChatScreen(
           scope.launch { drawerState.close() }
         },
         onDeleteThread = { threadId -> vm.deleteThread(threadId) },
+        onTogglePin = { threadId -> vm.togglePin(threadId) },
+        onArchiveThread = { threadId -> archiveConfirmThreadId = threadId },
+        onUnarchiveThread = { threadId -> unarchiveConfirmThreadId = threadId },
+        onAddTag = { threadId -> tagInputThreadId = threadId },
+        onRemoveTag = { threadId, tag -> vm.removeTag(threadId, tag) },
       )
     },
   ) {
@@ -278,17 +397,11 @@ fun ChatScreen(
           hasMessages = messages.isNotEmpty(),
           isStreaming = isStreaming,
           onMenuClick = { scope.launch { drawerState.open() } },
-          onExportClick = {
-            val text = vm.exportSession()
-            startActivity(
-              ShareIntents.sessionExport(
-                text = text,
-                subject = context.getString(R.string.ssh_session_subject, profileLabel),
-                chooserTitle = context.getString(R.string.export_session),
-              )
-            )
+          onExportClick = { showExportFormatDialog = true },
+          onCancelClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.Reject)
+            vm.cancelRunning()
           },
-          onCancelClick = { vm.cancelRunning() },
           onBackClick = onBack,
         )
       },
@@ -329,6 +442,7 @@ fun ChatScreen(
                 ChatBubble(
                   message = msg,
                   enableMermaid = enableMermaid,
+                  bubbleOpacity = bubbleOpacity,
                   showExpand = vm.hasFullOutput(msg.id),
                   onExpand = {
                     fullOutputDialog = vm.getFullOutput(msg.id)

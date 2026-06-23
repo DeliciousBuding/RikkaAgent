@@ -7,6 +7,7 @@ import io.rikka.agent.model.MessagePart
 import io.rikka.agent.model.MessageStatus
 import io.rikka.agent.model.SshProfile
 import io.rikka.agent.ssh.ClosableSshExecRunner
+import io.rikka.agent.ssh.ConnectionState
 import io.rikka.agent.ssh.ExecEvent
 import io.rikka.agent.ssh.HostKeyCallback
 import io.rikka.agent.ssh.KeyContentProvider
@@ -403,11 +404,11 @@ class CommandExecutorTest {
     val executor = createExecutor()
     advanceUntilIdle()
 
-    assertEquals(ConnectionState.IDLE, executor.connectionState.value)
+    assertEquals(ConnectionState.Idle, executor.connectionState.value)
 
     executor.loadProfile(profile.id)
     advanceUntilIdle()
-    assertEquals(ConnectionState.READY, executor.connectionState.value)
+    assertEquals(ConnectionState.Ready, executor.connectionState.value)
 
     executor.execute(
       command = "ls",
@@ -420,17 +421,17 @@ class CommandExecutorTest {
     // At this point the coroutine is launched but hasn't collected yet
     // After advanceUntilIdle the full flow completes
     advanceUntilIdle()
-    assertEquals(ConnectionState.READY, executor.connectionState.value)
+    assertEquals(ConnectionState.Ready, executor.connectionState.value)
   }
 
   @Test
-  fun `loadProfile sets state to ERROR for unknown profile`() = runTest(dispatcher) {
+  fun `loadProfile sets state to Failed for unknown profile`() = runTest(dispatcher) {
     val executor = createExecutor()
     advanceUntilIdle()
 
     val result = executor.loadProfile("nonexistent")
     assertNull(result)
-    assertEquals(ConnectionState.ERROR, executor.connectionState.value)
+    assertTrue(executor.connectionState.value is ConnectionState.Failed)
   }
 
   @Test
@@ -442,7 +443,7 @@ class CommandExecutorTest {
     assertNotNull(result)
     assertEquals(profile, result!!.first)
     assertEquals(profile.name, result.second)
-    assertEquals(ConnectionState.READY, executor.connectionState.value)
+    assertEquals(ConnectionState.Ready, executor.connectionState.value)
   }
 
   @Test
@@ -477,10 +478,10 @@ class CommandExecutorTest {
       getAssistantContent = { null },
     )
     advanceUntilIdle()
-    assertEquals(ConnectionState.READY, executor.connectionState.value) // error returns to READY
+    assertEquals(ConnectionState.Ready, executor.connectionState.value) // error returns to READY
 
     executor.resetConnectionState()
-    assertEquals(ConnectionState.READY, executor.connectionState.value)
+    assertEquals(ConnectionState.Ready, executor.connectionState.value)
   }
 
   // ── Full output access ────────────────────────────────────────────────────

@@ -85,6 +85,7 @@ fun MessagePartsBlock(
     bubbleOpacity: Float = 1.0f,
     isStreaming: Boolean = false,
     onDelete: (() -> Unit)? = null,
+    onEdit: (() -> Unit)? = null,
     onRerun: (() -> Unit)? = null,
     onCopy: (() -> Unit)? = null,
     onShare: (() -> Unit)? = null,
@@ -201,6 +202,7 @@ fun MessagePartsBlock(
     if (showActionsSheet) {
         ActionsSheet(
             onDelete = onDelete ?: {},
+            onEdit = onEdit,
             onRerun = onRerun,
             onCopy = onCopy ?: {},
             onShare = onShare ?: {},

@@ -223,9 +223,9 @@ fun ProfileEditorScreen(
             strokeWidth = 2.dp,
           )
           Spacer(Modifier.width(8.dp))
-          Text("Testing...")
+          Text(stringResource(R.string.testing))
         } else {
-          Text("Test Connection")
+          Text(stringResource(R.string.test_connection))
         }
       }
       if (testResult != null) {

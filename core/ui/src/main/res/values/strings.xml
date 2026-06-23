@@ -2,6 +2,7 @@
   <!-- ChatBubble -->
   <string name="cd_copy">Copy</string>
   <string name="cd_rerun">Re-run</string>
+  <string name="cd_edit">Edit</string>
   <string name="cd_share">Share</string>
   <string name="cd_share_full">Share complete output</string>
   <string name="expand_output">Complete output</string>
@@ -23,6 +24,7 @@
   <!-- ChatInput -->
   <string name="input_placeholder">$ command</string>
   <string name="cd_send">Send</string>
+  <string name="editing_message">Editing message</string>
 
   <!-- StreamOutputCard -->
   <string name="label_stdout">stdout</string>
@@ -43,7 +45,18 @@
   <!-- ActionsSheet -->
   <string name="action_copy">Copy</string>
   <string name="action_rerun">Re-run</string>
+  <string name="action_edit">Edit</string>
   <string name="action_share">Share</string>
   <string name="action_full_output">Complete output</string>
   <string name="action_delete">Delete</string>
+  <string name="more_actions">More actions</string>
+
+  <!-- CopySheet -->
+  <string name="copy_sheet_title">Select &amp; Copy</string>
+  <string name="copy_sheet_close">Close</string>
+  <string name="copy_sheet_copy_markdown">MD</string>
+  <string name="copy_sheet_copy_plain">Text</string>
+  <string name="copy_sheet_copy_part_markdown">Copy as Markdown</string>
+  <string name="copy_sheet_copy_part_plain">Copy as plain text</string>
+  <string name="copy_sheet_no_content">No text content to copy</string>
 </resources>

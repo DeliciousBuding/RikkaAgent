@@ -14,6 +14,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -85,6 +86,7 @@ fun ChatBubble(
     bubbleOpacity: Float = 1.0f,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+    onEdit: ((String) -> Unit)? = null,
     onRerun: ((String) -> Unit)? = null,
     onShare: ((String) -> Unit)? = null,
     showExpand: Boolean = false,
@@ -95,6 +97,7 @@ fun ChatBubble(
     val isError = message.status == MessageStatus.Error
     val isCanceled = message.status == MessageStatus.Canceled
     val isStreaming = message.status == MessageStatus.Streaming
+    val haptic = LocalHapticFeedback.current
 
     val bubbleColor = when {
         isUser -> MaterialTheme.colorScheme.primaryContainer
@@ -130,6 +133,7 @@ fun ChatBubble(
                 contentColor = contentColor,
                 bubbleOpacity = bubbleOpacity,
                 contentPadding = contentPadding,
+                onLongClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress) },
             )
         } else if (isStreaming && message.parts.isEmpty()) {
             // Empty streaming: dots in a minimal bubble
@@ -160,6 +164,10 @@ fun ChatBubble(
                     shape = BubbleShape,
                     modifier = Modifier
                         .clip(BubbleShape)
+                        .combinedClickable(
+                            onClick = {},
+                            onLongClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress) },
+                        )
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                 ) {
                     Column(
@@ -209,6 +217,7 @@ private fun UserBubble(
     contentColor: androidx.compose.ui.graphics.Color,
     bubbleOpacity: Float,
     contentPadding: PaddingValues,
+    onLongClick: (() -> Unit)? = null,
 ) {
     Surface(
         tonalElevation = 0.dp,
@@ -218,6 +227,10 @@ private fun UserBubble(
         modifier = Modifier
             .alpha(bubbleOpacity)
             .clip(BubbleShape)
+            .combinedClickable(
+                onClick = {},
+                onLongClick = onLongClick,
+            )
             .animateContentSize()
             .padding(horizontal = 12.dp, vertical = 6.dp),
     ) {
