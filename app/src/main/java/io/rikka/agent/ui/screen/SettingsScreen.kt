@@ -28,13 +28,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -54,15 +54,15 @@ fun SettingsScreen(
   onOpenAbout: () -> Unit = {},
 ) {
   val vm: SettingsViewModel = koinViewModel()
-  val theme by vm.theme.collectAsState()
-  val presetThemeId by vm.presetTheme.collectAsState()
-  val dynamicColor by vm.dynamicColor.collectAsState()
-  val defaultShell by vm.defaultShell.collectAsState()
-  val enableMermaid by vm.enableMermaid.collectAsState()
-  val showUserAvatar by vm.showUserAvatar.collectAsState()
-  val showModelIcon by vm.showModelIcon.collectAsState()
-  val chatFontId by vm.chatFont.collectAsState()
-  val fontSizeRatio by vm.fontSizeRatio.collectAsState()
+  val theme by vm.theme.collectAsStateWithLifecycle()
+  val presetThemeId by vm.presetTheme.collectAsStateWithLifecycle()
+  val dynamicColor by vm.dynamicColor.collectAsStateWithLifecycle()
+  val defaultShell by vm.defaultShell.collectAsStateWithLifecycle()
+  val enableMermaid by vm.enableMermaid.collectAsStateWithLifecycle()
+  val showUserAvatar by vm.showUserAvatar.collectAsStateWithLifecycle()
+  val showModelIcon by vm.showModelIcon.collectAsStateWithLifecycle()
+  val chatFontId by vm.chatFont.collectAsStateWithLifecycle()
+  val fontSizeRatio by vm.fontSizeRatio.collectAsStateWithLifecycle()
   var showThemePicker by remember { mutableStateOf(false) }
   var showPresetThemePicker by remember { mutableStateOf(false) }
   var showShellPicker by remember { mutableStateOf(false) }

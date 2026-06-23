@@ -17,4 +17,6 @@ data class SshProfileEntity(
   val codexMode: Boolean = false,
   val codexWorkDir: String? = null,
   val codexApiKey: String? = null,
+  val group: String = "None",
+  val tags: String = "",
 )

@@ -31,6 +31,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import io.rikka.agent.ui.R
 
+private val InputShape = RoundedCornerShape(24.dp)
+
 @Composable
 fun ChatInput(
   modifier: Modifier = Modifier,
@@ -38,7 +40,6 @@ fun ChatInput(
   onSend: (String) -> Unit,
 ) {
   var text by remember { mutableStateOf("") }
-  val shape = RoundedCornerShape(24.dp)
   val haptic = LocalHapticFeedback.current
 
   fun doSend() {
@@ -57,7 +58,7 @@ fun ChatInput(
     Box(
       modifier = Modifier
         .weight(1f)
-        .background(MaterialTheme.colorScheme.surfaceVariant, shape)
+        .background(MaterialTheme.colorScheme.surfaceVariant, InputShape)
         .padding(horizontal = 6.dp, vertical = 2.dp)
     ) {
       TextField(

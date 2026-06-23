@@ -196,6 +196,25 @@
   <string name="font_serif">Serif</string>
   <string name="font_monospace">Monospace</string>
 
+  <!-- Chat font settings -->
+  <string name="section_chat_font">Chat Font</string>
+  <string name="chat_font">Font family</string>
+  <string name="chat_font_title">Chat Font</string>
+  <string name="chat_font_preview">The quick brown fox jumps over the lazy dog</string>
+  <string name="font_size_ratio">Font size</string>
+  <string name="font_size_small">A</string>
+  <string name="font_size_large">A</string>
+
+  <!-- DisplaySettingsScreen -->
+  <string name="display_settings">Display</string>
+  <string name="section_display">Display</string>
+  <string name="bubble_opacity">Bubble opacity</string>
+  <string name="bubble_opacity_subtitle">Transparency of chat bubbles</string>
+  <string name="show_assistant_bubble">Show assistant bubble</string>
+  <string name="show_assistant_bubble_subtitle">Display a background bubble for assistant messages</string>
+  <string name="show_timestamp">Show timestamp</string>
+  <string name="show_timestamp_subtitle">Display time below each message</string>
+
   <!-- NerdLine -->
   <string name="nerd_line_exit_code">exit: %d</string>
   <string name="nerd_line_duration">%dms</string>

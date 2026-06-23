@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+private val ErrorCardShape = RoundedCornerShape(12.dp)
+
 /**
  * Lightweight error information for [ErrorCard] display.
  *

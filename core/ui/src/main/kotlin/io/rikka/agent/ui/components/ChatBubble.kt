@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -252,16 +253,17 @@ private fun ActionBar(
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
         )
+        val copyableText = remember(message.parts) { message.partsToCopyableText() }
         if (isUser && onRerun != null && message.textContent.isNotBlank()) {
             RerunButton(command = message.textContent, onRerun = onRerun)
         }
         if (message.parts.isNotEmpty()) {
-            CopyButton(content = message.partsToCopyableText())
+            CopyButton(content = copyableText)
             if (!isUser && showExpand && onExpand != null) {
                 ExpandButton(onExpand = onExpand)
             }
             if (!isUser && onShare != null) {
-                ShareButton(content = message.partsToCopyableText(), onShare = onShare)
+                ShareButton(content = copyableText, onShare = onShare)
             }
             if (!isUser && showExpand && onShareFull != null) {
                 ShareFullButton(onShareFull = onShareFull)
@@ -356,7 +358,7 @@ private fun CopyButton(content: String) {
                 painter = painterResource(id = R.drawable.ic_copy),
                 contentDescription = stringResource(R.string.cd_copy),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.size(14.dp),
+                modifier = ActionBarIconInnerSize,
             )
         }
     }
@@ -385,13 +387,13 @@ private fun RerunButton(command: String, onRerun: (String) -> Unit) {
 private fun ShareButton(content: String, onShare: (String) -> Unit) {
     IconButton(
         onClick = { onShare(content) },
-        modifier = Modifier.size(24.dp),
+        modifier = ActionBarIconSize,
     ) {
         Icon(
             painter = painterResource(id = R.drawable.ic_share),
             contentDescription = stringResource(R.string.cd_share),
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            modifier = Modifier.size(14.dp),
+            modifier = ActionBarIconInnerSize,
         )
     }
 }
@@ -414,13 +416,13 @@ private fun ExpandButton(onExpand: () -> Unit) {
 private fun ShareFullButton(onShareFull: () -> Unit) {
     IconButton(
         onClick = { onShareFull() },
-        modifier = Modifier.size(24.dp),
+        modifier = ActionBarIconSize,
     ) {
         Icon(
             painter = painterResource(id = R.drawable.ic_share),
             contentDescription = stringResource(R.string.cd_share_full),
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(14.dp),
+            modifier = ActionBarIconInnerSize,
         )
     }
 }
@@ -429,18 +431,35 @@ private fun ShareFullButton(onShareFull: () -> Unit) {
 
 @Composable
 private fun formatTimestamp(timestampMs: Long): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestampMs
-    return when {
-        diff < TimeUnit.MINUTES.toMillis(1) -> stringResource(R.string.time_just_now)
-        diff < TimeUnit.HOURS.toMillis(1) -> stringResource(
-            R.string.time_minutes_ago,
-            TimeUnit.MILLISECONDS.toMinutes(diff).toInt()
-        )
-        diff < TimeUnit.DAYS.toMillis(1) -> stringResource(
-            R.string.time_hours_ago,
-            TimeUnit.MILLISECONDS.toHours(diff).toInt()
-        )
-        else -> SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()).format(Date(timestampMs))
+    // Cache the result; update every 60s to keep "X minutes ago" fresh
+    var nowMs by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(60_000)
+            nowMs = System.currentTimeMillis()
+        }
+    }
+    val diff = nowMs - timestampMs
+    return remember(diff, timestampMs) {
+        when {
+            diff < TimeUnit.MINUTES.toMillis(1) -> null // handled by stringResource below
+            diff < TimeUnit.HOURS.toMillis(1) -> null
+            diff < TimeUnit.DAYS.toMillis(1) -> null
+            else -> SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()).format(Date(timestampMs))
+        }
+    } ?: run {
+        // For relative times, use stringResource (which needs @Composable context)
+        when {
+            diff < TimeUnit.MINUTES.toMillis(1) -> stringResource(R.string.time_just_now)
+            diff < TimeUnit.HOURS.toMillis(1) -> stringResource(
+                R.string.time_minutes_ago,
+                TimeUnit.MILLISECONDS.toMinutes(diff).toInt()
+            )
+            diff < TimeUnit.DAYS.toMillis(1) -> stringResource(
+                R.string.time_hours_ago,
+                TimeUnit.MILLISECONDS.toHours(diff).toInt()
+            )
+            else -> SimpleDateFormat("MMM d, HH:mm", Locale.getDefault()).format(Date(timestampMs))
+        }
     }
 }

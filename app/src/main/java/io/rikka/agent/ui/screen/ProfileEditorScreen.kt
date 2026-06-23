@@ -39,13 +39,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -76,8 +76,8 @@ fun ProfileEditorScreen(
 ) {
   val vm: ProfileEditorViewModel = koinViewModel { parametersOf(profileId) }
   val keyProvider: ContentUriKeyContentProvider = koinInject()
-  val form by vm.form.collectAsState()
-  val saved by vm.saved.collectAsState()
+  val form by vm.form.collectAsStateWithLifecycle()
+  val saved by vm.saved.collectAsStateWithLifecycle()
   var attempted by remember { mutableStateOf(false) }
   val context = LocalContext.current
   val clipboardManager = LocalClipboardManager.current
@@ -205,8 +205,8 @@ fun ProfileEditorScreen(
       }
 
       // --- Test connection ---
-      val testResult by vm.testResult.collectAsState()
-      val testing by vm.testing.collectAsState()
+      val testResult by vm.testResult.collectAsStateWithLifecycle()
+      val testing by vm.testing.collectAsStateWithLifecycle()
       OutlinedButton(
         onClick = { vm.testConnection() },
         enabled = !testing && form.host.isNotBlank(),
