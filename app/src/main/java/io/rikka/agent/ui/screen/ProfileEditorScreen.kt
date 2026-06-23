@@ -67,6 +67,7 @@ import io.rikka.agent.model.AuthType
 import io.rikka.agent.ssh.ContentUriKeyContentProvider
 import io.rikka.agent.ssh.SshKeyGenerator
 import io.rikka.agent.vm.ProfileEditorViewModel
+import io.rikka.agent.ui.components.MeshGradientBackground
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
@@ -109,7 +110,9 @@ fun ProfileEditorScreen(
     if (saved) onSaved()
   }
 
+  MeshGradientBackground {
   Scaffold(
+    containerColor = androidx.compose.ui.graphics.Color.Transparent,
     topBar = {
       TopAppBar(
         title = { Text(if (profileId == null) stringResource(R.string.new_profile_title) else stringResource(R.string.edit_profile_title)) },
@@ -118,6 +121,9 @@ fun ProfileEditorScreen(
             Icon(Lucide.ArrowLeft, contentDescription = stringResource(R.string.back))
           }
         },
+        colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+          containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        ),
       )
     },
     floatingActionButton = {
@@ -455,6 +461,7 @@ fun ProfileEditorScreen(
       Spacer(modifier = Modifier.height(80.dp)) // FAB clearance
     }
   }
+  } // MeshGradientBackground
 }
 
 @Composable
