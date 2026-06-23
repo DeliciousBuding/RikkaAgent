@@ -21,27 +21,28 @@
 | 分析 | [项目概览](../analysis/project-overview.md) | ✅ |
 | 分析 | [综合技术分析报告](../analysis/analysis-report.md) | ✅ |
 | 规划 | [任务分解](../plan/task-breakdown.md) | ✅ |
-| 规划 | [依赖图](../plan/dependency-graph.md) | ✅ (见 task-breakdown.md) |
-| 规划 | [里程碑](../plan/milestones.md) | ✅ (见 task-breakdown.md) |
+| 规划 | 依赖图 | ✅ (见 task-breakdown.md) |
+| 规划 | 里程碑 | ✅ (见 task-breakdown.md) |
 
 ## 阶段总览
 
 | 阶段 | 状态 | 任务数 | 说明 |
 |------|------|--------|------|
 | Phase 0: 同步与基线 | ✅ 完成 | 1 | RikkaHub fork 同步到 v2.3.2 |
-| Phase 1: 数据层重构 | 🔄 进行中 | 4 | 1A ✅ 1B ✅ 1C ⏳ 1D ✅ |
-| Phase 2: UI 基础设施 | ✅ 基本完成 | 4 | 2A ✅ 2B ✅ 2C ✅ 2D ⏳ |
-| Phase 3: 核心 UI 复刻 | 🔄 进行中 | 8 | 3A ⏳ 3B ⏳ 3C ✅ 3D ⏳ 3E ⏳ 3F ✅ 3G ✅ 3H ✅ |
-| Phase 4: SSH 适配 | ⏳ 待开始 | - | SSH exec 流式输出适配 |
-| Phase 5: 安全与展示 | ⏳ 待开始 | - | 安全加固 + 对外展示准备 |
+| Phase 1: 数据层重构 | ✅ 基本完成 | 4 | 1A ✅ 1B ✅ 1C ✅ 1D ✅ |
+| Phase 2: UI 基础设施 | ✅ 完成 | 4 | 2A ✅ 2B ✅ 2C ✅ 2D ✅ |
+| Phase 3: 核心 UI 复刻 | ✅ 基本完成 | 8 | 3A ✅ 3B ✅ 3C ✅ 3D ✅ 3E ✅ 3F ✅ 3G ✅ 3H ✅ |
+| Phase 4: SSH 适配 | ✅ 基本完成 | 4 | 4A ✅ 4B ✅ 4C ✅ 4D ✅ |
+| Phase 5: 安全与展示 | 🔄 进行中 | 4 | 5A ✅ 5B ✅ 5C ⏳ 5D ✅ |
 
 ## 当前状态
 
-**活跃阶段**：Phase 3-4 并行实现中
-**下一步**：MarkdownBlock + HighlightCodeBlock + SshOutputMapper + 剩余 UI 组件
+**活跃阶段**：验收轮 + Spec 文档 + 代码整理 + 测试补全（4 个 Workflow 并行）
+**下一步**：等待验收报告 → 修复迭代 → ADB 截图验收 → 最终提交
 
 ## 执行遥测
 
 | 任务 | 实际工作量 | S.U.P.E.R 评分 | 备注 |
 |------|-----------|---------------|------|
 | Phase 1 分析 | - | - | 15 agents 并行，~12min |
+| Phase 1-5 实现 | - | - | 4 commits, 64 files, +9089/-1565 lines |

@@ -14,28 +14,71 @@ import io.rikka.agent.ssh.SshExecRunnerFactory
 import io.rikka.agent.storage.AppPreferences
 import io.rikka.agent.storage.ProfileStore
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.util.concurrent.ConcurrentHashMap
 
-/** Lightweight holder for the most recent connection-level error. */
+/**
+ * Lightweight holder for the most recent connection-level error.
+ *
+ * @property category  Error category from the SSH layer (e.g. "auth", "timeout", "unknown-host").
+ * @property message   Human-readable, localized error message suitable for UI display.
+ */
 data class ConnectionError(
   val category: String,
   val message: String,
 )
 
 /**
- * Manages SSH command execution lifecycle: connection, streaming output, cancellation.
+ * Manages SSH command execution lifecycle: connection, streaming output, and cancellation.
  *
- * Handles both plain shell commands and Codex JSONL mode with structured progress rendering
- * mapped to [MessagePart] subtypes for ChainOfThought display.
+ * ## Responsibilities
+ * - Loads an [SshProfile] from the [ProfileStore] and exposes the connection state.
+ * - Executes commands over SSH via [ClosableSshExecRunner], streaming stdout/stderr chunks
+ *   back to the caller through callbacks.
+ * - Supports two execution modes:
+ *   - **Plain shell**: Wraps the command with the user-configured default shell.
+ *   - **Codex JSONL**: Wraps the command for Codex mode, parses JSONL output into structured
+ *     [MessagePart] instances (Reasoning, Code, Text) for ChainOfThought rendering.
+ * - Manages output truncation (max [maxOutputChars] chars) and stores full output separately
+ *   for "view full output" UI affordance.
+ * - Handles authentication callbacks (host key, password, passphrase) via [AuthCallbackBroker].
+ *
+ * ## Thread Safety
+ * - All mutable UI-facing state is held in [MutableStateFlow] instances, safe for concurrent access.
+ * - [runningJob], [runningAssistantId], and [runner] are mutated only from the calling coroutine
+ *   and the single [scope.launch] block; no concurrent mutation occurs because a new `execute()`
+ *   call cancels the previous job before mutating.
+ * - The [fullOutputByMessageId] map is accessed only from coroutines launched in [scope], which
+ *   run on the Main dispatcher by default.
+ * - Callbacks ([updateContent], [updateMessage]) are invoked from the [scope] coroutine and
+ *   must be thread-safe (they are, via `StateFlow.update` in [ChatViewModel]).
+ *
+ * ## Exposed State
+ * | StateFlow                  | Type                           | Description                                     |
+ * |----------------------------|--------------------------------|-------------------------------------------------|
+ * | [connectionState]          | `StateFlow<ConnectionState>`   | IDLE / READY / EXECUTING / ERROR.               |
+ * | [lastConnectionError]      | `StateFlow<ConnectionError?>`  | Most recent connection error, dismissable.       |
+ *
+ * @param profileStore      Source for loading [SshProfile] by ID.
+ * @param knownHostsStore   Persistent store for SSH known-hosts fingerprints.
+ * @param appPreferences    User preferences (default shell, etc.).
+ * @param keyContentProvider Optional provider for SSH private-key content.
+ * @param runnerFactory     Factory for creating [ClosableSshExecRunner] instances.
+ * @param authBroker        Broker that bridges SSH auth callbacks to UI SharedFlows.
+ * @param app               Android [Application] for string resource access.
+ * @param scope             Coroutine scope for launching execution jobs (typically [viewModelScope]).
  */
 class CommandExecutor(
   private val profileStore: ProfileStore,
@@ -48,8 +91,9 @@ class CommandExecutor(
   private val scope: CoroutineScope,
 ) {
 
-  /** Max chars for in-memory stdout/stderr per run. */
+  /** Max chars for in-memory stdout/stderr per run; output beyond this is truncated. */
   private val maxOutputChars = 256_000
+  /** Localized text templates for output formatting (stderr label, truncation hints, etc.). */
   private val outputTexts by lazy {
     OutputTexts(
       stderrLabel = app.getString(R.string.label_stderr),
@@ -60,27 +104,45 @@ class CommandExecutor(
     )
   }
 
+  /** Backing field for connection lifecycle state. */
   private val _connectionState = MutableStateFlow(ConnectionState.IDLE)
+  /** Observable SSH connection lifecycle state. */
   val connectionState: StateFlow<ConnectionState> = _connectionState
 
+  /** Backing field for the most recent connection error. */
   private val _lastConnectionError = MutableStateFlow<ConnectionError?>(null)
+  /** Observable most recent connection-level error, or null if none / dismissed. */
   val lastConnectionError: StateFlow<ConnectionError?> = _lastConnectionError
 
+  /** Clear the current [lastConnectionError]. */
   fun dismissConnectionError() {
     _lastConnectionError.value = null
   }
 
-  private val fullOutputByMessageId = mutableMapOf<String, String>()
+  /** In-memory cache of full (untruncated) output keyed by assistant message ID.
+   *  Uses [ConcurrentHashMap] for thread-safe access from multiple coroutines. */
+  private val fullOutputByMessageId = ConcurrentHashMap<String, String>()
 
+  /** The currently loaded SSH profile, or null if not yet loaded. */
   var currentProfile: SshProfile? = null
     private set
+  /** The coroutine Job for the currently running command, or null. */
   private var runningJob: Job? = null
+  /** The assistant message ID of the currently running command, or null. */
   private var runningAssistantId: String? = null
+  /** The reusable SSH exec runner, lazily created on first execution. */
   private var runner: ClosableSshExecRunner? = null
 
   // ── Profile ────────────────────────────────────────────────────────────
 
-  /** Load profile and set connection state. Returns (profile, label) or null. */
+  /**
+   * Load an SSH profile by [profileId] and set the connection state.
+   *
+   * @param profileId The profile ID to load from [ProfileStore].
+   * @return A pair of (profile, display label) on success, or null if the profile was not found.
+   *         On success, [connectionState] transitions to [ConnectionState.READY];
+   *         on failure, it transitions to [ConnectionState.ERROR].
+   */
   suspend fun loadProfile(profileId: String): Pair<SshProfile, String>? {
     val profile = profileStore.getById(profileId)
     if (profile != null) {
@@ -93,19 +155,36 @@ class CommandExecutor(
     }
   }
 
-  /** Reset connection state to READY (if profile loaded) or ERROR. */
+  /**
+   * Reset [connectionState] to [ConnectionState.READY] if a profile is loaded,
+   * or [ConnectionState.ERROR] otherwise. Typically called after cancellation or
+   * thread switching.
+   */
   fun resetConnectionState() {
     _connectionState.value = if (currentProfile != null) ConnectionState.READY else ConnectionState.ERROR
   }
 
   // ── Full output access ─────────────────────────────────────────────────
 
+  /**
+   * Check whether full (untruncated) output is stored for the given [messageId].
+   *
+   * @param messageId The assistant message ID.
+   * @return `true` if full output is available in [fullOutputByMessageId].
+   */
   fun hasFullOutput(messageId: String): Boolean =
     fullOutputByMessageId.containsKey(messageId)
 
+  /**
+   * Retrieve the full (untruncated) output for the given [messageId].
+   *
+   * @param messageId The assistant message ID.
+   * @return The full output string, or null if not available.
+   */
   fun getFullOutput(messageId: String): String? =
     fullOutputByMessageId[messageId]
 
+  /** Clear all cached full outputs. Called when starting a new session. */
   fun clearFullOutput() {
     fullOutputByMessageId.clear()
   }
@@ -142,15 +221,16 @@ class CommandExecutor(
     _connectionState.value = ConnectionState.EXECUTING
 
     val execRunner = getOrCreateRunner()
-    val shellCommand = if (isCodex) {
-      CommandComposer.wrapForCodex(command, profile.codexWorkDir, profile.codexApiKey)
-    } else {
-      wrapWithShell(command)
-    }
 
     runningAssistantId = assistantId
 
     runningJob = scope.launch {
+      val shellCommand = if (isCodex) {
+        CommandComposer.wrapForCodex(command, profile.codexWorkDir, profile.codexApiKey)
+      } else {
+        wrapWithShell(command)
+      }
+
       val stdout = StringBuilder()
       val stderr = StringBuilder()
       val jsonlBuffer = if (isCodex) JsonlLineBuffer() else null
@@ -194,7 +274,25 @@ class CommandExecutor(
         }
       }
 
-      execRunner.run(profile, shellCommand).collect { event ->
+      execRunner.run(profile, shellCommand)
+        .catch { e ->
+          // Defensive catch: SshjExecRunner handles errors internally via ExecEvent.Error,
+          // but if the Flow itself throws (e.g. connection dropped mid-stream), surface it.
+          val friendlyMsg = ErrorMessageMapper.friendlyErrorMessage(
+            category = "ssh_error",
+            raw = e.message ?: e.javaClass.simpleName,
+            connectionRefused = app.getString(R.string.err_connection_refused),
+            timeout = app.getString(R.string.err_timeout),
+            unknownHost = app.getString(R.string.err_unknown_host),
+            authFailed = app.getString(R.string.err_auth_failed),
+            generic = { raw -> app.getString(R.string.err_ssh_generic, raw) },
+          )
+          _lastConnectionError.value = ConnectionError("ssh_error", friendlyMsg)
+          updateMessage(assistantId, friendlyMsg, MessageStatus.Error)
+          runningAssistantId = null
+          _connectionState.value = ConnectionState.READY
+        }
+        .collect { event ->
         when (event) {
           is ExecEvent.StdoutChunk -> {
             if (isCodex && jsonlBuffer != null && codexParts != null) {
@@ -286,7 +384,10 @@ class CommandExecutor(
 
   /**
    * Cancel the currently running command.
-   * Returns the assistant message ID that was canceled, or null if nothing was running.
+   *
+   * Cancels the coroutine [Job] and clears the running state.
+   *
+   * @return The assistant message ID that was canceled, or null if nothing was running.
    */
   fun cancel(): String? {
     val canceledId = runningAssistantId
@@ -296,7 +397,10 @@ class CommandExecutor(
     return canceledId
   }
 
-  /** Release SSH runner resources. */
+  /**
+   * Release SSH runner resources. Cancels any running job and closes the underlying
+   * [ClosableSshExecRunner]. Called from [ChatViewModel.onCleared].
+   */
   fun cleanUp() {
     runningJob?.cancel()
     runner?.close()
@@ -439,8 +543,8 @@ class CommandExecutor(
     texts = outputTexts,
   )
 
-  private fun wrapWithShell(command: String): String {
-    val shell = kotlinx.coroutines.runBlocking {
+  private suspend fun wrapWithShell(command: String): String {
+    val shell = withContext(Dispatchers.IO) {
       appPreferences.defaultShell.first()
     }
     return CommandComposer.wrapWithShell(command, shell)

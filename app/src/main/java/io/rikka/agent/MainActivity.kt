@@ -6,9 +6,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.rikka.agent.nav.AppNavHost
 import io.rikka.agent.storage.AppPreferences
 import io.rikka.agent.ui.theme.RikkaAgentTheme
@@ -23,8 +23,9 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
 
     setContent {
-      val themeName by prefs.theme.collectAsState(initial = "system")
-      val dynamicColor by prefs.dynamicColor.collectAsState(initial = false)
+      val themeName by prefs.theme.collectAsStateWithLifecycle(initialValue = "system")
+      val presetThemeId by prefs.presetTheme.collectAsStateWithLifecycle(initialValue = "sakura")
+      val dynamicColor by prefs.dynamicColor.collectAsStateWithLifecycle(initialValue = false)
       val themeMode = when (themeName) {
         "light" -> ThemeMode.Light
         "dark" -> ThemeMode.Dark
@@ -32,7 +33,7 @@ class MainActivity : ComponentActivity() {
         else -> ThemeMode.System
       }
 
-      RikkaAgentTheme(themeMode = themeMode, dynamicColor = dynamicColor) {
+      RikkaAgentTheme(themeMode = themeMode, dynamicColor = dynamicColor, presetThemeId = presetThemeId) {
         Surface(modifier = Modifier.fillMaxSize()) {
           AppNavHost()
         }

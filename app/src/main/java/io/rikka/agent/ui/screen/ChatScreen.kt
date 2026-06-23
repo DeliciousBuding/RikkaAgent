@@ -52,7 +52,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,31 +59,36 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.rikka.agent.R
 import io.rikka.agent.storage.AppPreferences
+import io.rikka.agent.ui.components.ChatBubble
+import io.rikka.agent.ui.components.ChatInput
 import io.rikka.agent.vm.ChatViewModel
 import io.rikka.agent.vm.ConnectionError
 import io.rikka.agent.vm.ConnectionState
 import io.rikka.agent.vm.HostKeyEvent
-import io.rikka.agent.ui.components.ChatBubble
-import io.rikka.agent.ui.components.ChatInput
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import io.rikka.agent.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import lucide.icons.Lucide
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
+
+private val SessionItemShape = RoundedCornerShape(12.dp)
+private val ErrorBannerShape = RoundedCornerShape(12.dp)
+private val SuggestionCommands = listOf("uname -a", "df -h", "uptime")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -561,7 +565,7 @@ private fun ConnectionErrorBanner(
       modifier = Modifier
         .fillMaxWidth()
         .padding(horizontal = 12.dp, vertical = 6.dp),
-      shape = RoundedCornerShape(12.dp),
+      shape = ErrorBannerShape,
       color = bannerColor,
       shadowElevation = 4.dp,
     ) {
@@ -606,7 +610,7 @@ private fun ConnectionErrorBanner(
               )
             }
           },
-          modifier = Modifier.size(32.dp),
+          modifier = Modifier.size(48.dp),
         ) {
           Icon(
             imageVector = Lucide.Copy,
@@ -618,7 +622,7 @@ private fun ConnectionErrorBanner(
         // Dismiss button
         IconButton(
           onClick = onDismiss,
-          modifier = Modifier.size(32.dp),
+          modifier = Modifier.size(48.dp),
         ) {
           Icon(
             imageVector = Lucide.X,
@@ -687,7 +691,7 @@ private fun SessionDrawerContent(
       )
       IconButton(
         onClick = onNewSession,
-        modifier = Modifier.size(36.dp),
+        modifier = Modifier.size(48.dp),
       ) {
         Icon(
           Lucide.Plus,
@@ -751,9 +755,9 @@ private fun SessionItem(
     modifier = Modifier
       .fillMaxWidth()
       .padding(horizontal = 12.dp, vertical = 2.dp)
-      .clip(RoundedCornerShape(12.dp))
+      .clip(SessionItemShape)
       .clickable { onClick() },
-    shape = RoundedCornerShape(12.dp),
+    shape = SessionItemShape,
     color = containerColor,
     tonalElevation = 0.dp,
   ) {
@@ -780,7 +784,7 @@ private fun SessionItem(
       )
       IconButton(
         onClick = onDelete,
-        modifier = Modifier.size(28.dp),
+        modifier = Modifier.size(48.dp),
       ) {
         Icon(
           Lucide.Trash2,
@@ -815,7 +819,7 @@ private fun EmptySessionState(
     Row(
       horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-      listOf("uname -a", "df -h", "uptime").forEach { cmd ->
+      SuggestionCommands.forEach { cmd ->
         androidx.compose.material3.SuggestionChip(
           onClick = { onSuggestionClick(cmd) },
           label = {
@@ -971,7 +975,7 @@ internal fun HostKeyDialog(
       Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // Warning card (ErrorCard style)
         Surface(
-          shape = RoundedCornerShape(12.dp),
+          shape = ErrorBannerShape,
           color = warningColor,
           shadowElevation = 2.dp,
         ) {
@@ -1052,7 +1056,7 @@ internal fun HostKeyReplacementConfirmDialog(
     },
     text = {
       Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = ErrorBannerShape,
         color = MaterialTheme.colorScheme.errorContainer,
         shadowElevation = 2.dp,
       ) {

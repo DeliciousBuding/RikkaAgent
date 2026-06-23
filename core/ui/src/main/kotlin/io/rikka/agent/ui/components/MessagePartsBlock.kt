@@ -1,17 +1,29 @@
 package io.rikka.agent.ui.components
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.rikka.agent.model.ChatMessage
 import io.rikka.agent.model.MessagePart
 import io.rikka.agent.model.MessageStatus
+import lucide.icons.Lucide
 
 /**
  * Renders the structured [MessagePart] list of a [ChatMessage].
@@ -26,6 +38,10 @@ import io.rikka.agent.model.MessageStatus
  * - [MessagePart.Reasoning] -> ReasoningCard (collapsible chain-of-thought)
  * - [MessagePart.Mermaid]   -> MermaidDiagramCard
  *
+ * When [onDelete] is provided, a "more actions" button is appended at the end
+ * of the parts list. Tapping it opens an [ActionsSheet] with copy, re-run,
+ * share, full output, and delete actions.
+ *
  * @param message The [ChatMessage] whose [MessagePart] list will be rendered.
  * @param modifier Modifier applied to the outer [Column].
  * @param enableMermaid Whether to render [MessagePart.Mermaid] definitions as diagrams.
@@ -33,6 +49,13 @@ import io.rikka.agent.model.MessageStatus
  * @param isStreaming Whether the message is currently being streamed.
  *   When `true`, text parts skip [SelectionContainer] to avoid
  *   [ConcurrentModificationException] during rapid recomposition.
+ * @param onDelete Called when the user taps "Delete" in the [ActionsSheet].
+ *   When `null`, the "more actions" button is hidden.
+ * @param onRerun Called when the user taps "Re-run" in the [ActionsSheet].
+ * @param onCopy Called when the user taps "Copy" in the [ActionsSheet].
+ *   When `null`, defaults to copying [ChatMessage.textContent].
+ * @param onShare Called when the user taps "Share" in the [ActionsSheet].
+ * @param onFullOutput Called when the user taps "Complete output" in the [ActionsSheet].
  *
  * ```
  * // Basic usage in a chat list
@@ -42,11 +65,12 @@ import io.rikka.agent.model.MessageStatus
  *     }
  * }
  *
- * // Streaming message with Mermaid support
+ * // With actions sheet
  * MessagePartsBlock(
  *     message = currentMessage,
- *     enableMermaid = true,
- *     isStreaming = true,
+ *     onDelete = { viewModel.deleteMessage(currentMessage.id) },
+ *     onRerun = { viewModel.rerun(currentMessage) },
+ *     onShare = { shareMessage(currentMessage) },
  * )
  * ```
  */
@@ -56,8 +80,14 @@ fun MessagePartsBlock(
     modifier: Modifier = Modifier,
     enableMermaid: Boolean = false,
     isStreaming: Boolean = false,
+    onDelete: (() -> Unit)? = null,
+    onRerun: (() -> Unit)? = null,
+    onCopy: (() -> Unit)? = null,
+    onShare: (() -> Unit)? = null,
+    onFullOutput: (() -> Unit)? = null,
 ) {
     val isStreamingNow = isStreaming || message.status == MessageStatus.Streaming
+    var showActionsSheet by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -141,6 +171,37 @@ fun MessagePartsBlock(
                 }
             }
         }
+
+        // More actions button (only when onDelete is provided and not streaming)
+        if (onDelete != null && !isStreamingNow) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(top = 4.dp),
+            ) {
+                Icon(
+                    imageVector = Lucide.MoreHorizontal,
+                    contentDescription = "More actions",
+                    modifier = Modifier
+                        .size(20.dp)
+                        .clickable { showActionsSheet = true }
+                        .padding(2.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                )
+            }
+        }
+    }
+
+    // Actions sheet
+    if (showActionsSheet) {
+        ActionsSheet(
+            onDelete = onDelete ?: {},
+            onRerun = onRerun,
+            onCopy = onCopy ?: {},
+            onShare = onShare ?: {},
+            onFullOutput = onFullOutput,
+            onDismissRequest = { showActionsSheet = false },
+        )
     }
 }
 

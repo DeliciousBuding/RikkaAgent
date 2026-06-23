@@ -4,21 +4,17 @@ import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontFamily
@@ -35,69 +31,15 @@ val LocalDarkMode = compositionLocalOf { false }
 /** Code font for code blocks and monospace content. */
 val LocalCodeFontFamily = staticCompositionLocalOf { FontFamily.Monospace }
 
+/** Chat font family for message body text. */
+val LocalChatFontFamily = staticCompositionLocalOf { FontFamily.Default }
+
+/** Font size multiplier for chat content (0.8 .. 1.5). */
+val LocalFontSizeRatio = staticCompositionLocalOf { 1.0f }
+
 // ── Theme Mode ─────────────────────────────────────────────────────────────────
 
 enum class ThemeMode { Light, Dark, Amoled, System }
-
-// ── AMOLED Background ──────────────────────────────────────────────────────────
-
-private val AMOLED_DARK_BACKGROUND = Color(0xFF000000)
-
-// ── Static Color Schemes (fallback when dynamic color is off) ──────────────────
-
-private val LightScheme: ColorScheme = lightColorScheme(
-    primary = Color(0xFF0A0A0A),
-    onPrimary = Color(0xFFF5F1E9),
-    secondary = Color(0xFF3A6EA5),
-    onSecondary = Color(0xFFFFFFFF),
-    background = Color(0xFFF8F5F0),
-    onBackground = Color(0xFF0A0A0A),
-    surface = Color(0xFFFFFFFF),
-    onSurface = Color(0xFF0A0A0A),
-    surfaceVariant = Color(0xFFF1ECE3),
-    onSurfaceVariant = Color(0xFF2B2B2B),
-    outline = Color(0x332B2B2B),
-    error = Color(0xFFB3261E),
-    errorContainer = Color(0xFFFCE4EC),
-    onError = Color(0xFFFFFFFF),
-    onErrorContainer = Color(0xFF601410),
-)
-
-private val DarkScheme: ColorScheme = darkColorScheme(
-    primary = Color(0xFFF5F1E9),
-    onPrimary = Color(0xFF0A0A0A),
-    secondary = Color(0xFF7FB2E5),
-    onSecondary = Color(0xFF07131F),
-    background = Color(0xFF0B0B0B),
-    onBackground = Color(0xFFF5F1E9),
-    surface = Color(0xFF141414),
-    onSurface = Color(0xFFF5F1E9),
-    surfaceVariant = Color(0xFF1C1C1C),
-    onSurfaceVariant = Color(0xFFDDDDDD),
-    outline = Color(0x33DDDDDD),
-    error = Color(0xFFCF6679),
-    errorContainer = Color(0xFF3B1016),
-    onError = Color(0xFF000000),
-    onErrorContainer = Color(0xFFF2B8B5),
-)
-
-private val AmoledScheme: ColorScheme = darkColorScheme(
-    primary = Color(0xFFF5F1E9),
-    onPrimary = Color(0xFF000000),
-    secondary = Color(0xFF7FB2E5),
-    onSecondary = Color(0xFF000000),
-    background = Color(0xFF000000),
-    onBackground = Color(0xFFF5F1E9),
-    surface = Color(0xFF0A0A0A),
-    onSurface = Color(0xFFF5F1E9),
-    surfaceVariant = Color(0xFF121212),
-    onSurfaceVariant = Color(0xFFDDDDDD),
-    outline = Color(0x33DDDDDD),
-    error = Color(0xFFCF6679),
-    errorContainer = Color(0xFF2A0A0E),
-    onError = Color(0xFF000000),
-    onErrorContainer = Color(0xFFF2B8B5),
-)
 
 // ── Typography ─────────────────────────────────────────────────────────────────
 
@@ -109,6 +51,7 @@ val AppTypography = MaterialTheme.typography
  * RikkaAgent full Material 3 theme with:
  * - Material Expressive motion scheme
  * - Dynamic color (Material You, Android 12+)
+ * - Preset themes (Sakura/Ocean/Spring/Autumn/Black)
  * - Light / Dark / AMOLED dark modes
  * - 50 semantic extended colors via [MaterialTheme.extendColors]
  * - Status bar icon color sync
@@ -117,6 +60,9 @@ val AppTypography = MaterialTheme.typography
 fun RikkaAgentTheme(
     themeMode: ThemeMode = ThemeMode.System,
     dynamicColor: Boolean = false,
+    presetThemeId: String = "sakura",
+    chatFont: ChatFont = ChatFont.Default,
+    fontSizeRatio: Float = 1.0f,
     content: @Composable () -> Unit,
 ) {
     val darkTheme = when (themeMode) {
@@ -128,26 +74,23 @@ fun RikkaAgentTheme(
     val isAmoled = themeMode == ThemeMode.Amoled
 
     // Resolve color scheme
-    val baseColorScheme = when {
+    val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            val baseScheme = if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            if (isAmoled && darkTheme) {
+                baseScheme.copy(
+                    background = androidx.compose.ui.graphics.Color(0xFF000000),
+                    surface = androidx.compose.ui.graphics.Color(0xFF000000),
+                )
+            } else {
+                baseScheme
+            }
         }
-        else -> when {
-            darkTheme && isAmoled -> AmoledScheme
-            darkTheme -> DarkScheme
-            else -> LightScheme
+        else -> {
+            val preset = PresetTheme.findById(presetThemeId)
+            preset.getColorScheme(dark = darkTheme, amoled = isAmoled)
         }
-    }
-
-    // Apply AMOLED overrides when using dynamic color + amoled mode
-    val colorScheme = if (isAmoled && darkTheme) {
-        baseColorScheme.copy(
-            background = AMOLED_DARK_BACKGROUND,
-            surface = AMOLED_DARK_BACKGROUND,
-        )
-    } else {
-        baseColorScheme
     }
 
     val extendColors = if (darkTheme) ExtendDarkColors else ExtendLightColors
@@ -168,6 +111,8 @@ fun RikkaAgentTheme(
         LocalDarkMode provides darkTheme,
         LocalExtendColors provides extendColors,
         LocalCodeFontFamily provides FontFamily.Monospace,
+        LocalChatFontFamily provides chatFont.fontFamily,
+        LocalFontSizeRatio provides fontSizeRatio.coerceIn(0.8f, 1.5f),
         LocalOverscrollFactory provides null,
     ) {
         MaterialExpressiveTheme(

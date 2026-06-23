@@ -3,7 +3,6 @@ package io.rikka.agent.ui.screen
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,15 +25,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import io.rikka.agent.R
 import io.rikka.agent.ssh.KnownHostEndpointParser
 import io.rikka.agent.ssh.KnownHostsStore
 import io.rikka.agent.ssh.StoredHostKey
-import lucide.icons.Lucide
-import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
+import lucide.icons.Lucide
 import org.koin.compose.koinInject
 import java.text.SimpleDateFormat
 import java.util.Date

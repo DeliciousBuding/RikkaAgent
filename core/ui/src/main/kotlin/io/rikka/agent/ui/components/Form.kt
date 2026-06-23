@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.LocalContentColor
@@ -19,6 +18,45 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
+/**
+ * A horizontal form item layout with label, description, content, and optional tail widget.
+ *
+ * Arranges a left-aligned label/description column alongside a right-aligned tail
+ * (e.g. a [Switch]). The content slot sits below the label and description.
+ *
+ * @param modifier Modifier applied to the outer [Row].
+ * @param label Primary label composable, rendered with [MaterialTheme.typography.titleMedium].
+ * @param description Optional description text below the label, rendered with
+ *   [MaterialTheme.typography.labelSmall] at 60% opacity.
+ * @param tail Optional trailing widget displayed to the right of the label column,
+ *   commonly used for [Switch] or [Checkbox].
+ * @param content Optional content slot below the label/description, used for
+ *   text fields, sliders, or other input controls.
+ *
+ * ```
+ * FormItem(
+ *     label = { Text("Enable notifications") },
+ *     description = { Text("Receive push alerts for new messages") },
+ *     tail = {
+ *         Switch(
+ *             checked = isEnabled,
+ *             onCheckedChange = { isEnabled = it },
+ *         )
+ *     },
+ * )
+ *
+ * FormItem(
+ *     label = { Text("API Key") },
+ *     description = { Text("Your OpenAI API key") },
+ *     content = {
+ *         OutlinedTextField(
+ *             value = apiKey,
+ *             onValueChange = { apiKey = it },
+ *         )
+ *     },
+ * )
+ * ```
+ */
 @Composable
 fun FormItem(
     modifier: Modifier = Modifier,

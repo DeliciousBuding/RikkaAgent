@@ -1,6 +1,7 @@
 package io.rikka.agent.vm
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.rikka.agent.R
@@ -15,6 +16,7 @@ import io.rikka.agent.ssh.SshExecRunnerFactory
 import io.rikka.agent.storage.AppPreferences
 import io.rikka.agent.storage.ChatRepository
 import io.rikka.agent.storage.ProfileStore
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -95,6 +97,15 @@ class ChatViewModel(
     scope = viewModelScope,
   )
 
+  /** Global exception handler for viewModelScope.launch calls outside command execution.
+   *  Logs the error and appends an error system message so the user sees feedback. */
+  private val errorHandler = CoroutineExceptionHandler { _, throwable ->
+    Log.e("ChatViewModel", "Unhandled coroutine exception", throwable)
+    appendSystemMessage(
+      app.getString(R.string.err_ssh_generic, throwable.message ?: throwable.javaClass.simpleName),
+    )
+  }
+
   // ── UI State ───────────────────────────────────────────────────────────
 
   /** Backing list of messages for the current thread. Mutated via [MutableStateFlow.update]. */
@@ -135,7 +146,7 @@ class ChatViewModel(
    * Runs on [viewModelScope]; updates [_profileLabel] and appends a system [ChatMessage].
    */
   private fun loadProfile() {
-    viewModelScope.launch {
+    viewModelScope.launch(errorHandler) {
       val result = commandExecutor.loadProfile(profileId)
       if (result != null) {
         val (profile, label) = result
@@ -190,7 +201,7 @@ class ChatViewModel(
     commandExecutor.cancel()
     sessionManager.switchThread(targetThreadId)
     commandExecutor.resetConnectionState()
-    viewModelScope.launch {
+    viewModelScope.launch(errorHandler) {
       _messages.value = sessionManager.getMessages(targetThreadId)
     }
   }
@@ -203,7 +214,7 @@ class ChatViewModel(
    * @param targetThreadId The ID of the thread to delete.
    */
   fun deleteThread(targetThreadId: String) {
-    viewModelScope.launch {
+    viewModelScope.launch(errorHandler) {
       val wasActive = sessionManager.deleteThread(targetThreadId)
       if (wasActive) {
         commandExecutor.clearFullOutput()
@@ -214,14 +225,37 @@ class ChatViewModel(
 
   // ── Output access ──────────────────────────────────────────────────────
 
+  /**
+   * Check whether full (untruncated) output is available for a given message.
+   *
+   * @param messageId The assistant message ID to check.
+   * @return `true` if the full output is stored in memory.
+   */
   fun hasFullOutput(messageId: String): Boolean =
     commandExecutor.hasFullOutput(messageId)
 
+  /**
+   * Retrieve full (untruncated) output for a given message.
+   *
+   * @param messageId The assistant message ID.
+   * @return The full output string, or null if not available.
+   */
   fun getFullOutput(messageId: String): String? =
     commandExecutor.getFullOutput(messageId)
 
   // ── Command execution ──────────────────────────────────────────────────
 
+  /**
+   * Send a command for execution over SSH.
+   *
+   * Creates a user [ChatMessage] and an assistant seed message, persists both,
+   * then delegates to [CommandExecutor.execute] which streams output back
+   * via callbacks that update the assistant message in [_messages].
+   *
+   * If no profile is loaded, appends an error system message instead.
+   *
+   * @param text The raw command text from the user input.
+   */
   fun send(text: String) {
     val command = text.trim()
     if (command.isEmpty()) return
@@ -268,6 +302,12 @@ class ChatViewModel(
     )
   }
 
+  /**
+   * Cancel the currently running command.
+   *
+   * If a command was running, marks its assistant message as [MessageStatus.Canceled],
+   * merges a cancellation notice into the content, and resets the connection state.
+   */
   fun cancelRunning() {
     val canceledId = commandExecutor.cancel()
     if (canceledId != null) {
@@ -280,10 +320,18 @@ class ChatViewModel(
     commandExecutor.resetConnectionState()
   }
 
-  /** Export current session as plain text. */
+  /**
+   * Export the current session as a plain-text string.
+   *
+   * @return A formatted string containing the profile label and all messages.
+   */
   fun exportSession(): String =
     SessionExporter.export(_profileLabel.value, _messages.value)
 
+  /**
+   * Called when the ViewModel is being cleared (Activity/Fragment destroyed).
+   * Releases SSH runner resources held by [CommandExecutor].
+   */
   override fun onCleared() {
     super.onCleared()
     commandExecutor.cleanUp()
@@ -291,21 +339,25 @@ class ChatViewModel(
 
   // ── Private helpers ────────────────────────────────────────────────────
 
+  /** Update only the content of an assistant message by [id], preserving its current status. */
   private fun updateAssistantContent(id: String, content: String) {
     _messages.update { list ->
       list.map { if (it.id == id) it.copy(content = content) else it }
     }
   }
 
+  /** Update both content and status of an assistant message by [id]. */
   private fun updateAssistantMessage(id: String, content: String, status: MessageStatus) {
     _messages.update { list ->
       list.map { if (it.id == id) it.copy(content = content, status = status) else it }
     }
   }
 
+  /** Retrieve the current content of an assistant message by [id], or null if not found. */
   private fun getAssistantContent(id: String): String? =
     _messages.value.firstOrNull { it.id == id }?.content
 
+  /** Create and append a system-role [ChatMessage] with the given [text] to [_messages]. */
   private fun appendSystemMessage(text: String) {
     val msg = ChatMessage(
       id = "sys-${UUID.randomUUID()}",
@@ -318,6 +370,14 @@ class ChatViewModel(
   }
 }
 
+/**
+ * Represents the SSH connection lifecycle state.
+ *
+ * - [IDLE] -- No profile loaded; initial state.
+ * - [READY] -- Profile loaded and connection available; no command running.
+ * - [EXECUTING] -- A command is currently running over SSH.
+ * - [ERROR] -- Profile could not be loaded or a fatal connection error occurred.
+ */
 enum class ConnectionState {
   IDLE,
   READY,
@@ -325,7 +385,21 @@ enum class ConnectionState {
   ERROR,
 }
 
+/**
+ * Sealed class representing SSH host-key verification events.
+ *
+ * Collected from [AuthCallbackBroker.hostKeyEvent] and responded to via
+ * [ChatViewModel.respondToHostKey].
+ */
 sealed class HostKeyEvent {
+  /**
+   * The SSH host is not in the known-hosts file.
+   *
+   * @param host The hostname or IP.
+   * @param port The SSH port.
+   * @param fingerprint The server's public-key fingerprint.
+   * @param keyType The key algorithm (e.g. "ssh-ed25519").
+   */
   data class UnknownHost(
     val host: String,
     val port: Int,
@@ -333,6 +407,15 @@ sealed class HostKeyEvent {
     val keyType: String,
   ) : HostKeyEvent()
 
+  /**
+   * The SSH host's key has changed since it was last recorded.
+   *
+   * @param host The hostname or IP.
+   * @param port The SSH port.
+   * @param expectedFingerprint The fingerprint stored in known-hosts.
+   * @param actualFingerprint The fingerprint presented by the server.
+   * @param keyType The key algorithm (e.g. "ssh-ed25519").
+   */
   data class Mismatch(
     val host: String,
     val port: Int,
