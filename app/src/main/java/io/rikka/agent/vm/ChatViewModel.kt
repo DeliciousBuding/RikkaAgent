@@ -7,6 +7,7 @@ import io.rikka.agent.R
 import io.rikka.agent.model.ChatMessage
 import io.rikka.agent.model.ChatRole
 import io.rikka.agent.model.ChatThread
+import io.rikka.agent.model.MessagePart
 import io.rikka.agent.model.MessageStatus
 import io.rikka.agent.model.SshProfile
 import io.rikka.agent.ssh.ExecEvent
@@ -17,6 +18,7 @@ import io.rikka.agent.ssh.KnownHostsStore
 import io.rikka.agent.ssh.DefaultSshExecRunnerFactory
 import io.rikka.agent.ssh.PassphraseProvider
 import io.rikka.agent.ssh.PasswordProvider
+import io.rikka.agent.ssh.SshOutputMapper
 import io.rikka.agent.ssh.ClosableSshExecRunner
 import io.rikka.agent.ssh.SshExecRunnerFactory
 import io.rikka.agent.storage.AppPreferences
@@ -235,6 +237,9 @@ class ChatViewModel(
     runningJob = viewModelScope.launch {
       val stdout = StringBuilder()
       val stderr = StringBuilder()
+      // SshOutputMapper: accumulates stdout/stderr into MessageParts
+      val outputMapper = SshOutputMapper()
+      outputMapper.beginCommand(shellCommand)
       // For Codex mode: parse JSONL, accumulate markdown deltas
       val jsonlBuffer = if (isCodex) JsonlLineBuffer() else null
       val markdownAccum = if (isCodex) StringBuilder() else null
@@ -311,13 +316,22 @@ class ChatViewModel(
                 updateAssistantContent(assistantId, renderCodexContent(exitCode = null))
               }
             } else {
+              // Non-Codex: use SshOutputMapper to build MessageParts
+              val newParts = outputMapper.onStdout(event.bytes)
+              if (newParts.isNotEmpty()) {
+                appendPartsToMessage(assistantId, newParts)
+              }
+              // Also maintain legacy content for backward compat
               stdout.append(String(event.bytes, Charsets.UTF_8))
               val formatted = formatOutputPair(stdout, stderr, exitCode = null)
               if (formatted.truncated) fullOutputByMessageId[assistantId] = formatted.full
-              updateAssistantContent(assistantId, formatted.display)
             }
           }
           is ExecEvent.StderrChunk -> {
+            val newParts = outputMapper.onStderr(event.bytes)
+            if (newParts.isNotEmpty()) {
+              appendPartsToMessage(assistantId, newParts)
+            }
             stderr.append(String(event.bytes, Charsets.UTF_8))
             val formatted = formatOutputPair(stdout, stderr, exitCode = null)
             if (formatted.truncated) fullOutputByMessageId[assistantId] = formatted.full
@@ -343,6 +357,14 @@ class ChatViewModel(
                   }
                   else -> Unit
                 }
+              }
+            }
+
+            // Flush remaining output from mapper (non-Codex)
+            if (!isCodex) {
+              val exitParts = outputMapper.onExit(event.code ?: 0)
+              if (exitParts.isNotEmpty()) {
+                appendPartsToMessage(assistantId, exitParts)
               }
             }
 
@@ -525,6 +547,15 @@ class ChatViewModel(
       appPreferences.defaultShell.first()
     }
     return CommandComposer.wrapWithShell(command, shell)
+  }
+
+  /** Append [newParts] to the existing message identified by [messageId]. */
+  private fun appendPartsToMessage(messageId: String, newParts: List<MessagePart>) {
+    _messages.update { list ->
+      list.map { msg ->
+        if (msg.id == messageId) msg.copy(parts = msg.parts + newParts) else msg
+      }
+    }
   }
 }
 
