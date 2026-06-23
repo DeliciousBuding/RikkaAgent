@@ -16,12 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -67,6 +61,7 @@ import io.rikka.agent.model.AuthType
 import io.rikka.agent.ssh.ContentUriKeyContentProvider
 import io.rikka.agent.ssh.SshKeyGenerator
 import io.rikka.agent.vm.ProfileEditorViewModel
+import lucide.icons.Lucide
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
@@ -115,7 +110,7 @@ fun ProfileEditorScreen(
         title = { Text(if (profileId == null) stringResource(R.string.new_profile_title) else stringResource(R.string.edit_profile_title)) },
         navigationIcon = {
           IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+            Icon(Lucide.ArrowLeft, contentDescription = stringResource(R.string.back))
           }
         },
       )
@@ -125,7 +120,7 @@ fun ProfileEditorScreen(
         attempted = true
         vm.save()
       }) {
-        Icon(Icons.Default.Check, contentDescription = stringResource(R.string.save))
+        Icon(Lucide.Check, contentDescription = stringResource(R.string.save))
       }
     },
     snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -369,7 +364,7 @@ fun ProfileEditorScreen(
                     modifier = Modifier.size(24.dp),
                   ) {
                     Icon(
-                      Icons.Default.Close,
+                      Lucide.X,
                       contentDescription = stringResource(R.string.remove_key),
                       modifier = Modifier.size(16.dp),
                     )
@@ -437,7 +432,7 @@ fun ProfileEditorScreen(
               trailingIcon = {
                 IconButton(onClick = { apiKeyVisible = !apiKeyVisible }) {
                   Icon(
-                    imageVector = if (apiKeyVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                    imageVector = if (apiKeyVisible) Lucide.EyeOff else Lucide.Eye,
                     contentDescription = stringResource(R.string.cd_toggle_api_key),
                   )
                 }

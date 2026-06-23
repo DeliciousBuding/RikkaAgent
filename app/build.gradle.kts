@@ -98,6 +98,7 @@ dependencies {
 
   // Encrypted storage for SSH keys
   implementation(libs.security.crypto)
+  implementation(libs.lucide.icons)
 
   testImplementation(libs.junit4)
   testImplementation(platform(libs.compose.bom))
