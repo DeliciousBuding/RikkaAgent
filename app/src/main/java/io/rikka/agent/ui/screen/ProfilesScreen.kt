@@ -139,7 +139,7 @@ fun ProfilesScreen(
       // FAB
       FloatingActionButton(
         onClick = { onEditProfile(null) },
-        modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 32.dp),
       ) {
         Icon(Lucide.Plus, contentDescription = stringResource(R.string.new_profile))
       }
