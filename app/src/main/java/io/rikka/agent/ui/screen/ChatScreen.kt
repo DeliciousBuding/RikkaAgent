@@ -24,6 +24,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import com.composables.icons.lucide.Lucide
@@ -65,6 +68,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
@@ -477,6 +481,7 @@ private fun SessionDrawerContent(
   }
 
   ModalDrawerSheet(modifier = Modifier.width(280.dp)) {
+    // Header
     Row(
       modifier = Modifier
         .fillMaxWidth()
@@ -506,31 +511,49 @@ private fun SessionDrawerContent(
         )
       }
     } else {
-      LazyColumn {
+      LazyColumn(
+        modifier = Modifier.padding(horizontal = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+      ) {
         items(threads, key = { it.id }) { thread ->
-          ListItem(
-            headlineContent = {
+          val isSelected = false // TODO: track current thread
+          Surface(
+            modifier = Modifier
+              .fillMaxWidth()
+              .clip(RoundedCornerShape(50.dp))
+              .clickable { onSelectThread(thread.id) },
+            color = if (isSelected) {
+              MaterialTheme.colorScheme.surfaceColorAtElevation(8.dp)
+            } else {
+              Color.Transparent
+            },
+            shape = RoundedCornerShape(50.dp),
+          ) {
+            Row(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
               Text(
                 text = thread.title.ifBlank { stringResource(R.string.session_fallback_name) },
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
               )
-            },
-            trailingContent = {
               IconButton(
                 onClick = { confirmDeleteId = thread.id },
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier.size(24.dp),
               ) {
                 Icon(
                   Lucide.Trash2,
                   contentDescription = stringResource(R.string.delete),
-                  modifier = Modifier.size(16.dp),
-                  tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                  modifier = Modifier.size(14.dp),
+                  tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                 )
               }
-            },
-            modifier = Modifier.clickable { onSelectThread(thread.id) },
-          )
+            }
+          }
         }
       }
     }
