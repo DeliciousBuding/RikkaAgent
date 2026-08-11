@@ -1,7 +1,7 @@
 # 计划书：rikka-agent（Android / Compose）模式A「原生 SSH 命令面板」+ 聊天式渲染
 
-> 放置位置：`<repo-root>\docs\plan.md`  
-> 参考 UI：`rikkahub\app`（Jetpack Compose 聊天界面与富文本渲染）  
+> 放置位置：`docs/plan.md`  
+> 参考 UI：`rikkahub/app`（Jetpack Compose 聊天界面与富文本渲染）  
 > 约束：客户端原生 SSH（不新增服务端 HTTP 执行入口），以“好看 + 低延迟 + 不扩大攻击面”为第一优先级。
 
 ---
@@ -96,11 +96,11 @@
 ## 6. 技术落点（参考 RikkaHub）
 
 参考代码入口（只读勘探用）：
-1. 导航壳层：`rikkahub\app\src\main\java\me\rerere\rikkahub\RouteActivity.kt`
-2. 聊天页：`rikkahub\app\src\main\java\me\rerere\rikkahub\ui\pages\chat\ChatPage.kt`
+1. 导航壳层：`rikkahub/app/src/main/java/me/rerere/rikkahub/RouteActivity.kt`
+2. 聊天页：`rikkahub/app/src/main/java/me/rerere/rikkahub/ui/pages/chat/ChatPage.kt`
 3. 富文本渲染：
-   - Markdown：`rikkahub\app\src\main\java\me\rerere\rikkahub\ui\components\richtext\Markdown.kt`
-   - 代码块：`rikkahub\app\src\main\java\me\rerere\rikkahub\ui\components\richtext\HighlightCodeBlock.kt`
+   - Markdown：`rikkahub/app/src/main/java/me/rerere/rikkahub/ui/components/richtext/Markdown.kt`
+   - 代码块：`rikkahub/app/src/main/java/me/rerere/rikkahub/ui/components/richtext/HighlightCodeBlock.kt`
 
 后续实现时，我们会新增：
 1. `ssh/` 模块（或 package）：
@@ -152,11 +152,11 @@ Phase 4（体验打磨）：
 
 ## 9. 下一步（等待确认后执行）
 
-1. Phase 0：对 `rikkahub` 做只读勘探，产出落点文档到 `<repo-root>\docs\`.
+1. Phase 0：对 `rikkahub` 做只读勘探，产出落点文档到 `docs/`.
 2. 明确一个产品决策：SSH Profile 先支持单主机还是多主机（不影响底层，但影响信息架构与页面）。
 
 ## 10. Spec 文档入口
 
 完整 spec（分版块）位于：
 
-- `<repo-root>\docs\spec\00-index.md`
+- `docs/spec/00-index.md`

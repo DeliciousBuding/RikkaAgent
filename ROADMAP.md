@@ -13,7 +13,7 @@
 
 ## 仓库边界说明
 
-- 与 rikka-agent 无关的 VectorControl 文档已于 2026-03-13 外部归档到 `<local>\docs\vectorcontrol-archive`，索引见 `<local>\VECTORCONTROL_ARCHIVE_INDEX.md`。
+- 与 rikka-agent 无关的 VectorControl 文档已于 2026-03-13 外部归档，本仓库不再维护。
 
 ---
 
